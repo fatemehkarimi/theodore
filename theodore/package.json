@@ -1,0 +1,41 @@
+{
+  "name": "@theodore/theodore",
+  "version": "0.0.1",
+  "description": "",
+  "author": "fatemeh karimi",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fatemehkarimi/theodore",
+    "directory": "packages/theodore"
+  },
+  "devDependencies": {
+    "@rsbuild/plugin-react": "^1.1.1",
+    "@rslib/core": "^0.5.3",
+    "@types/react": "^18",
+    "react": "^18.3.1",
+    "react-dom": "^18"
+  },
+  "peerDependencies": {
+    "@types/react": ">=18.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}
