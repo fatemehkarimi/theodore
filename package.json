@@ -1,0 +1,29 @@
+{
+  "name": "@theodore/monorepo",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "format": "prettier --write .",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "editor"
+  ],
+  "author": "fatemeh karimi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fatemehkarimi/theodore/issues"
+  },
+  "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a",
+  "devDependencies": {
+    "@eslint/compat": "^1.2.7",
+    "@eslint/js": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint": "^9.21.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.2",
+    "typescript-eslint": "^8.26.0",
+    "typescript": "^5.8.2"
+  }
+}
