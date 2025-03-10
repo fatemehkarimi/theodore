@@ -1,12 +1,12 @@
 import type { MutableRefObject } from 'react';
 import React, { useRef } from 'react';
 import { useController } from '../controller/useController';
-import styles from './Theodore.module.scss';
+import styles from "./Theodore.module.scss";
 
 type OwnProps = {
-  apiRef?: MutableRefObject<FeditorHandle | null>;
+  apiRef?: MutableRefObject<TheodoreHandle | null>;
 };
-export type FeditorHandle = {
+export type TheodoreHandle = {
   insertEmoji: (emoji: string) => void;
 };
 
@@ -27,7 +27,7 @@ const Theodore: React.FC<OwnProps> = (ownProps) => {
 
   return (
     <div
-      className={styles.FeditorContainer}
+      className={styles.container}
       contentEditable="true"
       onKeyDown={handleKeyDown}
       ref={inputRef}

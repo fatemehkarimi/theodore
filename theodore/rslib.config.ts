@@ -1,5 +1,6 @@
 import { pluginReact } from '@rsbuild/plugin-react';
 import { defineConfig } from '@rslib/core';
+import { pluginSass } from '@rsbuild/plugin-sass';
 
 export default defineConfig({
   source: {
@@ -17,5 +18,5 @@ export default defineConfig({
   output: {
     target: 'web',
   },
-  plugins: [pluginReact()],
+  plugins: [pluginReact(), pluginSass()],
 });
