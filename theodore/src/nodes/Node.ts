@@ -1,4 +1,4 @@
-import type { TeactNode } from '../../../../lib/teact/teact';
+import type { ReactNode } from 'react';
 
 type NodeType = 'text' | 'emoji' | 'mention';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
@@ -20,7 +20,7 @@ export class Node {
     throw new Error('not implemented');
   }
 
-  public render(): TeactNode {
+  public render(): ReactNode {
     throw new Error('not implemented');
   }
 
