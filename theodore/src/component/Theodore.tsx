@@ -1,41 +1,44 @@
-import type { MutableRefObject } from 'react';
-import React, { useRef } from 'react';
+import React, { useImperativeHandle, useRef } from 'react';
 import { useController } from '../controller/useController';
-import styles from "./Theodore.module.scss";
+import type { RenderEmoji, TheodoreHandle } from '../types';
+import styles from './Theodore.module.scss';
 
-type OwnProps = {
-  apiRef?: MutableRefObject<TheodoreHandle | null>;
+type Props = Omit<
+  React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
+  'contentEditable'
+> & {
+  renderEmoji: RenderEmoji;
 };
-export type TheodoreHandle = {
-  insertEmoji: (emoji: string) => void;
-};
+const Theodore = React.forwardRef<TheodoreHandle, Props>(
+  ({ className, renderEmoji, ...props }, ref) => {
+    const inputRef = useRef<HTMLDivElement | null>(null);
+    const {
+      tree,
+      insertEmoji,
+      handlers: { handleKeyDown },
+    } = useController(inputRef, renderEmoji);
 
-const Theodore: React.FC<OwnProps> = (ownProps) => {
-  const inputRef = useRef<HTMLDivElement | null>(null);
-  const {
-    tree,
-    insertEmoji,
-    handlers: { handleKeyDown },
-  } = useController(inputRef);
+    useImperativeHandle(ref, () => {
+      return {
+        insertEmoji: (emoji) => {
+          insertEmoji(emoji);
+        },
+      };
+    }, []);
 
-  if (ownProps.apiRef != null)
-    ownProps.apiRef.current = {
-      insertEmoji: (emoji) => {
-        insertEmoji(emoji);
-      },
-    };
-
-  return (
-    <div
-      className={styles.container}
-      contentEditable="true"
-      onKeyDown={handleKeyDown}
-      ref={inputRef}
-      onInput={(e) => e.preventDefault()}
-    >
-      {tree?.map((tree) => tree.render())}
-    </div>
-  );
-};
+    return (
+      <div
+        className={`${styles.container} ${className}`}
+        contentEditable="true"
+        onKeyDown={handleKeyDown}
+        ref={inputRef}
+        onInput={(e) => e.preventDefault()}
+        {...props}
+      >
+        {tree?.map((tree) => tree.render())}
+      </div>
+    );
+  },
+);
 
 export { Theodore };

@@ -4,7 +4,7 @@ import { ARROW_LEFT, ARROW_RIGHT, END, HOME } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node } from '../nodes/Node';
 import TextNode from '../nodes/textNode/TextNode';
-import type { Selection } from '../types';
+import type { RenderEmoji, Selection } from '../types';
 import {
   getNodeBeforeSelection,
   isOnlyNavigationKey,
@@ -23,6 +23,7 @@ type History = {
 
 export const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
+  renderEmoji: RenderEmoji,
 ) => {
   const [tree, setTree] = useState<Node[] | null>(null);
   const nodeIndexRef = useRef<number>(0);
@@ -225,7 +226,7 @@ export const useController = (
   );
 
   const insertEmoji = (emoji: string) => {
-    const emojiNode = new EmojiNode(assignNodeIndex(), emoji);
+    const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
 
     if (editorSelection.current?.isAtStart) {
       setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
