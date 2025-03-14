@@ -1,17 +1,24 @@
-import { useCallback, useRef, useState, type MutableRefObject } from 'react';
-import { COMMAND_INSERT_EMOJI, COMMAND_INSERT_TEXT } from './commands';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import { ARROW_LEFT, ARROW_RIGHT, END, HOME } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node } from '../nodes/Node';
 import TextNode from '../nodes/textNode/TextNode';
-import type { RenderEmoji, Selection } from '../types';
 import {
   getNodeBeforeSelection,
   isOnlyNavigationKey,
-  moveToNode,
+  moveToNodeBySelection,
+  setCaretAfter,
   setCaretPosition,
   setCaretToEnd,
 } from '../selection/selection';
+import type { RenderEmoji, Selection } from '../types';
+import { COMMAND_INSERT_EMOJI, COMMAND_INSERT_TEXT } from './commands';
 
 type History = {
   command: string;
@@ -91,7 +98,7 @@ export const useController = (
         setTree(newTree);
 
         requestAnimationFrame(() => {
-          moveToNode(editorSelection.current);
+          moveToNodeBySelection(editorSelection.current);
         });
         return;
       }
@@ -232,10 +239,11 @@ export const useController = (
       setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
     } else {
       const selectedNode = getEditorSelectedNode();
+      selectedNode?.getIndex();
       const selectedNodeOffset = editorSelection.current?.offset ?? 0;
-      const selectedNodeTreeIndex = getEditorSelectedNodeTreeIndex();
 
-      if (selectedNode != undefined) {
+      if (selectedNode != null) {
+        const selectedNodeTreeIndex = getEditorSelectedNodeIndexInTree();
         if (selectedNode.getType() == 'text') {
         } else {
           setTree((tree) =>
@@ -266,10 +274,7 @@ export const useController = (
       prevState: null,
     });
 
-    requestAnimationFrame(() => {
-      const selection = document.getSelection();
-      if (selection != null) selection.modify('move', 'forward', 'character');
-    });
+    inputRef.current?.focus();
   };
 
   const createTextNodeAndUpdateEditorSelection = (text: string) => {
@@ -302,17 +307,29 @@ export const useController = (
   };
 
   const getEditorSelectedNode = () => {
-    const nodeIndex = editorSelection.current?.nodeIndex ?? 0;
+    const nodeIndex = editorSelection.current?.nodeIndex;
+    if (nodeIndex == undefined) return null;
     return tree?.find((t) => t.getIndex() == nodeIndex) ?? null;
   };
 
-  const getEditorSelectedNodeTreeIndex = () => {
+  const getEditorSelectedNodeIndexInTree = () => {
     return (
       tree?.findIndex(
         (t) => t.getIndex() == editorSelection.current?.nodeIndex,
       ) ?? -1
     );
   };
+
+  useLayoutEffect(() => {
+    if (editorSelection.current) {
+      const nodeIndex = editorSelection.current!.nodeIndex;
+      const nodeElement = document.querySelectorAll(
+        `[data-node-index="${nodeIndex}"]`,
+      )?.[0];
+      if (nodeElement == null) return;
+      setCaretAfter(nodeElement);
+    }
+  }, [tree]);
 
   return {
     tree,
