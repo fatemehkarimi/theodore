@@ -1,4 +1,4 @@
-import React from 'react';
+import { cloneElement } from 'react';
 import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
 
@@ -21,11 +21,22 @@ class EmojiNode extends Node {
   }
 
   public render() {
-    const element = this.renderEmoji(this.emoji);
-    return React.cloneElement(element, {
-      key: this.getKey(),
-      'data-node-index': this.getIndex(),
+    const emojiEl = this.renderEmoji(this.emoji);
+    const clonedEmojiEl = cloneElement(emojiEl, {
+      style: {
+        userSelect: 'none',
+      },
     });
+    return (
+      <span
+        key={this.getKey()}
+        data-node-index={this.getIndex()}
+        contentEditable="false"
+        style={{ display: 'inline-block' }}
+      >
+        {clonedEmojiEl}
+      </span>
+    );
   }
 }
 

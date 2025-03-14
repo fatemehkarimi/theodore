@@ -24,7 +24,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
           insertEmoji(emoji);
         },
       };
-    }, []);
+    }, [insertEmoji]);
 
     return (
       <div
@@ -34,6 +34,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
         {...props}
+        suppressContentEditableWarning={true}
       >
         {tree?.map((tree) => tree.render())}
       </div>

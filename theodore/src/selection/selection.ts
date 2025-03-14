@@ -39,12 +39,23 @@ export function setCaretPosition(element: Node, position: number) {
   return position;
 }
 
+export function setCaretAfter(element: Node) {
+  const selection = document.getSelection();
+  if (selection != null) {
+    var range = document.createRange();
+    range.setStartAfter(element);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+}
+
 export const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
   if (event.ctrlKey || event.shiftKey || event.altKey) return false;
   return NavigationKeys.includes(event.key);
 };
 
-export function moveToNode(selection: Selection | null) {
+export function moveToNodeBySelection(selection: Selection | null) {
   if (selection == null) return;
   const nodeElement = document.querySelectorAll(
     `[data-node-index="${selection.nodeIndex}"]`,
