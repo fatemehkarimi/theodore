@@ -12,7 +12,7 @@ export default [
     {
       ...react,
       settings: {
-        react: { version: 'detect' },
+        react: { version: '>=18.0.0' },
       },
     },
     reactJsx,
@@ -23,7 +23,15 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ExportNamedDeclaration[declaration.type='VariableDeclaration']",
+          message: 'Export statements should be at the end of the file.',
+        },
+      ],
     },
   },
-  { ignores: ['dist/'] },
+  { ignores: ['dist/**', 'node_modules/**'] },
 ];

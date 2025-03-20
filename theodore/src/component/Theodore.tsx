@@ -1,6 +1,10 @@
 import React, { useImperativeHandle, useRef } from 'react';
 import { useController } from '../controller/useController';
-import type { RenderEmoji, TheodoreHandle } from '../types';
+import type {
+  onSelectionChangeFn,
+  RenderEmoji,
+  TheodoreHandle,
+} from '../types';
 import styles from './Theodore.module.scss';
 
 type Props = Omit<
@@ -8,15 +12,20 @@ type Props = Omit<
   'contentEditable'
 > & {
   renderEmoji: RenderEmoji;
+  listeners?: {
+    onSelectionChange?: onSelectionChangeFn;
+  };
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
-  ({ className, renderEmoji, ...props }, ref) => {
+  ({ className, renderEmoji, listeners, ...props }, ref) => {
     const inputRef = useRef<HTMLDivElement | null>(null);
     const {
       tree,
       insertEmoji,
       handlers: { handleKeyDown },
-    } = useController(inputRef, renderEmoji);
+    } = useController(inputRef, renderEmoji, {// todo: fix this has performance problems
+      onSelectionChange: listeners?.onSelectionChange,
+    });
 
     useImperativeHandle(ref, () => {
       return {

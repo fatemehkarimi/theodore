@@ -17,26 +17,31 @@ import {
   setCaretPosition,
   setCaretToEnd,
 } from '../selection/selection';
-import type { RenderEmoji, Selection } from '../types';
+import type { onSelectionChangeFn, RenderEmoji, Selection } from '../types';
 import { COMMAND_INSERT_EMOJI, COMMAND_INSERT_TEXT } from './commands';
+import { useSelection } from './useSelection';
 
 type History = {
   command: string;
   nodeIndex: number;
   prevState: string | null;
   transactionId: number;
-  selection?: Selection | null;
+  selection: Selection;
 };
-
-export const useController = (
+const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
+  listeners?: {
+    onSelectionChange?: onSelectionChangeFn;
+  },
 ) => {
+  const { getSelection, setSelection } = useSelection(
+    listeners?.onSelectionChange,
+  );
   const [tree, setTree] = useState<Node[] | null>(null);
   const nodeIndexRef = useRef<number>(0);
   const transactionIdRef = useRef<number>(0);
   const history = useRef<History[]>([]);
-  const editorSelection = useRef<Selection | null>(null);
 
   const handleKeyDown: React.KeyboardEventHandler = useCallback(
     (event) => {
@@ -61,7 +66,7 @@ export const useController = (
           .filter((t) => t != null);
 
         if (prevState.selection) {
-          editorSelection.current = prevState.selection;
+          setSelection(prevState.selection);
         } else {
           // find selection
           const selectedNodeIdx = newTree.findIndex(
@@ -74,31 +79,31 @@ export const useController = (
             );
 
             if (prevNodeIndex + 1 < tree.length) {
-              editorSelection.current = {
+              setSelection({
                 nodeIndex: tree[prevNodeIndex + 1].getIndex(),
                 offset: 0,
                 isAtStart: false,
-              };
+              });
             } else if (prevNodeIndex - 1 >= 0) {
-              editorSelection.current = {
+              setSelection({
                 nodeIndex: tree[prevNodeIndex - 1].getIndex(),
                 offset: tree[prevNodeIndex - 1].getChildLength(),
                 isAtStart: false,
-              };
+              });
             }
           } else {
-            editorSelection.current = {
+            setSelection({
               nodeIndex: prevState.nodeIndex,
               offset: newTree[selectedNodeIdx].getChildLength(),
               isAtStart: false,
-            };
+            });
           }
         }
 
         setTree(newTree);
 
         requestAnimationFrame(() => {
-          moveToNodeBySelection(editorSelection.current);
+          moveToNodeBySelection(getSelection());
         });
         return;
       }
@@ -107,7 +112,8 @@ export const useController = (
       if (event.ctrlKey || event.altKey || event.shiftKey) return;
 
       if (key == HOME) {
-        if (editorSelection.current != null) editorSelection.current.offset = 0;
+        if (getSelection() != null)
+          setSelection({ ...getSelection()!, offset: 0 });
         if (inputRef.current != null) setCaretPosition(inputRef.current, 0);
         return;
       }
@@ -121,39 +127,37 @@ export const useController = (
               ? Number(el.dataset.nodeIndex)
               : undefined;
           const node = tree.find((n) => n.getIndex() == nodeIndex);
-          if (editorSelection.current != null && node != null)
-            editorSelection.current.offset +=
-              (node as TextNode).getChildren()?.length ?? 0;
+          if (getSelection() != null && node != null)
+            setSelection({
+              ...getSelection()!,
+              offset:
+                getSelection()!.offset +
+                ((node as TextNode).getChildren()?.length ?? 0),
+            });
         }
         return;
       }
 
       if (isOnlyNavigationKey(event)) {
         if (key == ARROW_LEFT || key == ARROW_RIGHT) {
-          const selection = document.getSelection();
-          if (selection == null) return;
+          const docSelection = document.getSelection();
+          if (docSelection == null) return;
 
-          const anchorNode = selection.anchorNode;
-          const focusNode = selection.focusNode;
-          const anchorOffset = selection.anchorOffset;
-          const focusOffset = selection.focusOffset;
+          const anchorNode = docSelection.anchorNode;
+          const focusNode = docSelection.focusNode;
+          const anchorOffset = docSelection.anchorOffset;
+          const focusOffset = docSelection.focusOffset;
 
-          selection.modify(
+          docSelection.modify(
             'move',
             key == ARROW_LEFT ? 'backward' : 'forward',
             'character',
           );
 
-          const newAnchorNode = selection.anchorNode;
-          const newFocusNode = selection.focusNode;
-          const newAnchorOffset = selection.anchorOffset;
-          const newFocusOffset = selection.focusOffset;
-
-          const selectionHasChanged =
-            newAnchorNode != anchorNode ||
-            newFocusNode != focusNode ||
-            newAnchorOffset != anchorOffset ||
-            newFocusOffset != focusOffset;
+          const newAnchorNode = docSelection.anchorNode;
+          const newFocusNode = docSelection.focusNode;
+          const newAnchorOffset = docSelection.anchorOffset;
+          const newFocusOffset = docSelection.focusOffset;
 
           const currentNode = getNodeBeforeSelection();
           const nodeIndex =
@@ -161,23 +165,21 @@ export const useController = (
               ? (currentNode as HTMLElement).dataset.nodeIndex
               : null;
 
+          const node =
+            nodeIndex != null ? getNodeInTreeByIndex(Number(nodeIndex)) : null;
+          const offset = node?.getType() == 'text' ? newAnchorOffset : 0;
           if (nodeIndex != null) {
-            editorSelection.current = {
+            setSelection({
               nodeIndex: Number(nodeIndex),
-              offset: editorSelection.current?.offset ?? 0,
+              offset: offset,
               isAtStart: false,
-            };
+            });
           } else
-            editorSelection.current = {
+            setSelection({
               nodeIndex: 0, // it is at the begining
               offset: 0,
               isAtStart: true,
-            };
-
-          if (editorSelection.current != undefined && selectionHasChanged) {
-            const diff = key == ARROW_LEFT ? -1 : 1;
-            editorSelection.current.offset += diff;
-          }
+            });
         }
 
         return;
@@ -192,27 +194,27 @@ export const useController = (
         if (node.getType() == 'text') {
           const textNode = node as TextNode;
           const nodeChildren = textNode.getChildren();
-          textNode.insertText(text, editorSelection.current?.offset ?? 0);
+          textNode.insertText(text, getSelection()?.offset ?? 0);
 
           history.current.push({
             transactionId: getTransactionId(),
             command: COMMAND_INSERT_TEXT,
             nodeIndex: textNode.getIndex(),
             prevState: nodeChildren,
-            selection:
-              editorSelection.current != null
-                ? { ...editorSelection.current }
-                : null,
+            selection: getSelection() != null ? { ...getSelection()! } : null,
           });
 
-          if (editorSelection.current != null) {
-            editorSelection.current.offset += text.length;
+          if (getSelection() != null) {
+            setSelection({
+              ...getSelection()!,
+              offset: getSelection()!.offset + text.length,
+            });
           } else {
-            editorSelection.current = {
+            setSelection({
               nodeIndex: textNode.getIndex(),
               offset: text.length,
               isAtStart: false,
-            };
+            });
           }
         } else if (node.getType() == 'emoji') {
           const textNode = createTextNodeAndUpdateEditorSelection(text);
@@ -225,8 +227,8 @@ export const useController = (
       requestAnimationFrame(
         () =>
           inputRef.current != null &&
-          editorSelection.current != null &&
-          setCaretPosition(inputRef.current, editorSelection.current.offset),
+          getSelection() != null &&
+          setCaretPosition(inputRef.current, getSelection()!.offset),
       );
     },
     [tree],
@@ -235,16 +237,58 @@ export const useController = (
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
 
-    if (editorSelection.current?.isAtStart) {
+    if (getSelection()?.isAtStart) {
       setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
     } else {
       const selectedNode = getEditorSelectedNode();
-      selectedNode?.getIndex();
-      const selectedNodeOffset = editorSelection.current?.offset ?? 0;
+      const selectedNodeOffset = getSelection()?.offset ?? 0;
 
       if (selectedNode != null) {
         const selectedNodeTreeIndex = getEditorSelectedNodeIndexInTree();
         if (selectedNode.getType() == 'text') {
+          const selectedTextNode = selectedNode as TextNode;
+          if (
+            selectedNodeOffset == selectedTextNode.getChildLength() ||
+            selectedNodeOffset == 0
+          ) {
+            setTree((tree) =>
+              tree
+                ? [
+                    ...tree.slice(0, selectedNodeTreeIndex + 1),
+                    emojiNode,
+                    ...tree.slice(selectedNodeTreeIndex + 1),
+                  ]
+                : [emojiNode],
+            );
+          } else {
+            const text = selectedTextNode.getChildren();
+            if (text != null) {
+              const [before, after] = [
+                text.slice(0, selectedNodeOffset),
+                text.slice(selectedNodeOffset),
+              ].map((part) => {
+                const textNode = new TextNode(assignNodeIndex());
+                textNode.setChild(part);
+                return textNode;
+              });
+
+              setTree((tree) =>
+                tree
+                  ? [
+                      ...tree.slice(0, selectedNodeTreeIndex),
+                      before,
+                      emojiNode,
+                      after,
+                      ...tree.slice(selectedNodeTreeIndex + 1),
+                    ]
+                  : [before, emojiNode, after],
+              );
+            } else {
+              throw new Error(
+                'tries to insert emoji at a text node with null content',
+              );
+            }
+          }
         } else {
           setTree((tree) =>
             tree
@@ -261,17 +305,18 @@ export const useController = (
       }
     }
 
-    editorSelection.current = {
+    setSelection({
       nodeIndex: emojiNode.getIndex(),
       offset: 0,
       isAtStart: false,
-    };
+    });
 
     history.current.push({
       transactionId: getTransactionId(),
       command: COMMAND_INSERT_EMOJI,
       nodeIndex: emojiNode.getIndex(),
       prevState: null,
+      selection: getSelection() != null ? { ...getSelection()! } : null,
     });
 
     inputRef.current?.focus();
@@ -281,17 +326,18 @@ export const useController = (
     const textNode = new TextNode(assignNodeIndex());
     textNode.setChild(text);
 
-    editorSelection.current = {
+    setSelection({
       nodeIndex: textNode.getIndex(),
       offset: textNode.getChildren()?.length ?? 0,
       isAtStart: false,
-    };
+    });
 
     history.current.push({
       transactionId: getTransactionId(),
       command: COMMAND_INSERT_TEXT,
       nodeIndex: textNode.getIndex(),
       prevState: null,
+      selection: getSelection() != null ? { ...getSelection()! } : null,
     });
     return textNode;
   };
@@ -307,22 +353,24 @@ export const useController = (
   };
 
   const getEditorSelectedNode = () => {
-    const nodeIndex = editorSelection.current?.nodeIndex;
+    const nodeIndex = getSelection()?.nodeIndex;
     if (nodeIndex == undefined) return null;
+    return tree?.find((t) => t.getIndex() == nodeIndex) ?? null;
+  };
+
+  const getNodeInTreeByIndex = (nodeIndex: number) => {
     return tree?.find((t) => t.getIndex() == nodeIndex) ?? null;
   };
 
   const getEditorSelectedNodeIndexInTree = () => {
     return (
-      tree?.findIndex(
-        (t) => t.getIndex() == editorSelection.current?.nodeIndex,
-      ) ?? -1
+      tree?.findIndex((t) => t.getIndex() == getSelection()?.nodeIndex) ?? -1
     );
   };
 
   useLayoutEffect(() => {
-    if (editorSelection.current) {
-      const nodeIndex = editorSelection.current!.nodeIndex;
+    if (getSelection() != null) {
+      const nodeIndex = getSelection()!.nodeIndex;
       const nodeElement = document.querySelectorAll(
         `[data-node-index="${nodeIndex}"]`,
       )?.[0];
@@ -339,3 +387,5 @@ export const useController = (
     },
   };
 };
+
+export { useController };
