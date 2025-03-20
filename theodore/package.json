@@ -26,6 +26,9 @@
     "url": "https://github.com/fatemehkarimi/theodore",
     "directory": "packages/theodore"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "devDependencies": {
     "@rsbuild/plugin-react": "^1.1.1",
     "@rsbuild/plugin-sass": "^1.2.2",

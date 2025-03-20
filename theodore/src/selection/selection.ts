@@ -1,5 +1,5 @@
 import { NavigationKeys } from '../keys';
-import { Selection } from '../types';
+import { SelectionDesc } from '../types';
 
 export const setCaretToEnd = (inputEl: HTMLElement) => {
   if (!inputEl) return;
@@ -55,7 +55,7 @@ export const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
   return NavigationKeys.includes(event.key);
 };
 
-export function moveToNodeBySelection(selection: Selection | null) {
+export function moveToNodeBySelection(selection: SelectionDesc | null) {
   if (selection == null) return;
   const nodeElement = document.querySelectorAll(
     `[data-node-index="${selection.nodeIndex}"]`,
@@ -76,11 +76,11 @@ export function getNodeBeforeSelection() {
 
   // If the cursor is inside a text node, get its parent
   if (node.nodeType === Node.TEXT_NODE) {
-    node = node.parentNode;
+    // node = node.parentNode;
+    return node.parentNode;
   }
 
   if (!node) return null;
-
   if (offset > 0) {
     return node.childNodes[offset - 1];
   }
