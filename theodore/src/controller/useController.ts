@@ -144,14 +144,8 @@ const useController = (
             setSelection({
               nodeIndex: Number(nodeIndex),
               offset: offset,
-              isAtStart: false,
             });
-          } else
-            setSelection({
-              nodeIndex: 0, // it is at the begining
-              offset: 0,
-              isAtStart: true,
-            });
+          } else setSelection(null);
         }
 
         return;
@@ -185,7 +179,6 @@ const useController = (
             setSelection({
               nodeIndex: textNode.getIndex(),
               offset: text.length,
-              isAtStart: false,
             });
           }
         } else if (node.getType() == 'emoji') {
@@ -209,78 +202,76 @@ const useController = (
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
 
-    if (getSelection()?.isAtStart) {
-      setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
-    } else {
-      const selectedNode = getEditorSelectedNode();
-      const selectedNodeOffset = getSelection()?.offset ?? 0;
+    const selectedNode = getEditorSelectedNode();
+    const selectedNodeOffset = getSelection()?.offset ?? 0;
 
-      if (selectedNode != null) {
-        const selectedNodeTreeIndex = getEditorSelectedNodeIndexInTree();
-        const isInsertAtBeginingOrEndOfTextNode =
-          selectedNode.getType() == 'text' &&
-          (selectedNodeOffset == (selectedNode as TextNode).getChildLength() ||
-            selectedNodeOffset == 0);
+    if (selectedNode != null) {
+      const selectedNodeTreeIndex = getEditorSelectedNodeIndexInTree();
+      const isInsertAtBeginingOrEndOfTextNode =
+        selectedNode.getType() == 'text' &&
+        (selectedNodeOffset == (selectedNode as TextNode).getChildLength() ||
+          selectedNodeOffset == 0);
 
-        if (
-          selectedNode.getType() != 'text' ||
-          isInsertAtBeginingOrEndOfTextNode
-        ) {
+      if (
+        selectedNode.getType() != 'text' ||
+        isInsertAtBeginingOrEndOfTextNode
+      ) {
+        const offset =
+          selectedNode.getType() == 'text' && selectedNodeOffset == 0 ? 0 : 1;
+        setTree((tree) =>
+          tree
+            ? [
+                ...tree.slice(0, selectedNodeTreeIndex + offset),
+                emojiNode,
+                ...tree.slice(selectedNodeTreeIndex + offset),
+              ]
+            : [emojiNode],
+        );
+      } else {
+        const selectedTextNode = selectedNode as TextNode;
+        const text = selectedTextNode.getChildren();
+        if (text != null) {
+          const [before, after] = [
+            text.slice(0, selectedNodeOffset),
+            text.slice(selectedNodeOffset),
+          ].map((part) => {
+            const textNode = new TextNode(assignNodeIndex());
+            textNode.setChild(part);
+            return textNode;
+          });
+
           setTree((tree) =>
             tree
               ? [
-                  ...tree.slice(0, selectedNodeTreeIndex + 1),
+                  ...tree.slice(0, selectedNodeTreeIndex),
+                  before,
                   emojiNode,
+                  after,
                   ...tree.slice(selectedNodeTreeIndex + 1),
                 ]
-              : [emojiNode],
+              : [before, emojiNode, after],
           );
+
+          history.push([
+            {
+              command: COMMAND_INSERT_TEXT,
+              nodeIndex: after.getIndex(),
+              prevState: null,
+            },
+            {
+              command: COMMAND_REPLACE,
+              nodeIndex: before.getIndex(),
+              prevState: selectedTextNode.toDescriptor(),
+            },
+          ]);
         } else {
-          const selectedTextNode = selectedNode as TextNode;
-          const text = selectedTextNode.getChildren();
-          if (text != null) {
-            const [before, after] = [
-              text.slice(0, selectedNodeOffset),
-              text.slice(selectedNodeOffset),
-            ].map((part) => {
-              const textNode = new TextNode(assignNodeIndex());
-              textNode.setChild(part);
-              return textNode;
-            });
-
-            setTree((tree) =>
-              tree
-                ? [
-                    ...tree.slice(0, selectedNodeTreeIndex),
-                    before,
-                    emojiNode,
-                    after,
-                    ...tree.slice(selectedNodeTreeIndex + 1),
-                  ]
-                : [before, emojiNode, after],
-            );
-
-            history.push([
-              {
-                command: COMMAND_INSERT_TEXT,
-                nodeIndex: after.getIndex(),
-                prevState: null,
-              },
-              {
-                command: COMMAND_REPLACE,
-                nodeIndex: before.getIndex(),
-                prevState: selectedTextNode.toDescriptor(),
-              },
-            ]);
-          } else {
-            throw new Error(
-              'tries to insert emoji at a text node with null content',
-            );
-          }
+          throw new Error(
+            'tries to insert emoji at a text node with null content',
+          );
         }
-      } else {
-        setTree((tree) => (tree ? [...tree, emojiNode] : [emojiNode]));
       }
+    } else {
+      setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
     }
 
     history.pushAndCommit([
@@ -293,7 +284,6 @@ const useController = (
     setSelection({
       nodeIndex: emojiNode.getIndex(),
       offset: 0,
-      isAtStart: false,
     });
 
     inputRef.current?.focus();
@@ -306,7 +296,6 @@ const useController = (
     setSelection({
       nodeIndex: textNode.getIndex(),
       offset: textNode.getChildren()?.length ?? 0,
-      isAtStart: false,
     });
 
     history.pushAndCommit([
