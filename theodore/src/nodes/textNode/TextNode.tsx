@@ -1,5 +1,6 @@
 import React from 'react';
 import { Node } from '../Node';
+import { TextNodeDesc } from '../../types';
 
 class TextNode extends Node {
   private children: string | null = null;
@@ -7,6 +8,12 @@ class TextNode extends Node {
   constructor(nodeIndex: number) {
     super(nodeIndex);
     this.type = 'text';
+  }
+
+  static fromDescriptor(desc: TextNodeDesc): TextNode {
+    const node = new TextNode(desc.nodeIndex);
+    if (desc.text != null) node.setChild(desc.text);
+    return node;
   }
 
   insertText(text: string, place: number) {
@@ -38,12 +45,20 @@ class TextNode extends Node {
     return (
       <p
         data-node-index={this.getIndex()}
-        style={{display: "inline"}}
+        style={{ display: 'inline' }}
         key={this.getKey()}
       >
         {inner}
       </p>
     );
+  }
+
+  public toDescriptor(): TextNodeDesc {
+    return {
+      type: 'text',
+      text: this.children,
+      nodeIndex: this.getIndex(),
+    };
   }
 }
 
