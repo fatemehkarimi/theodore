@@ -8,7 +8,6 @@ export type TheodoreHandle = {
 export type SelectionDesc = {
   readonly nodeIndex: number;
   readonly offset: number;
-  readonly isAtStart: boolean;
 };
 export type Selection = SelectionDesc | null;
 export type RenderEmoji = (emoji: string) => ReactElement;
