@@ -10,7 +10,7 @@ const useSelection = (onSelectionChange?: onSelectionChangeFn) => {
   };
 
   const getSelection = () => {
-    return selection.current;
+    return selection.current != null ? { ...selection.current } : null;
   };
 
   return {

@@ -7,6 +7,9 @@ export class Node {
   protected style: NodeStyle[] = [];
 
   constructor(protected nodeIndex: number) {}
+  static fromDescriptor(desc: Object): Node {
+    throw new Error('not implemented');
+  }
 
   public getIndex(): number {
     return this.nodeIndex;
@@ -25,6 +28,10 @@ export class Node {
   }
 
   public getChildLength(): number {
+    throw new Error('not implemented');
+  }
+
+  public toDescriptor(): Object {
     throw new Error('not implemented');
   }
 }
