@@ -13,6 +13,19 @@ export const setCaretToEnd = (inputEl: HTMLElement) => {
   sel.addRange(range);
 };
 
+export const setCaretToBegining = (inputEl: HTMLElement) => {
+  if(!inputEl) return;
+
+  const range = document.createRange();
+  const sel = window.getSelection();
+  if(sel == null) return;
+  range.setStart(inputEl, 0);
+  range.collapse(true);
+
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 export function setCaretPosition(element: Node, position: number) {
   for (const node of Array.from(element.childNodes)) {
     if (node.nodeType === Node.TEXT_NODE) {
