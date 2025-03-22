@@ -15,9 +15,15 @@ import {
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
+  setCaretToBegining,
   setCaretToEnd,
 } from '../selection/selection';
-import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
+import type {
+  onSelectionChangeFn,
+  RenderEmoji,
+  Selection,
+  TextNodeDesc,
+} from '../types';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_TEXT,
@@ -94,28 +100,27 @@ const useController = (
       if (event.ctrlKey || event.altKey || event.shiftKey) return;
 
       if (key == HOME) {
-        if (getSelection() != null)
-          setSelection({ ...getSelection()!, offset: 0 });
-        if (inputRef.current != null) setCaretPosition(inputRef.current, 0);
+        if (tree == null) return;
+        setSelection(null);
+
+        requestAnimationFrame(() => {
+          inputRef.current != null && setCaretToBegining(inputRef.current);
+        });
         return;
       }
 
       if (key == END) {
         if (inputRef.current != null && tree != null) {
           setCaretToEnd(inputRef.current);
-          const el = inputRef.current.childNodes[0] as HTMLElement;
-          const nodeIndex =
-            el.dataset.nodeIndex != undefined
-              ? Number(el.dataset.nodeIndex)
-              : undefined;
-          const node = tree.find((n) => n.getIndex() == nodeIndex);
-          if (getSelection() != null && node != null)
-            setSelection({
-              ...getSelection()!,
-              offset:
-                getSelection()!.offset +
-                ((node as TextNode).getChildren()?.length ?? 0),
-            });
+          const last = tree ? tree[tree.length - 1] : null;
+          const selection: Selection =
+            last == null
+              ? null
+              : {
+                  nodeIndex: last.getIndex(),
+                  offset: last.getType() == 'text' ? last.getChildLength() : 0,
+                };
+          setSelection(selection);
         }
         return;
       }
@@ -161,32 +166,28 @@ const useController = (
           const textNode = new TextNode(assignNodeIndex());
           textNode.setChild(text);
           const selection = getSelection();
+          const selectedNodeIndexInTree = getEditorSelectedNodeIndexInTree();
 
-          if (selection == null) {
-            setTree((tree) => (tree ? [textNode, ...tree] : [textNode]));
-          } else {
-            const selectedNodeIndexInTree = getEditorSelectedNodeIndexInTree();
-            setTree((tree) => {
-              if (!tree) return [textNode];
-              return [
-                ...tree.slice(0, selectedNodeIndexInTree + 1),
-                textNode,
-                ...tree.slice(selectedNodeIndexInTree + 1),
-              ];
-            });
-
-            history.pushAndCommit([
-              {
-                command: COMMAND_INSERT_TEXT,
-                nodeIndex: textNode.getIndex(),
-                prevState: null,
-              },
-            ]);
-            setSelection({
+          setTree((tree) => {
+            if (!tree) return [textNode];
+            if (selection == null) return [textNode, ...tree];
+            return [
+              ...tree.slice(0, selectedNodeIndexInTree + 1),
+              textNode,
+              ...tree.slice(selectedNodeIndexInTree + 1),
+            ];
+          });
+          history.pushAndCommit([
+            {
+              command: COMMAND_INSERT_TEXT,
               nodeIndex: textNode.getIndex(),
-              offset: textNode.getChildLength(),
-            });
-          }
+              prevState: null,
+            },
+          ]);
+          setSelection({
+            nodeIndex: textNode.getIndex(),
+            offset: textNode.getChildLength(),
+          });
         } else if (node.getType() == 'text') {
           const textNode = node as TextNode;
           const prevText = textNode.getChildren();
@@ -200,7 +201,6 @@ const useController = (
               prevState: prevText,
             },
           ]);
-
           setSelection({
             nodeIndex: textNode.getIndex(),
             offset: offset + text.length,
