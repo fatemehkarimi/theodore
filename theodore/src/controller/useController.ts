@@ -1,11 +1,11 @@
 import {
-  useCallback,
   useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
 } from 'react';
 import { ARROW_LEFT, ARROW_RIGHT, END, ENTER, HOME } from '../keys';
+import BreakNode from '../nodes/breakNode/BreakNode';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node } from '../nodes/Node';
 import TextNode from '../nodes/textNode/TextNode';
@@ -14,7 +14,6 @@ import {
   isOnlyNavigationKey,
   moveToNodeBySelection,
   setCaretAfter,
-  setCaretPosition,
   setCaretToBegining,
   setCaretToEnd,
 } from '../selection/selection';
@@ -118,6 +117,8 @@ const useController = (
         setSelection(selection);
       }
     } else if (key == ENTER) {
+      const breakNode = new BreakNode(assignNodeIndex());
+      insertNodeInSelection(breakNode);
     } else if (isOnlyNavigationKey(event)) {
       if (key == ARROW_LEFT || key == ARROW_RIGHT) {
         const docSelection = document.getSelection();
@@ -207,9 +208,7 @@ const useController = (
     }
   };
 
-  const insertEmoji = (emoji: string) => {
-    const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-
+  const insertNodeInSelection = (node: Node) => {
     const selectedNode = getEditorSelectedNode();
     const selectedNodeOffset = getSelection()?.offset ?? 0;
 
@@ -230,10 +229,10 @@ const useController = (
           tree
             ? [
                 ...tree.slice(0, selectedNodeTreeIndex + offset),
-                emojiNode,
+                node,
                 ...tree.slice(selectedNodeTreeIndex + offset),
               ]
-            : [emojiNode],
+            : [node],
         );
       } else {
         const selectedTextNode = selectedNode as TextNode;
@@ -253,11 +252,11 @@ const useController = (
               ? [
                   ...tree.slice(0, selectedNodeTreeIndex),
                   before,
-                  emojiNode,
+                  node,
                   after,
                   ...tree.slice(selectedNodeTreeIndex + 1),
                 ]
-              : [before, emojiNode, after],
+              : [before, node, after],
           );
 
           history.push([
@@ -279,22 +278,27 @@ const useController = (
         }
       }
     } else {
-      setTree((tree) => (tree ? [emojiNode, ...tree] : [emojiNode]));
+      setTree((tree) => (tree ? [node, ...tree] : [node]));
     }
 
     history.pushAndCommit([
       {
         command: COMMAND_INSERT_EMOJI,
-        nodeIndex: emojiNode.getIndex(),
+        nodeIndex: node.getIndex(),
         prevState: null,
       },
     ]);
     setSelection({
-      nodeIndex: emojiNode.getIndex(),
+      nodeIndex: node.getIndex(),
       offset: 0,
     });
 
     inputRef.current?.focus();
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
+    insertNodeInSelection(emojiNode);
   };
 
   const createTextNodeAndUpdateEditorSelection = (text: string) => {
