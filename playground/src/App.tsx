@@ -48,17 +48,17 @@ const App = () => {
   return (
     <div className={styles.container}>
       <div className={styles.editorWrapper}>
-        <Picker
-          data={appleEmojisData}
-          set="apple"
-          theme="light"
-          onEmojiSelect={handleSelectEmoji}
-        />
         <Theodore
           className={styles.editor}
           ref={theodoreRef}
           renderEmoji={renderEmoji}
           listeners={listeners}
+        />
+        <Picker
+          data={appleEmojisData}
+          set="apple"
+          theme="light"
+          onEmojiSelect={handleSelectEmoji}
         />
       </div>
       <div className={styles.selection}>{JSON.stringify(editorSelection)}</div>
