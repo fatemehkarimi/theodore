@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type NodeType = 'text' | 'emoji' | 'mention';
+type NodeType = 'text' | 'emoji' | 'mention' | 'break';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
 export class Node {
   protected type: NodeType = 'text';

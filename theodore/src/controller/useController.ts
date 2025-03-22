@@ -5,7 +5,7 @@ import {
   useState,
   type MutableRefObject,
 } from 'react';
-import { ARROW_LEFT, ARROW_RIGHT, END, HOME } from '../keys';
+import { ARROW_LEFT, ARROW_RIGHT, END, ENTER, HOME } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node } from '../nodes/Node';
 import TextNode from '../nodes/textNode/TextNode';
@@ -46,116 +46,106 @@ const useController = (
   const [tree, setTree] = useState<Node[] | null>(null);
   const nodeIndexRef = useRef<number>(0);
 
-  const handleKeyDown: React.KeyboardEventHandler = useCallback(
-    (event) => {
-      event.preventDefault();
-      const key = event.key;
+  const handleKeyDown: React.KeyboardEventHandler = (event) => {
+    event.preventDefault();
+    const key = event.key;
 
-      if (event.ctrlKey && key == 'z') {
-        if (tree == null) return;
-        let transactionId = undefined;
-        do {
-          const prevState = history.pop();
-          if (prevState == null) return;
-          if (transactionId == undefined)
-            transactionId = prevState.transactionId;
-          setTree((tree) => {
-            if (tree == null) return null;
-            const newTree = tree
-              .map((t) => {
-                if (t.getIndex() == prevState.nodeIndex) {
-                  if (prevState.command == COMMAND_INSERT_TEXT) {
-                    if (prevState.prevState != null) {
-                      // todo: fix when command is insert the node type can't be an object
-                      (t as TextNode).setChild(prevState.prevState as string);
-                      return t;
-                    } else return null;
-                  } else {
-                    prevState.command == COMMAND_REPLACE;
-                  }
-                  {
-                    if (prevState.prevState != null) {
-                      window.console.log('here prevState= ', prevState);
-                      const node = TextNode.fromDescriptor(
-                        prevState.prevState as TextNodeDesc,
-                      );
-                      return node;
-                    } else return null;
-                  }
-                } else return t;
-              })
-              .filter((t) => t != null);
-            return newTree;
+    if (event.ctrlKey && key == 'z') {
+      if (tree == null) return;
+      let transactionId = undefined;
+      do {
+        const prevState = history.pop();
+        if (prevState == null) return;
+        if (transactionId == undefined) transactionId = prevState.transactionId;
+        setTree((tree) => {
+          if (tree == null) return null;
+          const newTree = tree
+            .map((t) => {
+              if (t.getIndex() == prevState.nodeIndex) {
+                if (prevState.command == COMMAND_INSERT_TEXT) {
+                  if (prevState.prevState != null) {
+                    // todo: fix when command is insert the node type can't be an object
+                    (t as TextNode).setChild(prevState.prevState as string);
+                    return t;
+                  } else return null;
+                } else {
+                  prevState.command == COMMAND_REPLACE;
+                }
+                {
+                  if (prevState.prevState != null) {
+                    window.console.log('here prevState= ', prevState);
+                    const node = TextNode.fromDescriptor(
+                      prevState.prevState as TextNodeDesc,
+                    );
+                    return node;
+                  } else return null;
+                }
+              } else return t;
+            })
+            .filter((t) => t != null);
+          return newTree;
+        });
+        setSelection(prevState.selection);
+      } while (transactionId == history.top()?.transactionId);
+
+      requestAnimationFrame(() => {
+        moveToNodeBySelection(getSelection());
+      });
+      return;
+    }
+
+    // todo: handle
+    if (event.ctrlKey || event.altKey || event.shiftKey) return;
+
+    if (key == HOME) {
+      if (tree == null) return;
+      setSelection(null);
+
+      requestAnimationFrame(() => {
+        inputRef.current != null && setCaretToBegining(inputRef.current);
+      });
+    } else if (key == END) {
+      if (inputRef.current != null && tree != null) {
+        setCaretToEnd(inputRef.current);
+        const last = tree ? tree[tree.length - 1] : null;
+        const selection: Selection =
+          last == null
+            ? null
+            : {
+                nodeIndex: last.getIndex(),
+                offset: last.getType() == 'text' ? last.getChildLength() : 0,
+              };
+        setSelection(selection);
+      }
+    } else if (key == ENTER) {
+    } else if (isOnlyNavigationKey(event)) {
+      if (key == ARROW_LEFT || key == ARROW_RIGHT) {
+        const docSelection = document.getSelection();
+        if (docSelection == null) return;
+
+        docSelection.modify(
+          'move',
+          key == ARROW_LEFT ? 'backward' : 'forward',
+          'character',
+        );
+        const newAnchorOffset = docSelection.anchorOffset;
+        const currentNode = getNodeBeforeSelection();
+        const nodeIndex =
+          currentNode != null
+            ? (currentNode as HTMLElement).dataset.nodeIndex
+            : null;
+
+        const node =
+          nodeIndex != null ? getNodeInTreeByIndex(Number(nodeIndex)) : null;
+        const offset = node?.getType() == 'text' ? newAnchorOffset : 0;
+        if (nodeIndex != null) {
+          setSelection({
+            nodeIndex: Number(nodeIndex),
+            offset: offset,
           });
-          setSelection(prevState.selection);
-        } while (transactionId == history.top()?.transactionId);
-
-        requestAnimationFrame(() => {
-          moveToNodeBySelection(getSelection());
-        });
-        return;
+        } else setSelection(null);
       }
-
-      // todo: handle
-      if (event.ctrlKey || event.altKey || event.shiftKey) return;
-
-      if (key == HOME) {
-        if (tree == null) return;
-        setSelection(null);
-
-        requestAnimationFrame(() => {
-          inputRef.current != null && setCaretToBegining(inputRef.current);
-        });
-        return;
-      }
-
-      if (key == END) {
-        if (inputRef.current != null && tree != null) {
-          setCaretToEnd(inputRef.current);
-          const last = tree ? tree[tree.length - 1] : null;
-          const selection: Selection =
-            last == null
-              ? null
-              : {
-                  nodeIndex: last.getIndex(),
-                  offset: last.getType() == 'text' ? last.getChildLength() : 0,
-                };
-          setSelection(selection);
-        }
-        return;
-      }
-
-      if (isOnlyNavigationKey(event)) {
-        if (key == ARROW_LEFT || key == ARROW_RIGHT) {
-          const docSelection = document.getSelection();
-          if (docSelection == null) return;
-
-          docSelection.modify(
-            'move',
-            key == ARROW_LEFT ? 'backward' : 'forward',
-            'character',
-          );
-          const newAnchorOffset = docSelection.anchorOffset;
-          const currentNode = getNodeBeforeSelection();
-          const nodeIndex =
-            currentNode != null
-              ? (currentNode as HTMLElement).dataset.nodeIndex
-              : null;
-
-          const node =
-            nodeIndex != null ? getNodeInTreeByIndex(Number(nodeIndex)) : null;
-          const offset = node?.getType() == 'text' ? newAnchorOffset : 0;
-          if (nodeIndex != null) {
-            setSelection({
-              nodeIndex: Number(nodeIndex),
-              offset: offset,
-            });
-          } else setSelection(null);
-        }
-
-        return;
-      }
-
+    } else {
       const text = key;
       if (tree == null || tree.length == 0) {
         const textNode = createTextNodeAndUpdateEditorSelection(text);
@@ -214,9 +204,8 @@ const useController = (
           getSelection() != null &&
           moveToNodeBySelection(getSelection()),
       );
-    },
-    [tree],
-  );
+    }
+  };
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
