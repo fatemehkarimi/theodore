@@ -156,44 +156,63 @@ const useController = (
         const textNode = createTextNodeAndUpdateEditorSelection(text);
         setTree([textNode]);
       } else {
-        const node = getEditorSelectedNode()!;
-        if (node.getType() == 'text') {
+        const node = getEditorSelectedNode();
+        if (node == null || node.getType() != 'text') {
+          const textNode = new TextNode(assignNodeIndex());
+          textNode.setChild(text);
+          const selection = getSelection();
+
+          if (selection == null) {
+            setTree((tree) => (tree ? [textNode, ...tree] : [textNode]));
+          } else {
+            const selectedNodeIndexInTree = getEditorSelectedNodeIndexInTree();
+            setTree((tree) => {
+              if (!tree) return [textNode];
+              return [
+                ...tree.slice(0, selectedNodeIndexInTree + 1),
+                textNode,
+                ...tree.slice(selectedNodeIndexInTree + 1),
+              ];
+            });
+
+            history.pushAndCommit([
+              {
+                command: COMMAND_INSERT_TEXT,
+                nodeIndex: textNode.getIndex(),
+                prevState: null,
+              },
+            ]);
+            setSelection({
+              nodeIndex: textNode.getIndex(),
+              offset: textNode.getChildLength(),
+            });
+          }
+        } else if (node.getType() == 'text') {
           const textNode = node as TextNode;
-          const nodeChildren = textNode.getChildren();
-          textNode.insertText(text, getSelection()?.offset ?? 0);
+          const prevText = textNode.getChildren();
+          const offset = getSelection()?.offset ?? 0;
+          textNode.insertText(text, offset);
 
           history.pushAndCommit([
             {
               command: COMMAND_INSERT_TEXT,
               nodeIndex: textNode.getIndex(),
-              prevState: nodeChildren,
+              prevState: prevText,
             },
           ]);
 
-          if (getSelection() != null) {
-            setSelection({
-              ...getSelection()!,
-              offset: getSelection()!.offset + text.length,
-            });
-          } else {
-            setSelection({
-              nodeIndex: textNode.getIndex(),
-              offset: text.length,
-            });
-          }
-        } else if (node.getType() == 'emoji') {
-          const textNode = createTextNodeAndUpdateEditorSelection(text);
-          setTree([...tree, textNode]);
+          setSelection({
+            nodeIndex: textNode.getIndex(),
+            offset: offset + text.length,
+          });
         }
-
-        setTree([node]);
       }
 
       requestAnimationFrame(
         () =>
           inputRef.current != null &&
           getSelection() != null &&
-          setCaretPosition(inputRef.current, getSelection()!.offset),
+          moveToNodeBySelection(getSelection()),
       );
     },
     [tree],
