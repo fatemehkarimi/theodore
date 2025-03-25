@@ -43,13 +43,9 @@ class TextNode extends Node {
     if (this.children == null) return <p></p>;
     const inner = this.children;
     return (
-      <p
-        data-node-index={this.getIndex()}
-        style={{ display: 'inline' }}
-        key={this.getKey()}
-      >
+      <span data-node-index={this.getIndex()} key={this.getKey()}>
         {inner}
-      </p>
+      </span>
     );
   }
 

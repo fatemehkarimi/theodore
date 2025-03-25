@@ -22,8 +22,10 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     const {
       tree,
       insertEmoji,
+      insertNewParagraph,
       handlers: { handleKeyDown },
-    } = useController(inputRef, renderEmoji, {// todo: fix this has performance problems
+    } = useController(inputRef, renderEmoji, {
+      // todo: fix this has performance problems
       onSelectionChange: listeners?.onSelectionChange,
     });
 
@@ -32,8 +34,11 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         insertEmoji: (emoji) => {
           insertEmoji(emoji);
         },
+        insertNewParagraph: () => {
+          insertNewParagraph();
+        },
       };
-    }, [insertEmoji]);
+    }, [insertEmoji, insertNewParagraph]);
 
     return (
       <div
@@ -45,7 +50,20 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         {...props}
         suppressContentEditableWarning={true}
       >
-        {tree?.map((tree) => tree.render())}
+        {tree?.map((subtree) => {
+          if (subtree.length == 0) throw new Error('Subtree is empty');
+          const paragraph = subtree[0];
+          const nodes = subtree.slice(1);
+          return paragraph.render(
+            nodes.length == 0 ? undefined : (
+              <>
+                {nodes.map((node) => {
+                  return node.render();
+                })}
+              </>
+            ),
+          );
+        })}
       </div>
     );
   },
