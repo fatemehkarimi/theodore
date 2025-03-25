@@ -56,7 +56,10 @@ export function setCaretAfter(element: Node) {
   const selection = document.getSelection();
   if (selection != null) {
     var range = document.createRange();
-    range.setStartAfter(element);
+
+    // if the element is a paragraph, we set the caret at the beginning so that the selection still remains in the node
+    if (element.nodeName == 'P') range.setStart(element, 0);
+    else range.setStartAfter(element);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
