@@ -1,6 +1,7 @@
 import { cloneElement } from 'react';
 import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
+import styles from './styles.module.scss';
 
 class EmojiNode extends Node {
   constructor(
@@ -22,19 +23,19 @@ class EmojiNode extends Node {
 
   public render() {
     const emojiEl = this.renderEmoji(this.emoji);
-    const clonedEmojiEl = cloneElement(emojiEl, {
-      style: {
-        userSelect: 'none',
-      },
-    });
+    // const clonedEmojiEl = cloneElement(emojiEl, {
+    //   style: {
+    //     userSelect: 'none',
+    //   },
+    // });
     return (
       <span
         key={this.getKey()}
         data-node-index={this.getIndex()}
         contentEditable="false"
-        style={{ display: 'inline-block' }}
+        className={styles.emojiContainer}
       >
-        {clonedEmojiEl}
+        {emojiEl}
       </span>
     );
   }

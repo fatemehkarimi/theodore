@@ -14,17 +14,17 @@ export const setCaretToEnd = (inputEl: HTMLElement) => {
 };
 
 export const setCaretToBegining = (inputEl: HTMLElement) => {
-  if(!inputEl) return;
+  if (!inputEl) return;
 
   const range = document.createRange();
   const sel = window.getSelection();
-  if(sel == null) return;
+  if (sel == null) return;
   range.setStart(inputEl, 0);
   range.collapse(true);
 
   sel.removeAllRanges();
   sel.addRange(range);
-}
+};
 
 export function setCaretPosition(element: Node, position: number) {
   for (const node of Array.from(element.childNodes)) {
@@ -56,7 +56,10 @@ export function setCaretAfter(element: Node) {
   const selection = document.getSelection();
   if (selection != null) {
     var range = document.createRange();
-    range.setStartAfter(element);
+
+    // if the element is a paragraph, we set the caret at the beginning so that the selection still remains in the node
+    if (element.nodeName == 'P') range.setStart(element, 0);
+    else range.setStartAfter(element);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
@@ -78,6 +81,9 @@ export function moveToNodeBySelection(selection: SelectionDesc | null) {
   setCaretPosition(nodeElement, selection.offset ?? 0);
 }
 
+/* Returns the node before the current selection.
+ when it is at the begining of the paragraph, it returns the node itself
+*/
 export function getNodeBeforeSelection() {
   const selection = window.getSelection();
   if (!selection) return null;
@@ -87,16 +93,27 @@ export function getNodeBeforeSelection() {
   let node: Node | null = range.startContainer;
   let offset = range.startOffset;
 
+  if (!node) return null;
+
+  // for empty paragprah we return the paragraph itself
+  if (
+    node &&
+    node.firstChild != null &&
+    node.firstChild == node.lastChild &&
+    node.firstChild.nodeName == 'BR'
+  ) {
+    return node;
+  }
   // If the cursor is inside a text node, get its parent
   if (node.nodeType === Node.TEXT_NODE) {
     // node = node.parentNode;
     return node.parentNode;
   }
 
-  if (!node) return null;
   if (offset > 0) {
     return node.childNodes[offset - 1];
   }
 
-  return node.previousSibling;
+  // return node.previousSibling;
+  return node;
 }

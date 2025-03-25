@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type NodeType = 'text' | 'emoji' | 'mention';
+type NodeType = 'text' | 'emoji' | 'mention' | 'paragraph';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
 export class Node {
   protected type: NodeType = 'text';
@@ -23,7 +23,7 @@ export class Node {
     throw new Error('not implemented');
   }
 
-  public render(): ReactNode {
+  public render(children?: ReactNode | undefined): ReactNode {
     throw new Error('not implemented');
   }
 
