@@ -152,7 +152,7 @@ export function moveCursor(
     } else if (offset == node.textContent?.length) {
       const parent = node.parentNode;
       const grandParent = parent?.parentNode;
-      if (grandParent) {
+      if (grandParent && grandParent.childNodes) {
         const nextOffset =
           // @ts-ignore
           Array.from(grandParent.childNodes).indexOf(parent) + 1;
@@ -163,19 +163,21 @@ export function moveCursor(
       }
     }
   } else if (node.nodeType == Node.ELEMENT_NODE) {
-    offset = nextOffset;
-
-    const nextNodeChilds = node.childNodes[offset].childNodes;
-    if (
-      nextNodeChilds.length > 0 &&
-      nextNodeChilds[0].nodeType == Node.TEXT_NODE
-    ) {
-      node = nextNodeChilds[0];
-      offset = node.textContent
-        ? direction == 'backward'
-          ? node.textContent.length - 1
-          : 0
-        : 0;
+    if (nextOffset < node.childNodes.length) {
+      offset = nextOffset;
+      const nextNodeChilds = node.childNodes[offset].childNodes;
+      if (
+        // if next node is text node
+        nextNodeChilds.length > 0 &&
+        nextNodeChilds[0].nodeType == Node.TEXT_NODE
+      ) {
+        node = nextNodeChilds[0];
+        offset = node.textContent
+          ? direction == 'backward'
+            ? node.textContent.length - 1
+            : 0
+          : 0;
+      }
     }
   }
 
