@@ -136,14 +136,26 @@ export function moveCursor(
     node.textContent?.length ?? offset + 1,
   );
   const nextOffset = direction == 'backward' ? backwardOffset : forwardOffset;
+
   if (node.nodeType == Node.TEXT_NODE) {
     offset = nextOffset;
     if (offset == 0) {
+      const parent = node.parentNode as ChildNode | null;
+      const grandParent = parent?.parentNode;
+      if (grandParent) {
+        const nextOffset = Array.from(grandParent.childNodes).indexOf(parent);
+        if (nextOffset != -1 && nextOffset != offset) {
+          node = grandParent;
+          offset = nextOffset;
+        }
+      }
+    } else if (offset == node.textContent?.length) {
       const parent = node.parentNode;
       const grandParent = parent?.parentNode;
       if (grandParent) {
-        // @ts-ignore
-        const nextOffset = Array.from(grandParent.childNodes).indexOf(parent);
+        const nextOffset =
+          // @ts-ignore
+          Array.from(grandParent.childNodes).indexOf(parent) + 1;
         if (nextOffset != -1 && nextOffset != offset) {
           node = grandParent;
           offset = nextOffset;
@@ -159,7 +171,11 @@ export function moveCursor(
       nextNodeChilds[0].nodeType == Node.TEXT_NODE
     ) {
       node = nextNodeChilds[0];
-      offset = node.textContent ? node.textContent.length - 1 : 0;
+      offset = node.textContent
+        ? direction == 'backward'
+          ? node.textContent.length - 1
+          : 0
+        : 0;
     }
   }
 
