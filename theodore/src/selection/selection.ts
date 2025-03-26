@@ -136,8 +136,21 @@ export function moveCursor(
     node.textContent?.length ?? offset + 1,
   );
   const nextOffset = direction == 'backward' ? backwardOffset : forwardOffset;
-  if (node.nodeType == Node.TEXT_NODE) offset = nextOffset;
-  else if (node.nodeType == Node.ELEMENT_NODE) {
+  if (node.nodeType == Node.TEXT_NODE) {
+    offset = nextOffset;
+    if (offset == 0) {
+      const parent = node.parentNode;
+      const grandParent = parent?.parentNode;
+      if (grandParent) {
+        // @ts-ignore
+        const nextOffset = Array.from(grandParent.childNodes).indexOf(parent);
+        if (nextOffset != -1 && nextOffset != offset) {
+          node = grandParent;
+          offset = nextOffset;
+        }
+      }
+    }
+  } else if (node.nodeType == Node.ELEMENT_NODE) {
     offset = nextOffset;
 
     const nextNodeChilds = node.childNodes[offset].childNodes;
