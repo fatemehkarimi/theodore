@@ -12,6 +12,7 @@ import TextNode from '../nodes/textNode/TextNode';
 import {
   getNodeBeforeSelection,
   isOnlyNavigationKey,
+  moveCursor,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretToBegining,
@@ -122,11 +123,7 @@ const useController = (
         const docSelection = document.getSelection();
         if (docSelection == null) return;
 
-        docSelection.modify(
-          'move',
-          key == ARROW_LEFT ? 'backward' : 'forward',
-          'character',
-        );
+        moveCursor(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
         const newAnchorOffset = docSelection.anchorOffset;
         const currentNode = getNodeBeforeSelection();
         const nodeIndex =

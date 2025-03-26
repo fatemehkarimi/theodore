@@ -117,3 +117,45 @@ export function getNodeBeforeSelection() {
   // return node.previousSibling;
   return node;
 }
+
+export function moveCursor(
+  direction: 'forward' | 'backward',
+  granularity: 'character',
+) {
+  const selection = document.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+
+  let node = range.startContainer;
+  let offset = range.startOffset;
+
+  const backwardOffset = Math.max(offset - 1, 0);
+  const forwardOffset = Math.min(
+    offset + 1,
+    node.textContent?.length ?? offset + 1,
+  );
+  const nextOffset = direction == 'backward' ? backwardOffset : forwardOffset;
+  if (node.nodeType == Node.TEXT_NODE) offset = nextOffset;
+  else if (node.nodeType == Node.ELEMENT_NODE) {
+    offset = nextOffset;
+
+    const nextNodeChilds = node.childNodes[offset].childNodes;
+    if (
+      nextNodeChilds.length > 0 &&
+      nextNodeChilds[0].nodeType == Node.TEXT_NODE
+    ) {
+      node = nextNodeChilds[0];
+      offset = node.textContent ? node.textContent.length - 1 : 0;
+    }
+  }
+
+  const newRange = document.createRange();
+  newRange.setStart(node, offset);
+  newRange.collapse(true);
+
+  const sel = window.getSelection();
+  if (sel == null) return;
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+}
