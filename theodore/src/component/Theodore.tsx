@@ -1,4 +1,4 @@
-import React, { useImperativeHandle, useRef } from 'react';
+import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { useController } from '../controller/useController';
 import type {
   onSelectionChangeFn,
@@ -23,9 +23,8 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       tree,
       insertEmoji,
       insertNewParagraph,
-      handlers: { handleKeyDown },
+      handlers: { handleKeyDown, handleSelectionChange },
     } = useController(inputRef, renderEmoji, {
-      // todo: fix this has performance problems
       onSelectionChange: listeners?.onSelectionChange,
     });
 
@@ -39,6 +38,12 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         },
       };
     }, [insertEmoji, insertNewParagraph]);
+
+    useEffect(() => {
+      document.addEventListener('selectionchange', handleSelectionChange);
+      return () =>
+        document.removeEventListener('selectionchange', handleSelectionChange);
+    }, [handleSelectionChange]);
 
     return (
       <div
