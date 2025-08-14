@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import type { Optional, Selection, TextNodeDesc } from '../types';
+import { Node as EditorNode } from '../nodes/Node';
 
 type History = {
   command: string;
   nodeIndex: number;
-  prevState: string | TextNodeDesc | null;
+  prevState: string | TextNodeDesc | EditorNode[] | null;
   transactionId: number;
   selection: Selection;
 };

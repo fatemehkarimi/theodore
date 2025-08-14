@@ -6,14 +6,16 @@ import {
 } from 'react';
 import { ARROW_LEFT, ARROW_RIGHT, END, ENTER, HOME } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
-import { Node } from '../nodes/Node';
+import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import TextNode from '../nodes/textNode/TextNode';
 import {
   getNodeBeforeSelection,
   isOnlyNavigationKey,
+  moveCursor,
   moveToNodeBySelection,
   setCaretAfter,
+  setCaretPosition,
   setCaretToBegining,
 } from '../selection/selection';
 import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
@@ -21,10 +23,12 @@ import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
   COMMAND_INSERT_TEXT,
-  COMMAND_REPLACE,
+  COMMAND_REPLACE_PARAGRAPH,
+  COMMAND_REPLACE_TEXT,
 } from './commands';
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
+import { getNextNode } from './utils/getNode';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -34,11 +38,12 @@ const useController = (
   },
 ) => {
   const { getSelection, setSelection } = useSelection(
+    { nodeIndex: 1, offset: 0 },
     listeners?.onSelectionChange,
   );
   const history = useHistory(getSelection);
   const nodeIndexRef = useRef<number>(1); // starts at 1 because 1 is a paragraph node that is always in dom
-  const [tree, setTree] = useState<Node[][]>([[new ParagraphNode(1)]]);
+  const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     event.preventDefault();
@@ -55,6 +60,21 @@ const useController = (
           if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
           const newTree = tree
             .map((subTree) => {
+              const pNode = subTree[0];
+              if (
+                pNode.getIndex() == prevState.nodeIndex &&
+                prevState.command == COMMAND_REPLACE_PARAGRAPH
+              ) {
+                if (prevState.prevState != null) {
+                  const prevNodes = prevState.prevState as EditorNode[];
+                  return prevNodes;
+                }
+              } else if (
+                pNode.getIndex() == prevState.nodeIndex &&
+                prevState.command == COMMAND_INSERT_PARAGRAPH
+              )
+                return [];
+
               return subTree
                 .map((node) => {
                   if (node.getIndex() == prevState.nodeIndex) {
@@ -66,15 +86,13 @@ const useController = (
                         );
                         return node;
                       } else return null;
-                    } else if (prevState.command == COMMAND_REPLACE) {
+                    } else if (prevState.command == COMMAND_REPLACE_TEXT) {
                       if (prevState.prevState != null) {
                         const node = TextNode.fromDescriptor(
                           prevState.prevState as TextNodeDesc,
                         );
                         return node;
                       } else return null;
-                    } else if (prevState.command == COMMAND_INSERT_PARAGRAPH) {
-                      return null;
                     } else return null;
                   } else return node;
                 })
@@ -119,28 +137,40 @@ const useController = (
       insertNewParagraph();
     } else if (isOnlyNavigationKey(event)) {
       if (key == ARROW_LEFT || key == ARROW_RIGHT) {
+        moveCursor(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
         const docSelection = document.getSelection();
         if (docSelection == null) return;
 
-        docSelection.modify(
-          'move',
-          key == ARROW_LEFT ? 'backward' : 'forward',
-          'character',
-        );
-        const newAnchorOffset = docSelection.anchorOffset;
+        const range = docSelection.getRangeAt(0);
+        const startContainer = range.startContainer;
+        const startOffset = range.startOffset;
+        const focusedNode =
+          startContainer.childNodes.length > 0
+            ? startContainer.childNodes[startOffset - 1]
+            : startContainer;
+        let newOffset = 0;
+
+        // we check span nodes because each atom node is whithing a span, except <br />
+        if (focusedNode && (focusedNode as HTMLElement).tagName == 'SPAN') {
+          const innerChild = focusedNode.childNodes[0];
+          if (innerChild?.nodeType == Node.TEXT_NODE) {
+            newOffset = innerChild.textContent?.length ?? 0;
+          } else newOffset = 0;
+        } else if (focusedNode?.nodeType == Node.TEXT_NODE) {
+          newOffset = startOffset;
+        } // to do: what about other nodes?
+
+        // this founds the span, but focus node may be the text node inside the span
         const currentNode = getNodeBeforeSelection();
         const nodeIndex =
           currentNode != null
             ? (currentNode as HTMLElement).dataset.nodeIndex
             : null;
 
-        const node =
-          nodeIndex != null ? getNodeInTreeByIndex(Number(nodeIndex)) : null;
-        const offset = node?.getType() == 'text' ? newAnchorOffset : 0;
         if (nodeIndex != null) {
           setSelection({
             nodeIndex: Number(nodeIndex),
-            offset: offset,
+            offset: newOffset,
           });
         } else setSelection(null);
       }
@@ -222,16 +252,124 @@ const useController = (
 
   const insertNewParagraph = () => {
     const paragraphNode = new ParagraphNode(assignNodeIndex());
-    const selectedParagraphIdx = getSelectedParagraphIndexInTree();
+    const selection = getSelection();
 
-    setTree((tree) => {
-      if (selectedParagraphIdx == -1) return [[paragraphNode]];
-      return [
-        ...tree.slice(0, selectedParagraphIdx + 1),
-        [paragraphNode],
-        ...tree.slice(selectedParagraphIdx + 1),
-      ];
-    });
+    if (selection == null) return; //todo: fix, selection cannot be null
+
+    const selectedNode = getEditorSelectedNode();
+    const [pIdx, nodeIdx] = getEditorSelectedNodeIndexInTree();
+
+    const selectedParagraphClone = [...tree[pIdx]];
+    const selectedParagraphNode = selectedParagraphClone[0];
+    const lastNodeOfSelectedP =
+      selectedParagraphClone[selectedParagraphClone.length - 1];
+
+    let nextSelectionNodeIdx = paragraphNode.getIndex();
+
+    if (selectedNode?.isTextNode()) {
+      const text = (selectedNode as TextNode).getChildren();
+
+      const isInsertedAtBegining = selection.offset == 0;
+      const isInsertedAtEnd =
+        selection.nodeIndex == lastNodeOfSelectedP.getIndex()
+          ? lastNodeOfSelectedP.getType() == 'text'
+            ? selection.offset == lastNodeOfSelectedP.getChildLength()
+            : true
+          : false;
+
+      if (isInsertedAtBegining || isInsertedAtEnd) {
+        const slicePostion = isInsertedAtBegining ? nodeIdx : nodeIdx + 1;
+        const pSubTree = tree[pIdx].slice(0, slicePostion);
+        const newPSubTree = [paragraphNode, ...tree[pIdx].slice(slicePostion)];
+
+        setTree(() => {
+          return [
+            ...tree.slice(0, pIdx),
+            pSubTree,
+            newPSubTree,
+            ...tree.slice(pIdx + 1),
+          ];
+        });
+
+        if (isInsertedAtBegining) {
+          if (newPSubTree[1] != null && newPSubTree[1].getType() == 'text')
+            nextSelectionNodeIdx = newPSubTree[1].getIndex();
+
+          history.push([
+            {
+              command: COMMAND_REPLACE_PARAGRAPH,
+              nodeIndex: selectedParagraphNode.getIndex(),
+              prevState: selectedParagraphClone,
+            },
+          ]);
+        }
+      } else {
+        if (text != null) {
+          const pSubTree = tree[pIdx].slice(0, nodeIdx);
+          const newPSubTree = [paragraphNode];
+
+          const beforeText = text.slice(0, selection.offset);
+          const afterText = text.slice(selection.offset);
+
+          if (beforeText.length > 0) {
+            const textNode = new TextNode(assignNodeIndex());
+            textNode.setChild(beforeText);
+            pSubTree.push(textNode);
+          }
+
+          if (afterText.length > 0) {
+            const textNode = new TextNode(assignNodeIndex());
+            textNode.setChild(afterText);
+            newPSubTree.push(textNode);
+          }
+          newPSubTree.push(...tree[pIdx].slice(nodeIdx + 1));
+
+          if (newPSubTree[1] != null && newPSubTree[1].getType() == 'text')
+            nextSelectionNodeIdx = newPSubTree[1].getIndex();
+
+          setTree(() => {
+            return [
+              ...tree.slice(0, pIdx),
+              pSubTree,
+              newPSubTree,
+              ...tree.slice(pIdx + 1),
+            ];
+          });
+
+          history.push([
+            {
+              command: COMMAND_REPLACE_PARAGRAPH,
+              nodeIndex: selectedParagraphNode.getIndex(),
+              prevState: selectedParagraphClone,
+            },
+          ]);
+        } else {
+          throw new Error(
+            'tries to insert paragraph at a text node with null content',
+          );
+        }
+      }
+    } else {
+      const pSubTree = tree[pIdx].slice(0, nodeIdx + 1);
+      const newPSubTree = [paragraphNode, ...tree[pIdx].slice(nodeIdx + 1)];
+
+      setTree(() => {
+        return [
+          ...tree.slice(0, pIdx),
+          pSubTree,
+          newPSubTree,
+          ...tree.slice(pIdx + 1),
+        ];
+      });
+
+      history.push([
+        {
+          command: COMMAND_REPLACE_PARAGRAPH,
+          nodeIndex: selectedParagraphNode.getIndex(),
+          prevState: selectedParagraphClone,
+        },
+      ]);
+    }
 
     history.pushAndCommit([
       {
@@ -242,12 +380,12 @@ const useController = (
     ]);
 
     setSelection({
-      nodeIndex: paragraphNode.getIndex(),
+      nodeIndex: nextSelectionNodeIdx,
       offset: 0,
     });
   };
 
-  const insertNodeInSelection = (node: Node) => {
+  const insertNodeInSelection = (node: EditorNode) => {
     const selectedNode = getEditorSelectedNode();
     const selectedNodeOffset = getSelection()?.offset ?? 0;
 
@@ -289,8 +427,6 @@ const useController = (
           });
 
           setTree((tree) => {
-            if (subtreeIdx == -1 && nodeIdxInTree == -1)
-              window.console.log('here negative indices');
             const newTree = [...tree];
             const subTree = newTree[subtreeIdx];
             const newSubTree = [
@@ -311,7 +447,7 @@ const useController = (
               prevState: null,
             },
             {
-              command: COMMAND_REPLACE,
+              command: COMMAND_REPLACE_TEXT,
               nodeIndex: before.getIndex(),
               prevState: selectedTextNode.toDescriptor(),
             },
@@ -323,10 +459,10 @@ const useController = (
         }
       }
     } else {
+      // todo: remove: null selection is not meaningful anymore
       setTree((tree) => {
         const newTree = [...tree];
         newTree[0] = [newTree[0][0], node, ...newTree[0].slice(1)];
-        window.console.log('here info = ', newTree);
         return newTree;
       });
     }
@@ -387,13 +523,31 @@ const useController = (
   };
 
   useLayoutEffect(() => {
-    if (getSelection() != null) {
-      const nodeIndex = getSelection()!.nodeIndex;
-      const nodeElement = document.querySelectorAll(
+    let selection = getSelection();
+    const selectedNode = getEditorSelectedNode();
+    const nextSelectedNode =
+      selectedNode != null ? getNextNode(tree, selectedNode) : null;
+    if (
+      selectedNode?.getType() == 'emoji' &&
+      nextSelectedNode?.getType() == 'text'
+    ) {
+      setSelection({
+        nodeIndex: nextSelectedNode.getIndex(),
+        offset: 0,
+      });
+    }
+
+    selection = getSelection();
+    if (selection != null) {
+      const nodeIndex = selection.nodeIndex;
+      const node = getEditorSelectedNode();
+      let nodeElement = document.querySelectorAll(
         `[data-node-index="${nodeIndex}"]`,
-      )?.[0];
+      )?.[0] as Element | null;
       if (nodeElement == null) return;
-      setCaretAfter(nodeElement);
+
+      if (node?.isTextNode()) setCaretPosition(nodeElement, selection.offset);
+      else setCaretAfter(nodeElement);
     }
   }, [tree]);
 

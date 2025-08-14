@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type NodeType = 'text' | 'emoji' | 'mention' | 'paragraph';
+type NodeType = 'text' | 'emoji' | 'paragraph';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
 export class Node {
   protected type: NodeType = 'text';
@@ -33,5 +33,9 @@ export class Node {
 
   public toDescriptor(): Object {
     throw new Error('not implemented');
+  }
+
+  public isTextNode(): boolean {
+    return ['text', 'mention'].includes(this.getType());
   }
 }
