@@ -1,4 +1,3 @@
-import { cloneElement } from 'react';
 import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
 import styles from './styles.module.scss';

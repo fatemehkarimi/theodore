@@ -1,8 +1,11 @@
 import { useRef } from 'react';
 import type { onSelectionChangeFn, Selection } from '../types';
 
-const useSelection = (onSelectionChange?: onSelectionChangeFn) => {
-  const selection = useRef<Selection>(null);
+const useSelection = (
+  initialSelection: Selection,
+  onSelectionChange?: onSelectionChangeFn,
+) => {
+  const selection = useRef<Selection>(initialSelection);
 
   const setSelection = (newSelection: Selection) => {
     selection.current = newSelection;

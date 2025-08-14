@@ -1,5 +1,10 @@
 import { NavigationKeys } from '../keys';
-import { SelectionDesc } from '../types';
+import { Selection } from '../types';
+import {
+  getFirstNode,
+  getNodeOrFirstTextNode,
+  isEmptyParagraph,
+} from './utils';
 
 export const setCaretToEnd = (inputEl: HTMLElement) => {
   if (!inputEl) return;
@@ -71,7 +76,7 @@ export const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
   return NavigationKeys.includes(event.key);
 };
 
-export function moveToNodeBySelection(selection: SelectionDesc | null) {
+export function moveToNodeBySelection(selection: Selection) {
   if (selection == null) return;
   const nodeElement = document.querySelectorAll(
     `[data-node-index="${selection.nodeIndex}"]`,
@@ -116,4 +121,120 @@ export function getNodeBeforeSelection() {
 
   // return node.previousSibling;
   return node;
+}
+
+export function moveCursor(
+  direction: 'forward' | 'backward',
+  granularity: 'character',
+) {
+  const selection = document.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+
+  let node = range.startContainer;
+  let offset = range.startOffset;
+
+  const backwardOffset = offset - 1;
+  const forwardOffset = offset + 1;
+  const nextOffset = direction == 'backward' ? backwardOffset : forwardOffset;
+
+  if (node.nodeType == Node.TEXT_NODE) {
+    const nodeContentLength = node.textContent?.length ?? 0;
+    if (nextOffset >= 0 && nextOffset <= nodeContentLength) offset = nextOffset;
+    else if (nextOffset < 0) {
+      const parent = node.parentNode as ChildNode | null;
+      const grandParent = parent?.parentNode;
+      if (grandParent) {
+        const parentIndex = Array.from(grandParent.childNodes).indexOf(parent);
+        if (parentIndex != -1 && parentIndex - 1 >= 0) {
+          node = grandParent;
+          offset = parentIndex - 1;
+        } else {
+          // moving to previous paragraph
+          if (grandParent.previousSibling != null) {
+            node = grandParent.previousSibling;
+            offset = grandParent.previousSibling.childNodes.length;
+          }
+        }
+      }
+    } else if (nextOffset > nodeContentLength) {
+      const parent = node.parentNode as ChildNode | null;
+      const grandParent = parent?.parentNode;
+      if (grandParent && grandParent.childNodes) {
+        const parentIndex = Array.from(grandParent.childNodes).indexOf(parent);
+        if (
+          parentIndex != -1 &&
+          parentIndex + 2 <= grandParent.childNodes.length
+        ) {
+          node = grandParent;
+          offset = parentIndex + 2;
+        } else {
+          // moving to next paragraph
+          // if first node of next paragraph is a text node, text node should be
+          // selected
+          if (grandParent.nextSibling != null) {
+            node = getNodeOrFirstTextNode(grandParent.nextSibling);
+            offset = 0;
+          }
+        }
+      }
+    }
+  } else if (isEmptyParagraph(node)) {
+    const prevSibling = node.previousSibling;
+    const nextSibling = node.nextSibling;
+
+    if (direction == 'backward' && prevSibling != null) {
+      node = prevSibling;
+      offset = prevSibling.childNodes.length ?? 0;
+    } else if (direction == 'forward' && nextSibling != null) {
+      const firstChildOfNextP = getFirstNode(nextSibling);
+      if (firstChildOfNextP.nodeType == Node.TEXT_NODE)
+        node = firstChildOfNextP;
+      else node = nextSibling;
+      offset = 0;
+    }
+  } else if (
+    node.nodeType == Node.ELEMENT_NODE &&
+    node.nodeName == 'P' &&
+    ((offset == 0 && nextOffset < 0) ||
+      (offset == node.childNodes.length && nextOffset > node.childNodes.length))
+  ) {
+    if (offset == 0 && node.previousSibling != null) {
+      node = node.previousSibling;
+      offset = node.childNodes.length;
+    } else if (offset == node.childNodes.length && node.nextSibling != null) {
+      node = getNodeOrFirstTextNode(node.nextSibling);
+      offset = 0;
+    }
+  } else if (node.nodeType == Node.ELEMENT_NODE) {
+    if (nextOffset >= 0 && nextOffset <= node.childNodes.length) {
+      offset = nextOffset;
+    }
+
+    if (offset < node.childNodes.length) {
+      const nextNodeChilds = node.childNodes[offset].childNodes;
+      if (
+        // if next node is text node
+        nextNodeChilds.length > 0 &&
+        nextNodeChilds[0].nodeType == Node.TEXT_NODE
+      ) {
+        node = nextNodeChilds[0];
+        offset = node.textContent
+          ? direction == 'backward'
+            ? node.textContent.length - 1
+            : 0
+          : 0;
+      }
+    }
+  }
+
+  const newRange = document.createRange();
+  newRange.setStart(node, offset);
+  newRange.collapse(true);
+
+  const sel = window.getSelection();
+  if (sel == null) return;
+  sel.removeAllRanges();
+  sel.addRange(newRange);
 }
