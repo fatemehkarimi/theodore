@@ -28,7 +28,8 @@ import {
 } from './commands';
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
-import { getNextNode } from './utils/getNode';
+import { getNextNode } from './utils';
+import { convertDomSelectionToEditorSelection } from '../selection/utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -247,6 +248,36 @@ const useController = (
           getSelection() != null &&
           moveToNodeBySelection(getSelection()),
       );
+    }
+  };
+
+  const handleInputSelectionChange = () => {
+    const selection = document.getSelection();
+    if (selection == null) return;
+
+    const range = selection.getRangeAt(0);
+    if (!inputRef.current?.contains(range.commonAncestorContainer)) {
+      return;
+    }
+
+    const editorSelection = convertDomSelectionToEditorSelection(range);
+    if (editorSelection == null) return;
+    const { nodeIndex, offset } = editorSelection;
+
+    const currentSelection = getSelection();
+    if (currentSelection == null) {
+      setSelection({
+        nodeIndex,
+        offset: offset,
+      });
+    } else if (
+      nodeIndex != currentSelection.nodeIndex ||
+      offset != currentSelection.offset
+    ) {
+      setSelection({
+        nodeIndex,
+        offset: offset,
+      });
     }
   };
 
@@ -557,6 +588,7 @@ const useController = (
     insertNewParagraph,
     handlers: {
       handleKeyDown,
+      handleSelectionChange: handleInputSelectionChange,
     },
   };
 };
