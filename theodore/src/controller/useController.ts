@@ -19,7 +19,7 @@ import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import TextNode from '../nodes/textNode/TextNode';
 import {
   getNodeBeforeSelection,
-  moveCursor,
+  moveCursorForwardOrBackward,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
@@ -228,7 +228,7 @@ const useController = (
   const handleNavigateLeftOrRight = (
     key: typeof ARROW_LEFT | typeof ARROW_RIGHT,
   ) => {
-    moveCursor(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
+    moveCursorForwardOrBackward(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
     const docSelection = document.getSelection();
     if (docSelection == null) return;
 

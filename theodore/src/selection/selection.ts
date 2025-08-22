@@ -118,7 +118,7 @@ export function getNodeBeforeSelection() {
   return node;
 }
 
-export function moveCursor(
+export function moveCursorForwardOrBackward(
   direction: 'forward' | 'backward',
   granularity: 'character',
 ) {
@@ -234,6 +234,7 @@ export function moveCursor(
   sel.addRange(newRange);
 }
 
+export function moveCursorUpwardOrDownward(direction: 'upward' | 'downward') {}
 
 // converts dom selection to editor selection.
 export const convertDomSelectionToEditorSelection = (
@@ -244,22 +245,10 @@ export const convertDomSelectionToEditorSelection = (
   let offset = startOffset;
 
   if (node.nodeType == Node.ELEMENT_NODE) {
-    /* firefox differs from chrome and safari in startContainer. in chrome and safari,
-      the start container is the P tag, but in firefox it is the span. here we convert
-      firefox range to chrome range */
-    if (!isPTag(node)) {
-      node = node.parentNode as HTMLElement;
-      const indexOfChild = Array.from(node.childNodes).findIndex(
-        (c) => c === startContainer,
-      );
-
-      if (indexOfChild == 0) {
-        offset = startOffset;
-      }
-
-      if (startOffset == 1) offset = indexOfChild + 1;
-      else offset = indexOfChild;
-    }
+    const pBounrayPoint =
+      convertRangeBoundyPointToParagraphBoundaryPoint(range);
+    node = pBounrayPoint.node;
+    offset = pBounrayPoint.offset;
 
     if (isEmptyParagraph(node) || offset == 0) {
       const nodeIndex = (node as HTMLElement).dataset.nodeIndex;
@@ -304,4 +293,32 @@ export const convertDomSelectionToEditorSelection = (
     }
   }
   return null;
+};
+
+const convertRangeBoundyPointToParagraphBoundaryPoint = (range: Range) => {
+  const { startContainer, startOffset } = range;
+  let node = startContainer;
+  let offset = startOffset;
+
+  if (node.nodeType != Node.ELEMENT_NODE)
+    throw new Error('this function should be called only for element nodes');
+
+  /*  firefox differs from chrome and safari in startContainer. in chrome and safari,
+      the start container is the P tag, but in firefox it is the span. here we convert
+      firefox range to chrome range */
+  if (!isPTag(node)) {
+    node = node.parentNode as HTMLElement;
+    const indexOfChild = Array.from(node.childNodes).findIndex(
+      (c) => c === startContainer,
+    );
+
+    if (indexOfChild == 0) {
+      offset = startOffset;
+    }
+
+    if (startOffset == 1) offset = indexOfChild + 1;
+    else offset = indexOfChild;
+  }
+
+  return { node, offset };
 };
