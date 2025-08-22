@@ -20,6 +20,7 @@ import TextNode from '../nodes/textNode/TextNode';
 import {
   getNodeBeforeSelection,
   moveCursorForwardOrBackward,
+  moveCursorUpwardOrDownward,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
@@ -221,14 +222,23 @@ const useController = (
     }
   };
 
-  const handleNavigateUpOrDown = (
-    key: typeof ARROW_UP | typeof ARROW_DOWN,
-  ) => {};
+  const handleNavigateUpOrDown = (key: typeof ARROW_UP | typeof ARROW_DOWN) => {
+    moveCursorUpwardOrDownward(key == ARROW_UP ? 'upward' : 'downward');
+    const docSelection = document.getSelection();
+    if (docSelection == null) return;
+
+    const range = docSelection.getRangeAt(0);
+    const newSelection = convertDomSelectionToEditorSelection(range);
+    // setSelection(newSelection);
+  };
 
   const handleNavigateLeftOrRight = (
     key: typeof ARROW_LEFT | typeof ARROW_RIGHT,
   ) => {
-    moveCursorForwardOrBackward(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
+    moveCursorForwardOrBackward(
+      key == ARROW_LEFT ? 'backward' : 'forward',
+      'character',
+    );
     const docSelection = document.getSelection();
     if (docSelection == null) return;
 

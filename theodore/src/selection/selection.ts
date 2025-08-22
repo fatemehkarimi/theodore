@@ -234,7 +234,29 @@ export function moveCursorForwardOrBackward(
   sel.addRange(newRange);
 }
 
-export function moveCursorUpwardOrDownward(direction: 'upward' | 'downward') {}
+export function moveCursorUpwardOrDownward(direction: 'upward' | 'downward') {
+  const selection = document.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  let node = range.startContainer;
+  let offset = range.startOffset;
+
+  const paragraphBoundary =
+    convertRangeBoundyPointToParagraphBoundaryPoint(range);
+  node = paragraphBoundary.node;
+  offset = paragraphBoundary.offset;
+
+
+  const newRange = document.createRange();
+  newRange.setStart(node, offset);
+  newRange.collapse(true);
+
+  const sel = window.getSelection();
+  if (sel == null) return;
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+}
 
 // converts dom selection to editor selection.
 export const convertDomSelectionToEditorSelection = (
@@ -296,12 +318,16 @@ export const convertDomSelectionToEditorSelection = (
 };
 
 const convertRangeBoundyPointToParagraphBoundaryPoint = (range: Range) => {
-  const { startContainer, startOffset } = range;
+  const startOffset = range.startOffset;
+  let startContainer = range.startContainer;
   let node = startContainer;
-  let offset = startOffset;
+  let offset = range.startOffset;
 
-  if (node.nodeType != Node.ELEMENT_NODE)
-    throw new Error('this function should be called only for element nodes');
+  if (node.nodeType == Node.TEXT_NODE && node.parentNode != null) {
+    const spanParentNode = node.parentNode;
+    node = spanParentNode;
+    startContainer = spanParentNode;
+  }
 
   /*  firefox differs from chrome and safari in startContainer. in chrome and safari,
       the start container is the P tag, but in firefox it is the span. here we convert
