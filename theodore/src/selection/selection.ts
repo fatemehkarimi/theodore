@@ -1,7 +1,11 @@
 import { Selection as EditorSelection } from '../types';
 import {
+  getCountCharsInNode,
   getFirstNode,
   getNodeOrFirstTextNode,
+  getNodeTextContentLength,
+  getReferencableNode,
+  hasTextContent,
   isEmptyParagraph,
   isPTag,
 } from './utils';
@@ -244,18 +248,38 @@ export function moveCursorUpwardOrDownward(direction: 'upward' | 'downward') {
 
   const paragraphBoundary =
     convertRangeBoundyPointToParagraphBoundaryPoint(range);
+
   node = paragraphBoundary.node;
   offset = paragraphBoundary.offset;
 
+  if (direction == 'upward' && node.previousSibling == null) return;
+  if (direction == 'downward' && node.nextSibling == null) return;
 
-  const newRange = document.createRange();
-  newRange.setStart(node, offset);
-  newRange.collapse(true);
+  const currentSelectedNode =
+    offset == 0 ? node : getReferencableNode(node.childNodes[offset - 1]);
 
-  const sel = window.getSelection();
-  if (sel == null) return;
-  sel.removeAllRanges();
-  sel.addRange(newRange);
+  const currentSelectedNodeIdx = Array.from(node.childNodes).findIndex(
+    (c) => c == currentSelectedNode,
+  );
+
+  let countLettersBeforeSelectedNode =
+    Array.from(node.childNodes)
+      .slice(0, currentSelectedNodeIdx)
+      .reduce((sum, childNode) => sum + getCountCharsInNode(childNode), 0) +
+    (range.startContainer.nodeType == Node.TEXT_NODE
+      ? range.startOffset
+      : hasTextContent(currentSelectedNode)
+        ? getNodeTextContentLength(currentSelectedNode)
+        : 1);
+
+  // const newRange = document.createRange();
+  // newRange.setStart(node, offset);
+  // newRange.collapse(true);
+
+  // const sel = window.getSelection();
+  // if (sel == null) return;
+  // sel.removeAllRanges();
+  // sel.addRange(newRange);
 }
 
 // converts dom selection to editor selection.
@@ -325,8 +349,14 @@ const convertRangeBoundyPointToParagraphBoundaryPoint = (range: Range) => {
 
   if (node.nodeType == Node.TEXT_NODE && node.parentNode != null) {
     const spanParentNode = node.parentNode;
-    node = spanParentNode;
-    startContainer = spanParentNode;
+    const pNode = spanParentNode.parentNode;
+    if (pNode != null) {
+      offset =
+        Array.from(pNode.childNodes).findIndex(
+          (c: Node) => c == spanParentNode,
+        ) + 1;
+    }
+    return { node: pNode as Node, offset };
   }
 
   /*  firefox differs from chrome and safari in startContainer. in chrome and safari,

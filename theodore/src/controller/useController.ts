@@ -18,15 +18,13 @@ import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import TextNode from '../nodes/textNode/TextNode';
 import {
-  getNodeBeforeSelection,
+  convertDomSelectionToEditorSelection,
   moveCursorForwardOrBackward,
   moveCursorUpwardOrDownward,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
-  setCaretToBegining,
 } from '../selection/selection';
-import { isOnlyNavigationKey } from '../keys';
 import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
 import {
   COMMAND_INSERT_EMOJI,
@@ -38,7 +36,6 @@ import {
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
 import { getNextNode } from './utils';
-import { convertDomSelectionToEditorSelection } from '../selection/selection';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -57,8 +54,8 @@ const useController = (
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     event.preventDefault();
-    const key = event.key;
 
+    const key = event.key;
     if (event.ctrlKey && key == 'z') {
       if (tree == null) return;
       let transactionId = undefined;
