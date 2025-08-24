@@ -36,6 +36,7 @@ import {
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
 import { getNextNode } from './utils';
+import { useInputProperty } from './useInputProperty';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -49,6 +50,7 @@ const useController = (
     listeners?.onSelectionChange,
   );
   const history = useHistory(getSelection);
+  const inputProperty = useInputProperty(inputRef);
   const nodeIndexRef = useRef<number>(1); // starts at 1 because 1 is a paragraph node that is always in dom
   const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
 
@@ -121,24 +123,7 @@ const useController = (
     if (event.ctrlKey || event.altKey || event.shiftKey) return;
 
     if (key == HOME) {
-      // if (tree == null) return;
-      // setSelection(null);
-      // requestAnimationFrame(() => {
-      //   inputRef.current != null && setCaretToBegining(inputRef.current);
-      // });
     } else if (key == END) {
-      if (inputRef.current != null && tree != null) {
-        // setCaretToEnd(inputRef.current);
-        // const last = tree ? tree[tree.length - 1] : null;
-        // const selection: Selection =
-        //   last == null
-        //     ? null
-        //     : {
-        //         nodeIndex: last.getIndex(),
-        //         offset: last.getType() == 'text' ? last.getChildLength() : 0,
-        //       };
-        // setSelection(selection);
-      }
     } else if (key == ENTER) insertNewParagraph();
     else if (key == ARROW_LEFT || key == ARROW_RIGHT)
       handleNavigateLeftOrRight(key);
