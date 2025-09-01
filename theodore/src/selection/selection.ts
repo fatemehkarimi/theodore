@@ -1,10 +1,10 @@
-import { NavigationKeys } from '../keys';
-import { Selection } from '../types';
+import { Selection as EditorSelection } from '../types';
 import {
+  convertRangeBoundyPointToParagraphBoundaryPoint,
   getFirstNode,
   getNodeOrFirstTextNode,
   isEmptyParagraph,
-} from './utils';
+} from '../utils';
 
 export const setCaretToEnd = (inputEl: HTMLElement) => {
   if (!inputEl) return;
@@ -71,12 +71,7 @@ export function setCaretAfter(element: Node) {
   }
 }
 
-export const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
-  if (event.ctrlKey || event.shiftKey || event.altKey) return false;
-  return NavigationKeys.includes(event.key);
-};
-
-export function moveToNodeBySelection(selection: Selection) {
+export function moveToNodeBySelection(selection: EditorSelection) {
   if (selection == null) return;
   const nodeElement = document.querySelectorAll(
     `[data-node-index="${selection.nodeIndex}"]`,
@@ -123,7 +118,7 @@ export function getNodeBeforeSelection() {
   return node;
 }
 
-export function moveCursor(
+export function moveCursorForwardOrBackward(
   direction: 'forward' | 'backward',
   granularity: 'character',
 ) {
@@ -238,3 +233,62 @@ export function moveCursor(
   sel.removeAllRanges();
   sel.addRange(newRange);
 }
+
+// converts dom selection to editor selection.
+export const convertDomSelectionToEditorSelection = (
+  range: Range,
+): EditorSelection => {
+  const { startContainer, startOffset } = range;
+  let node = startContainer;
+  let offset = startOffset;
+
+  if (node.nodeType == Node.ELEMENT_NODE) {
+    const pBounrayPoint =
+      convertRangeBoundyPointToParagraphBoundaryPoint(range);
+    node = pBounrayPoint.node;
+    offset = pBounrayPoint.offset;
+
+    if (isEmptyParagraph(node) || offset == 0) {
+      const nodeIndex = (node as HTMLElement).dataset.nodeIndex;
+      if (nodeIndex != undefined)
+        return {
+          nodeIndex: Number(nodeIndex),
+          offset: 0,
+        };
+      else return null;
+    }
+
+    let currentNode = node.childNodes[offset - 1];
+    while (
+      currentNode.nodeType != Node.TEXT_NODE &&
+      currentNode.childNodes.length > 0
+    ) {
+      const childNode = currentNode.childNodes[0];
+      const childNodeIndex = (childNode as HTMLElement)?.dataset?.nodeIndex; // child node can be a text node
+      const nodeIndex = (currentNode as HTMLElement).dataset.nodeIndex;
+
+      if (childNodeIndex == undefined && nodeIndex != undefined) {
+        let finalOffset = 0;
+        if (childNode.nodeType == Node.TEXT_NODE)
+          finalOffset = childNode.textContent?.length ?? offset;
+
+        return {
+          nodeIndex: Number(nodeIndex),
+          offset: finalOffset,
+        };
+      }
+    }
+    return null;
+  }
+  if (node.nodeType == Node.TEXT_NODE) {
+    const parentNode = node.parentNode as HTMLElement;
+    const parentNodeIndex = parentNode?.dataset.nodeIndex;
+    if (parentNodeIndex != null) {
+      return {
+        nodeIndex: Number(parentNodeIndex),
+        offset,
+      };
+    }
+  }
+  return null;
+};

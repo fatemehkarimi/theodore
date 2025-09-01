@@ -19,10 +19,12 @@
 }
 
 .editor {
-  width: 70%;
-  border: 1px solid blue;
+  width: 45%;
   border-radius: 8px;
   height: fit-content;
+  font-size: 24px;
+  outline: none;
+  border: 1px dashed black;
 }
 
 .selection {

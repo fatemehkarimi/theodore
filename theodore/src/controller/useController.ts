@@ -4,19 +4,24 @@ import {
   useState,
   type MutableRefObject,
 } from 'react';
-import { ARROW_LEFT, ARROW_RIGHT, END, ENTER, HOME } from '../keys';
+import {
+  ARROW_DOWN,
+  ARROW_LEFT,
+  ARROW_RIGHT,
+  ARROW_UP,
+  END,
+  ENTER,
+  HOME,
+} from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import TextNode from '../nodes/textNode/TextNode';
 import {
-  getNodeBeforeSelection,
-  isOnlyNavigationKey,
-  moveCursor,
+  convertDomSelectionToEditorSelection,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
-  setCaretToBegining,
 } from '../selection/selection';
 import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
 import {
@@ -29,7 +34,6 @@ import {
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
 import { getNextNode } from './utils';
-import { convertDomSelectionToEditorSelection } from '../selection/utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -47,8 +51,8 @@ const useController = (
   const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
-    event.preventDefault();
     const key = event.key;
+    let delegateHandleToBrowser = false;
 
     if (event.ctrlKey && key == 'z') {
       if (tree == null) return;
@@ -113,69 +117,12 @@ const useController = (
 
     // todo: handle
     if (event.ctrlKey || event.altKey || event.shiftKey) return;
-
-    if (key == HOME) {
-      if (tree == null) return;
-      setSelection(null);
-
-      requestAnimationFrame(() => {
-        inputRef.current != null && setCaretToBegining(inputRef.current);
-      });
-    } else if (key == END) {
-      if (inputRef.current != null && tree != null) {
-        // setCaretToEnd(inputRef.current);
-        // const last = tree ? tree[tree.length - 1] : null;
-        // const selection: Selection =
-        //   last == null
-        //     ? null
-        //     : {
-        //         nodeIndex: last.getIndex(),
-        //         offset: last.getType() == 'text' ? last.getChildLength() : 0,
-        //       };
-        // setSelection(selection);
-      }
-    } else if (key == ENTER) {
-      insertNewParagraph();
-    } else if (isOnlyNavigationKey(event)) {
-      if (key == ARROW_LEFT || key == ARROW_RIGHT) {
-        moveCursor(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
-        const docSelection = document.getSelection();
-        if (docSelection == null) return;
-
-        const range = docSelection.getRangeAt(0);
-        const startContainer = range.startContainer;
-        const startOffset = range.startOffset;
-        const focusedNode =
-          startContainer.childNodes.length > 0
-            ? startContainer.childNodes[startOffset - 1]
-            : startContainer;
-        let newOffset = 0;
-
-        // we check span nodes because each atom node is whithing a span, except <br />
-        if (focusedNode && (focusedNode as HTMLElement).tagName == 'SPAN') {
-          const innerChild = focusedNode.childNodes[0];
-          if (innerChild?.nodeType == Node.TEXT_NODE) {
-            newOffset = innerChild.textContent?.length ?? 0;
-          } else newOffset = 0;
-        } else if (focusedNode?.nodeType == Node.TEXT_NODE) {
-          newOffset = startOffset;
-        } // to do: what about other nodes?
-
-        // this founds the span, but focus node may be the text node inside the span
-        const currentNode = getNodeBeforeSelection();
-        const nodeIndex =
-          currentNode != null
-            ? (currentNode as HTMLElement).dataset.nodeIndex
-            : null;
-
-        if (nodeIndex != null) {
-          setSelection({
-            nodeIndex: Number(nodeIndex),
-            offset: newOffset,
-          });
-        } else setSelection(null);
-      }
-    } else {
+    if (
+      [ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END].includes(key)
+    ) {
+      delegateHandleToBrowser = true;
+    } else if (key == ENTER) insertNewParagraph();
+    else {
       const text = key;
       const node = getEditorSelectedNode();
       if (node == null || node.getType() != 'text') {
@@ -249,6 +196,8 @@ const useController = (
           moveToNodeBySelection(getSelection()),
       );
     }
+
+    if (!delegateHandleToBrowser) event.preventDefault();
   };
 
   const handleInputSelectionChange = () => {
