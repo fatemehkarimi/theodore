@@ -22,16 +22,10 @@ class EmojiNode extends Node {
 
   public render() {
     const emojiEl = this.renderEmoji(this.emoji);
-    // const clonedEmojiEl = cloneElement(emojiEl, {
-    //   style: {
-    //     userSelect: 'none',
-    //   },
-    // });
     return (
       <span
         key={this.getKey()}
         data-node-index={this.getIndex()}
-        contentEditable="false"
         className={styles.emojiContainer}
       >
         {emojiEl}

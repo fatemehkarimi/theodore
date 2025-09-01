@@ -18,14 +18,11 @@ import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import TextNode from '../nodes/textNode/TextNode';
 import {
-  getNodeBeforeSelection,
-  moveCursor,
+  convertDomSelectionToEditorSelection,
   moveToNodeBySelection,
   setCaretAfter,
   setCaretPosition,
-  setCaretToBegining,
 } from '../selection/selection';
-import { isOnlyNavigationKey } from '../keys';
 import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
 import {
   COMMAND_INSERT_EMOJI,
@@ -37,7 +34,6 @@ import {
 import { useHistory } from './useHistory';
 import { useSelection } from './useSelection';
 import { getNextNode } from './utils';
-import { convertDomSelectionToEditorSelection } from '../selection/selection';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -55,8 +51,8 @@ const useController = (
   const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
-    event.preventDefault();
     const key = event.key;
+    let delegateHandleToBrowser = false;
 
     if (event.ctrlKey && key == 'z') {
       if (tree == null) return;
@@ -121,30 +117,11 @@ const useController = (
 
     // todo: handle
     if (event.ctrlKey || event.altKey || event.shiftKey) return;
-
-    if (key == HOME) {
-      // if (tree == null) return;
-      // setSelection(null);
-      // requestAnimationFrame(() => {
-      //   inputRef.current != null && setCaretToBegining(inputRef.current);
-      // });
-    } else if (key == END) {
-      if (inputRef.current != null && tree != null) {
-        // setCaretToEnd(inputRef.current);
-        // const last = tree ? tree[tree.length - 1] : null;
-        // const selection: Selection =
-        //   last == null
-        //     ? null
-        //     : {
-        //         nodeIndex: last.getIndex(),
-        //         offset: last.getType() == 'text' ? last.getChildLength() : 0,
-        //       };
-        // setSelection(selection);
-      }
+    if (
+      [ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END].includes(key)
+    ) {
+      delegateHandleToBrowser = true;
     } else if (key == ENTER) insertNewParagraph();
-    else if (key == ARROW_LEFT || key == ARROW_RIGHT)
-      handleNavigateLeftOrRight(key);
-    else if (key == ARROW_UP || key == ARROW_DOWN) handleNavigateUpOrDown(key);
     else {
       const text = key;
       const node = getEditorSelectedNode();
@@ -219,22 +196,8 @@ const useController = (
           moveToNodeBySelection(getSelection()),
       );
     }
-  };
 
-  const handleNavigateUpOrDown = (
-    key: typeof ARROW_UP | typeof ARROW_DOWN,
-  ) => {};
-
-  const handleNavigateLeftOrRight = (
-    key: typeof ARROW_LEFT | typeof ARROW_RIGHT,
-  ) => {
-    moveCursor(key == ARROW_LEFT ? 'backward' : 'forward', 'character');
-    const docSelection = document.getSelection();
-    if (docSelection == null) return;
-
-    const range = docSelection.getRangeAt(0);
-    const newSelection = convertDomSelectionToEditorSelection(range);
-    setSelection(newSelection);
+    if (!delegateHandleToBrowser) event.preventDefault();
   };
 
   const handleInputSelectionChange = () => {
