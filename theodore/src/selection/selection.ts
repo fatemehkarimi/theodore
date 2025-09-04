@@ -1,4 +1,4 @@
-import { Selection as EditorSelection } from '../types';
+import { EditorNodeSelection as EditorSelection } from '../types';
 import {
   convertRangeBoundyPointToParagraphBoundaryPoint,
   getFirstNode,
@@ -236,15 +236,17 @@ export function moveCursorForwardOrBackward(
 
 // converts dom selection to editor selection.
 export const convertDomSelectionToEditorSelection = (
-  range: Range,
+  container: Node,
+  initialOffset: number,
 ): EditorSelection => {
-  const { startContainer, startOffset } = range;
-  let node = startContainer;
-  let offset = startOffset;
+  let node = container;
+  let offset = initialOffset;
 
   if (node.nodeType == Node.ELEMENT_NODE) {
-    const pBounrayPoint =
-      convertRangeBoundyPointToParagraphBoundaryPoint(range);
+    const pBounrayPoint = convertRangeBoundyPointToParagraphBoundaryPoint(
+      container,
+      initialOffset,
+    );
     node = pBounrayPoint.node;
     offset = pBounrayPoint.offset;
 

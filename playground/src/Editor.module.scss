@@ -19,7 +19,8 @@
 }
 
 .editor {
-  width: 45%;
+  min-width: 250px;
+  max-width: 45%;
   border-radius: 8px;
   height: fit-content;
   font-size: 24px;
@@ -33,5 +34,6 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  max-width: 500px;
   user-select: none;
 }

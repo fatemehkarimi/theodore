@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { Optional, Selection, TextNodeDesc } from '../types';
+import type { EditorSelection, Optional, TextNodeDesc } from '../types';
 import { Node as EditorNode } from '../nodes/Node';
 
 type History = {
@@ -7,13 +7,13 @@ type History = {
   nodeIndex: number;
   prevState: string | TextNodeDesc | EditorNode[] | null;
   transactionId: number;
-  selection: Selection;
+  selection: EditorSelection;
 };
 
 type pushFn = (
   newHistory: Optional<Omit<History, 'transactionId'>, 'selection'>[],
 ) => void;
-const useHistory = (getSelection: () => Selection) => {
+const useHistory = (getSelection: () => EditorSelection) => {
   const history = useRef<History[]>([]);
   const transactionIdRef = useRef<number>(0);
 

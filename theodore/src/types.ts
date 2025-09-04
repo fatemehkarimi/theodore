@@ -9,9 +9,13 @@ export type SelectionDesc = {
   readonly nodeIndex: number;
   readonly offset: number;
 };
-export type Selection = SelectionDesc | null;
+export type EditorNodeSelection = SelectionDesc | null;
+export type EditorSelection = {
+  startSelection: SelectionDesc;
+  endSelection: SelectionDesc;
+} | null;
 export type RenderEmoji = (emoji: string) => ReactElement;
-export type onSelectionChangeFn = (selection: Selection) => void;
+export type onSelectionChangeFn = (selection: EditorNodeSelection) => void;
 
 export type TextNodeDesc = {
   type: 'text';

@@ -32,7 +32,11 @@ import {
   COMMAND_REPLACE_TEXT,
 } from './commands';
 import { useHistory } from './useHistory';
-import { useSelection } from './useSelection';
+import {
+  areNodeSelectionEqual,
+  isEditorSelectionCollapsed,
+  useSelection,
+} from './useSelection';
 import { getNextNode } from './utils';
 
 const useController = (
@@ -106,11 +110,16 @@ const useController = (
             .filter((subTree) => subTree.length > 0);
           return newTree;
         });
-        setSelection(prevState.selection);
+        if (prevState.selection != null)
+          setSelection(
+            prevState.selection?.startSelection,
+            prevState.selection?.endSelection,
+          );
       } while (transactionId == history.top()?.transactionId);
 
       requestAnimationFrame(() => {
-        moveToNodeBySelection(getSelection());
+        const selection = getSelection();
+        if (selection != null) moveToNodeBySelection(selection.startSelection);
       });
       return;
     }
@@ -166,7 +175,7 @@ const useController = (
       } else if (node.getType() == 'text') {
         const textNode = node as TextNode;
         const prevText = textNode.getChildren();
-        const offset = getSelection()?.offset ?? 0;
+        const offset = getSelection()?.startSelection.offset ?? 0; // todo: check
         textNode.insertText(text, offset);
         const subTreeIdx = getSelectedParagraphIndexInTree();
 
@@ -189,12 +198,13 @@ const useController = (
         });
       }
 
-      requestAnimationFrame(
-        () =>
-          inputRef.current != null &&
-          getSelection() != null &&
-          moveToNodeBySelection(getSelection()),
-      );
+      requestAnimationFrame(() => {
+        if (inputRef.current != null) {
+          const selection = getSelection();
+          if (selection != null)
+            moveToNodeBySelection(selection.startSelection);
+        }
+      });
     }
 
     if (!delegateHandleToBrowser) event.preventDefault();
@@ -209,30 +219,44 @@ const useController = (
       return;
     }
 
-    const editorSelection = convertDomSelectionToEditorSelection(range);
-    if (editorSelection == null) return;
-    const { nodeIndex, offset } = editorSelection;
+    const startSelection = convertDomSelectionToEditorSelection(
+      range.startContainer,
+      range.startOffset,
+    );
+
+    const endSelection = convertDomSelectionToEditorSelection(
+      range.endContainer,
+      range.endOffset,
+    );
+
+    if (startSelection == null) return;
 
     const currentSelection = getSelection();
     if (currentSelection == null) {
       setSelection({
-        nodeIndex,
-        offset: offset,
+        ...startSelection,
+        ...endSelection,
       });
     } else if (
-      nodeIndex != currentSelection.nodeIndex ||
-      offset != currentSelection.offset
+      !areNodeSelectionEqual(currentSelection.startSelection, startSelection) ||
+      !areNodeSelectionEqual(currentSelection.endSelection, endSelection)
     ) {
-      setSelection({
-        nodeIndex,
-        offset: offset,
-      });
+      setSelection(
+        {
+          ...startSelection,
+        },
+        endSelection != undefined
+          ? {
+              ...endSelection,
+            }
+          : undefined,
+      );
     }
   };
 
   const insertNewParagraph = () => {
     const paragraphNode = new ParagraphNode(assignNodeIndex());
-    const selection = getSelection();
+    const selection = getSelection()?.startSelection; // todo:  check;
 
     if (selection == null) return; //todo: fix, selection cannot be null
 
@@ -367,7 +391,7 @@ const useController = (
 
   const insertNodeInSelection = (node: EditorNode) => {
     const selectedNode = getEditorSelectedNode();
-    const selectedNodeOffset = getSelection()?.offset ?? 0;
+    const selectedNodeOffset = getSelection()?.startSelection?.offset ?? 0; // todo: check
 
     if (selectedNode != null) {
       const [subtreeIdx, nodeIdxInTree] = getEditorSelectedNodeIndexInTree();
@@ -473,7 +497,7 @@ const useController = (
   };
 
   const getEditorSelectedNode = () => {
-    const nodeIndex = getSelection()?.nodeIndex;
+    const nodeIndex = getSelection()?.startSelection?.nodeIndex; //todo: check
     return getNodeInTreeByIndex(nodeIndex);
   };
 
@@ -484,12 +508,14 @@ const useController = (
 
   const getEditorSelectedNodeIndexInTree = () => {
     const subtreeIdx = tree.findIndex((subtree) =>
-      subtree.find((t) => t.getIndex() == getSelection()?.nodeIndex),
+      subtree.find(
+        (t) => t.getIndex() == getSelection()?.startSelection?.nodeIndex, // todo: check
+      ),
     );
 
     if (subtreeIdx == -1) return [-1, -1];
     const nodeIdx = tree[subtreeIdx].findIndex(
-      (node) => node.getIndex() == getSelection()?.nodeIndex,
+      (node) => node.getIndex() == getSelection()?.startSelection.nodeIndex, // todo: check
     );
 
     return [subtreeIdx, nodeIdx];
@@ -518,15 +544,16 @@ const useController = (
     }
 
     selection = getSelection();
-    if (selection != null) {
-      const nodeIndex = selection.nodeIndex;
+    if (selection != null && isEditorSelectionCollapsed(selection)) {
+      const nodeIndex = selection.startSelection.nodeIndex;
       const node = getEditorSelectedNode();
       let nodeElement = document.querySelectorAll(
         `[data-node-index="${nodeIndex}"]`,
       )?.[0] as Element | null;
       if (nodeElement == null) return;
 
-      if (node?.isTextNode()) setCaretPosition(nodeElement, selection.offset);
+      if (node?.isTextNode())
+        setCaretPosition(nodeElement, selection.startSelection.offset);
       else setCaretAfter(nodeElement);
     }
   }, [tree]);
