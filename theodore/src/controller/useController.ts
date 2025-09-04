@@ -178,16 +178,12 @@ const useController = (
               text.slice(0, startSelection.offset) +
               text.slice(endSelection.offset);
 
-            if (remainingText.length > 0) {
-              textNode.setChild(remainingText);
-              newTree.push(...tree);
-              setSelection({
-                nodeIndex: textNode.getIndex(),
-                offset: startSelection.offset,
-              });
-            } else {
-              /* remove node from tree */
-            }
+            textNode.setChild(remainingText);
+            newTree.push(...tree);
+            setSelection({
+              nodeIndex: textNode.getIndex(),
+              offset: startSelection.offset,
+            });
           } else
             throw new Error(
               'impossible case and start end indices are equal only when selected node is text node or selection is collapsed.',
