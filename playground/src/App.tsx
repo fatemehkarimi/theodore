@@ -85,7 +85,22 @@ const SelectionPreview = React.forwardRef<{
     };
   }, []);
 
-  return <div className={styles.selection}>{JSON.stringify(selection)}</div>;
+  return (
+    <div className={styles.selection}>
+      <span>
+        start:{' '}
+        {selection?.startSelection == null
+          ? 'null'
+          : JSON.stringify(selection?.startSelection)}
+      </span>
+      <span>
+        end:{' '}
+        {selection?.startSelection == null
+          ? 'null'
+          : JSON.stringify(selection?.endSelection)}
+      </span>
+    </div>
+  );
 });
 
 export default App;

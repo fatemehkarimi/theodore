@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { Node as EditorNode } from './nodes/Node';
 
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type TheodoreHandle = {
@@ -15,10 +16,12 @@ export type EditorSelection = {
   endSelection: SelectionDesc;
 } | null;
 export type RenderEmoji = (emoji: string) => ReactElement;
-export type onSelectionChangeFn = (selection: EditorNodeSelection) => void;
+export type onSelectionChangeFn = (selection: EditorSelection) => void;
 
 export type TextNodeDesc = {
   type: 'text';
   text: string | null;
   nodeIndex: number;
 };
+
+export type Tree = EditorNode[][];

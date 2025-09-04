@@ -21,7 +21,14 @@ const useSelection = (
     if (newEndSelection != undefined) endSelection.current = newEndSelection;
     else endSelection.current = newStartSelection;
 
-    onSelectionChange?.(startSelection.current);
+    onSelectionChange?.(
+      startSelection.current != undefined && endSelection.current != undefined
+        ? {
+            startSelection: { ...startSelection.current },
+            endSelection: { ...endSelection.current },
+          }
+        : null,
+    );
   };
 
   const getSelection = () => {

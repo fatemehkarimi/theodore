@@ -115,3 +115,4 @@ export const convertRangeBoundyPointToParagraphBoundaryPoint = (
 };
 
 export const isTextNode = (node: Node) => node.nodeType == Node.TEXT_NODE;
+export const isDevelopment = process.env.NODE_ENV == 'development';

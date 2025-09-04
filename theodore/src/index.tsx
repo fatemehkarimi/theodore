@@ -1,2 +1,2 @@
 export { Theodore } from './component/Theodore';
-export type { TheodoreHandle, EditorNodeSelection as Selection } from './types';
+export type { TheodoreHandle, EditorSelection as Selection } from './types';

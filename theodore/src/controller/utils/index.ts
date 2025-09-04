@@ -1,4 +1,6 @@
 import type { Node } from '../../nodes/Node';
+import type { Tree } from '../../types';
+import { isEditorSelectionCollapsed } from '../useSelection';
 
 export function getNode(
   tree: readonly Node[][] | null,
@@ -57,3 +59,31 @@ export function getNextNode(
   }
   return currentNode;
 }
+
+export const getNodeIndexInTree = (
+  tree: Tree,
+  nodeIndex: number | undefined,
+) => {
+  const subtreeIdx = tree.findIndex((subtree) =>
+    subtree.find((t) => t.getIndex() == nodeIndex),
+  );
+
+  if (subtreeIdx == -1) return [-1, -1];
+  const nodeIdx = tree[subtreeIdx].findIndex(
+    (node) => node.getIndex() == nodeIndex,
+  );
+
+  return [subtreeIdx, nodeIdx];
+};
+
+export const getParagraphIndexInTree = (
+  tree: Tree,
+  nodeIndex: number | undefined,
+) => {
+  const [subTreeIdx] = getNodeIndexInTree(tree, nodeIndex);
+  return subTreeIdx;
+};
+
+export const findNode = (tree: Tree, nodeIndex: number | undefined) => {
+  return tree.flat().find((node) => node.getIndex() == nodeIndex);
+};

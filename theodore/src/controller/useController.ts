@@ -23,7 +23,13 @@ import {
   setCaretAfter,
   setCaretPosition,
 } from '../selection/selection';
-import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
+import type {
+  EditorNodeSelection,
+  onSelectionChangeFn,
+  RenderEmoji,
+  TextNodeDesc,
+  Tree,
+} from '../types';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
@@ -37,7 +43,13 @@ import {
   isEditorSelectionCollapsed,
   useSelection,
 } from './useSelection';
-import { getNextNode } from './utils';
+import {
+  findNode,
+  getNextNode,
+  getNodeIndexInTree,
+  getParagraphIndexInTree,
+} from './utils';
+import { isDevelopment } from '../utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -52,7 +64,7 @@ const useController = (
   );
   const history = useHistory(getSelection);
   const nodeIndexRef = useRef<number>(1); // starts at 1 because 1 is a paragraph node that is always in dom
-  const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
+  const [tree, setTree] = useState<Tree>([[new ParagraphNode(1)]]);
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
@@ -140,33 +152,81 @@ const useController = (
 
   const handleInsertText = (text: string) => {
     const selection = getSelection();
-    if (!isEditorSelectionCollapsed(selection)) {
+    const selectedNodes = getEditorSelectedNode();
+    const isSelectionCollapsed = isEditorSelectionCollapsed(selection);
+    const newTree: EditorNode[][] = isSelectionCollapsed ? [...tree] : [];
+
+    if (selection != null && selectedNodes != null && !isSelectionCollapsed) {
+      const { startNode, endNode } = selectedNodes;
+      const { startSelection, endSelection } = selection;
+
+      const [startSubTreeIdx, startIdx] = getNodeIndexInTree(
+        tree,
+        startNode?.getIndex(),
+      );
+      const [endSubTreeIdx, endIdx] = getNodeIndexInTree(
+        tree,
+        endNode?.getIndex(),
+      );
+
+      if (startSubTreeIdx == endSubTreeIdx) {
+        if (startIdx == endIdx) {
+          if (startNode?.isTextNode()) {
+            const textNode = startNode as TextNode;
+            const text = textNode.getChildren() ?? '';
+            const remainingText =
+              text.slice(0, startSelection.offset) +
+              text.slice(endSelection.offset);
+
+            if (remainingText.length > 0) {
+              textNode.setChild(remainingText);
+              newTree.push(...tree);
+              setSelection({
+                nodeIndex: textNode.getIndex(),
+                offset: startSelection.offset,
+              });
+            } else {
+              /* remove node from tree */
+            }
+          } else
+            throw new Error(
+              'impossible case and start end indices are equal only when selected node is text node or selection is collapsed.',
+            );
+        }
+      }
     }
 
-    const selectedNodes = getEditorSelectedNode();
-    const node = selectedNodes?.startNode;
+    // todo: make sure selection is collapsed here
+    const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
     if (node == null || node.getType() != 'text') {
       const textNode = new TextNode(assignNodeIndex());
       textNode.setChild(text);
       const selection = getSelection();
-      const [subtreeIdx, nodeIdxInTree] = getEditorSelectedNodeIndexInTree();
 
-      setTree((tree) => {
-        const newTree = [...tree];
+      setTree(() => {
+        const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+          newTree,
+          node?.getIndex(),
+        );
+        const finalTree = [...newTree];
         if (subtreeIdx == -1 || selection == null) {
-          const newSubTree = [newTree[0][0], textNode, ...newTree[0].slice(1)];
-          newTree[0] = newSubTree;
-          return newTree;
+          const newSubTree = [
+            finalTree[0][0],
+            textNode,
+            ...finalTree[0].slice(1),
+          ];
+          finalTree[0] = newSubTree;
+          return finalTree;
         }
 
-        const subtree = newTree[subtreeIdx];
+        const subtree = finalTree[subtreeIdx];
         const newsubTree = [
           ...subtree.slice(0, nodeIdxInTree + 1),
           textNode,
           ...subtree.slice(nodeIdxInTree + 1),
         ];
-        newTree[subtreeIdx] = newsubTree;
-        return newTree;
+        finalTree[subtreeIdx] = newsubTree;
+        return finalTree;
       });
       history.pushAndCommit([
         {
@@ -182,14 +242,21 @@ const useController = (
     } else if (node.getType() == 'text') {
       const textNode = node as TextNode;
       const prevText = textNode.getChildren();
-      const offset = getSelection()?.startSelection.offset ?? 0; // todo: check
+      // selection should be always collapsed when it wants to insert the new node
+      const selectedNode = getSelection()?.startSelection.nodeIndex;
+      if (selectedNode == null) {
+        if (isDevelopment)
+          throw new Error('selectedNode cannot be null when inserting text');
+        else return;
+      }
+      const offset = getSelection()?.startSelection.offset ?? 0;
       textNode.insertText(text, offset);
-      const subTreeIdx = getSelectedParagraphIndexInTree();
+      const subTreeIdx = getParagraphIndexInTree(newTree, selectedNode);
 
-      setTree((tree) => {
-        const newTree = [...tree];
-        newTree[subTreeIdx] = [...tree[subTreeIdx]];
-        return newTree;
+      setTree(() => {
+        const finalTree = [...newTree];
+        finalTree[subTreeIdx] = [...newTree[subTreeIdx]];
+        return finalTree;
       });
 
       history.pushAndCommit([
@@ -265,7 +332,8 @@ const useController = (
 
     const selectedNodes = getEditorSelectedNode();
     const selectedNode = selectedNodes?.startNode; // todo: check;
-    const [pIdx, nodeIdx] = getEditorSelectedNodeIndexInTree();
+    if (selectedNode == null) return;
+    const [pIdx, nodeIdx] = getNodeIndexInTree(tree, selectedNode.getIndex());
 
     const selectedParagraphClone = [...tree[pIdx]];
     const selectedParagraphNode = selectedParagraphClone[0];
@@ -400,7 +468,10 @@ const useController = (
     if (selectedNodes?.startNode != null) {
       const selectedNode = selectedNodes?.startNode; //todo: check
 
-      const [subtreeIdx, nodeIdxInTree] = getEditorSelectedNodeIndexInTree();
+      const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+        tree,
+        selectedNode.getIndex(),
+      );
       const isInsertAtBeginingOrEndOfTextNode =
         selectedNode.getType() == 'text' &&
         (selectedNodeOffset == (selectedNode as TextNode).getChildLength() ||
@@ -515,28 +586,6 @@ const useController = (
   const getNodeInTreeByIndex = (nodeIndex: number | undefined) => {
     if (nodeIndex == undefined) return null;
     return tree.flat().find((node) => node.getIndex() == nodeIndex) ?? null;
-  };
-
-  const getEditorSelectedNodeIndexInTree = () => {
-    const subtreeIdx = tree.findIndex((subtree) =>
-      subtree.find(
-        (t) => t.getIndex() == getSelection()?.startSelection?.nodeIndex, // todo: check
-      ),
-    );
-
-    if (subtreeIdx == -1) return [-1, -1];
-    const nodeIdx = tree[subtreeIdx].findIndex(
-      (node) => node.getIndex() == getSelection()?.startSelection.nodeIndex, // todo: check
-    );
-
-    return [subtreeIdx, nodeIdx];
-  };
-
-  const getSelectedParagraphIndexInTree = () => {
-    const selection = getSelection();
-    if (selection == null) return 0;
-    const [subTreeIdx] = getEditorSelectedNodeIndexInTree();
-    return subTreeIdx;
   };
 
   useLayoutEffect(() => {

@@ -53,7 +53,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
         {...props}
-        suppressContentEditableWarning={true}
+        suppressContentEditableWarning
       >
         {tree?.map((subtree) => {
           if (subtree.length == 0) throw new Error('Subtree is empty');
