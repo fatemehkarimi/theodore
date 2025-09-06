@@ -160,16 +160,13 @@ const useController = (
       const { startNode, endNode } = selectedNodes;
       const { startSelection, endSelection } = selection;
 
-      const [startSubTreeIdx, startIdx] = getNodeIndexInTree(
+      const [startPIdx, startIdx] = getNodeIndexInTree(
         tree,
         startNode?.getIndex(),
       );
-      const [endSubTreeIdx, endIdx] = getNodeIndexInTree(
-        tree,
-        endNode?.getIndex(),
-      );
+      const [endPIdx, endIdx] = getNodeIndexInTree(tree, endNode?.getIndex());
 
-      if (startSubTreeIdx == endSubTreeIdx) {
+      if (startPIdx == endPIdx) {
         if (startIdx == endIdx) {
           if (startNode?.isTextNode()) {
             const textNode = startNode as TextNode;
@@ -184,10 +181,44 @@ const useController = (
               nodeIndex: textNode.getIndex(),
               offset: startSelection.offset,
             });
-          } else
-            throw new Error(
-              'impossible case and start end indices are equal only when selected node is text node or selection is collapsed.',
+          } else {
+            if (isDevelopment)
+              throw new Error(
+                'impossible case and start end indices are equal only when selected node is text node or selection is collapsed.',
+              );
+          }
+        } else {
+          newTree.push(...tree.slice(0, startPIdx));
+          const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+          if (startNode) {
+            if (!startNode.isTextNode()) newStartP.push(startNode);
+            else {
+              const textNode = startNode as TextNode;
+              const currentText = textNode.getChildren() ?? '';
+              const remainingText = currentText.slice(
+                0,
+                selection.startSelection.offset,
+              );
+              textNode.setChild(remainingText);
+              newStartP.push(textNode);
+            }
+          }
+
+          if (endNode && endNode.isTextNode()) {
+            const textNode = endNode as TextNode;
+            const currentText = textNode.getChildren() ?? '';
+            const remainingText = currentText.slice(
+              selection.endSelection.offset,
             );
+            if (remainingText.length > 0) {
+              textNode.setChild(remainingText);
+              newStartP.push(textNode);
+            }
+          }
+
+          newStartP.push(...tree[startPIdx].slice(endIdx + 1));
+          newTree.push(newStartP);
+          newTree.push(...tree.slice(endPIdx + 1));
         }
       }
     }
