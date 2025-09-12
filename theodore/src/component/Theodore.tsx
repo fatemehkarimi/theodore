@@ -12,12 +12,10 @@ type Props = Omit<
   'contentEditable'
 > & {
   renderEmoji: RenderEmoji;
-  listeners?: {
-    onSelectionChange?: onSelectionChangeFn;
-  };
+  onSelectionChange?: onSelectionChangeFn;
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
-  ({ className, renderEmoji, listeners, ...props }, ref) => {
+  ({ className, renderEmoji, onSelectionChange, ...props }, ref) => {
     const inputRef = useRef<HTMLDivElement | null>(null);
     const {
       tree,
@@ -25,7 +23,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       insertNewParagraph,
       handlers: { handleKeyDown, handleSelectionChange },
     } = useController(inputRef, renderEmoji, {
-      onSelectionChange: listeners?.onSelectionChange,
+      onSelectionChange: onSelectionChange,
     });
 
     useImperativeHandle(ref, () => {
@@ -53,7 +51,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
         {...props}
-        suppressContentEditableWarning={true}
+        suppressContentEditableWarning
       >
         {tree?.map((subtree) => {
           if (subtree.length == 0) throw new Error('Subtree is empty');

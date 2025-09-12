@@ -1,4 +1,6 @@
-import { Selection as EditorSelection } from '../types';
+import { getDomNodeByNodeIndex } from '../controller/utils';
+import { EditorNodeSelection as EditorSelection } from '../types';
+import { Node as EditorNode } from '../nodes/Node';
 import {
   convertRangeBoundyPointToParagraphBoundaryPoint,
   getFirstNode,
@@ -71,11 +73,41 @@ export function setCaretAfter(element: Node) {
   }
 }
 
+export function selectRangeInDom(
+  startNode: EditorNode,
+  startOffset: number,
+  endNode: EditorNode,
+  endOffset: number,
+) {
+  const domStartNode = getDomNodeByNodeIndex(startNode.getIndex());
+  const domEndNode = getDomNodeByNodeIndex(endNode.getIndex());
+  if (domStartNode == null || domEndNode == null) return;
+  const range = document.createRange();
+
+  if (startNode.isTextNode()) {
+    const targetNode = getNodeOrFirstTextNode(domStartNode);
+    range.setStart(targetNode, startOffset);
+  } else {
+    if (domStartNode.tagName == 'P') range.setStart(domStartNode, 0);
+    else range.setStartAfter(domStartNode);
+  }
+
+  if (endNode.isTextNode()) {
+    const targetNode = getNodeOrFirstTextNode(domEndNode);
+    range.setEnd(targetNode, endOffset);
+  } else {
+    if (domEndNode.tagName == 'P') range.setEnd(domEndNode, 0);
+    else range.setEndAfter(domEndNode);
+  }
+
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
 export function moveToNodeBySelection(selection: EditorSelection) {
   if (selection == null) return;
-  const nodeElement = document.querySelectorAll(
-    `[data-node-index="${selection.nodeIndex}"]`,
-  )?.[0];
+  const nodeElement = getDomNodeByNodeIndex(selection.nodeIndex);
 
   if (nodeElement == null) return;
   setCaretPosition(nodeElement, selection.offset ?? 0);
@@ -236,15 +268,17 @@ export function moveCursorForwardOrBackward(
 
 // converts dom selection to editor selection.
 export const convertDomSelectionToEditorSelection = (
-  range: Range,
+  container: Node,
+  initialOffset: number,
 ): EditorSelection => {
-  const { startContainer, startOffset } = range;
-  let node = startContainer;
-  let offset = startOffset;
+  let node = container;
+  let offset = initialOffset;
 
   if (node.nodeType == Node.ELEMENT_NODE) {
-    const pBounrayPoint =
-      convertRangeBoundyPointToParagraphBoundaryPoint(range);
+    const pBounrayPoint = convertRangeBoundyPointToParagraphBoundaryPoint(
+      container,
+      initialOffset,
+    );
     node = pBounrayPoint.node;
     offset = pBounrayPoint.offset;
 

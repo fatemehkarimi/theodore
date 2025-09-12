@@ -20,20 +20,39 @@ import TextNode from '../nodes/textNode/TextNode';
 import {
   convertDomSelectionToEditorSelection,
   moveToNodeBySelection,
+  selectRangeInDom,
   setCaretAfter,
   setCaretPosition,
 } from '../selection/selection';
-import type { onSelectionChangeFn, RenderEmoji, TextNodeDesc } from '../types';
+import type {
+  onSelectionChangeFn,
+  RenderEmoji,
+  TextNodeDesc,
+  Tree,
+} from '../types';
+import { isDevelopment } from '../utils';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
   COMMAND_INSERT_TEXT,
+  COMMAND_REMOVE_NODE,
   COMMAND_REPLACE_PARAGRAPH,
   COMMAND_REPLACE_TEXT,
 } from './commands';
 import { useHistory } from './useHistory';
-import { useSelection } from './useSelection';
-import { getNextNode } from './utils';
+import {
+  areNodeSelectionEqual,
+  isEditorSelectionCollapsed,
+  useSelection,
+} from './useSelection';
+import {
+  findNode,
+  findNodeAfter,
+  getDomNodeByNodeIndex,
+  getNextNode,
+  getNodeIndexInTree,
+  getParagraphIndexInTree,
+} from './utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -48,7 +67,7 @@ const useController = (
   );
   const history = useHistory(getSelection);
   const nodeIndexRef = useRef<number>(1); // starts at 1 because 1 is a paragraph node that is always in dom
-  const [tree, setTree] = useState<EditorNode[][]>([[new ParagraphNode(1)]]);
+  const [tree, setTree] = useState<Tree>([[new ParagraphNode(1)]]);
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
@@ -63,6 +82,64 @@ const useController = (
         if (transactionId == undefined) transactionId = prevState.transactionId;
         setTree((tree) => {
           if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
+
+          if (prevState.command == COMMAND_REMOVE_NODE) {
+            const prevNode = prevState.prevNodeIndexInTree;
+            const nextNode = prevState.nextNodeIndexInTree;
+
+            const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
+              tree,
+              prevNode,
+            );
+            const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
+              tree,
+              nextNode,
+            );
+
+            if (prevNodeIdx == -1) return tree;
+            const newTree = tree.slice(0, prevNodePIdx);
+
+            const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
+            let newStartPAppended = false;
+
+            const deletedNodes = prevState.prevState as (
+              | EditorNode
+              | EditorNode[]
+            )[];
+            for (const node of deletedNodes) {
+              if (Array.isArray(node)) {
+                if (node.length == 0) continue;
+                const firstNode = node[0];
+                if (firstNode.getType() == 'paragraph') {
+                  if (!newStartPAppended) {
+                    newTree.push(newStartP);
+                    newStartPAppended = true;
+                  }
+                  newTree.push(node);
+                } else newStartP.push(...node);
+              } else if (node.getType() == 'paragraph') {
+                if (!newStartPAppended) {
+                  newTree.push(newStartP);
+                  newStartPAppended = true;
+                }
+                newTree.push([node]);
+              } else if (!newStartPAppended) {
+                newStartP.push(node);
+              } else newTree[newTree.length - 1].push(node);
+            }
+
+            if (!newStartPAppended) newTree.push(newStartP);
+            if (nextNodeIdx != -1) {
+              const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
+              const firstNode =
+                remainingNodes.length > 0 ? remainingNodes[0] : null;
+              if (firstNode != null && firstNode.getType() == 'paragraph')
+                newTree.push(remainingNodes);
+              else newTree[newTree.length - 1].push(...remainingNodes);
+              newTree.push(...tree.slice(nextNodePIdx + 1));
+            }
+            return newTree;
+          }
           const newTree = tree
             .map((subTree) => {
               const pNode = subTree[0];
@@ -84,8 +161,7 @@ const useController = (
                 .map((node) => {
                   if (node.getIndex() == prevState.nodeIndex) {
                     if (prevState.command == COMMAND_INSERT_TEXT) {
-                      if (prevState.prevState != null) {
-                        // todo: fix when command is insert the node type can't be an object
+                      if (prevState.prevState != null && node.isTextNode()) {
                         (node as TextNode).setChild(
                           prevState.prevState as string,
                         );
@@ -106,12 +182,12 @@ const useController = (
             .filter((subTree) => subTree.length > 0);
           return newTree;
         });
-        setSelection(prevState.selection);
+        if (prevState.selection != null)
+          setSelection(
+            prevState.selection?.startSelection,
+            prevState.selection?.endSelection,
+          );
       } while (transactionId == history.top()?.transactionId);
-
-      requestAnimationFrame(() => {
-        moveToNodeBySelection(getSelection());
-      });
       return;
     }
 
@@ -123,81 +199,294 @@ const useController = (
       delegateHandleToBrowser = true;
     } else if (key == ENTER) insertNewParagraph();
     else {
-      const text = key;
-      const node = getEditorSelectedNode();
-      if (node == null || node.getType() != 'text') {
-        const textNode = new TextNode(assignNodeIndex());
-        textNode.setChild(text);
-        const selection = getSelection();
-        const [subtreeIdx, nodeIdxInTree] = getEditorSelectedNodeIndexInTree();
-
-        setTree((tree) => {
-          const newTree = [...tree];
-          if (subtreeIdx == -1 || selection == null) {
-            const newSubTree = [
-              newTree[0][0],
-              textNode,
-              ...newTree[0].slice(1),
-            ];
-            newTree[0] = newSubTree;
-            return newTree;
-          }
-
-          const subtree = newTree[subtreeIdx];
-          const newsubTree = [
-            ...subtree.slice(0, nodeIdxInTree + 1),
-            textNode,
-            ...subtree.slice(nodeIdxInTree + 1),
-          ];
-          newTree[subtreeIdx] = newsubTree;
-          return newTree;
-        });
-        history.pushAndCommit([
-          {
-            command: COMMAND_INSERT_TEXT,
-            nodeIndex: textNode.getIndex(),
-            prevState: null,
-          },
-        ]);
-        setSelection({
-          nodeIndex: textNode.getIndex(),
-          offset: textNode.getChildLength(),
-        });
-      } else if (node.getType() == 'text') {
-        const textNode = node as TextNode;
-        const prevText = textNode.getChildren();
-        const offset = getSelection()?.offset ?? 0;
-        textNode.insertText(text, offset);
-        const subTreeIdx = getSelectedParagraphIndexInTree();
-
-        setTree((tree) => {
-          const newTree = [...tree];
-          newTree[subTreeIdx] = [...tree[subTreeIdx]];
-          return newTree;
-        });
-
-        history.pushAndCommit([
-          {
-            command: COMMAND_INSERT_TEXT,
-            nodeIndex: textNode.getIndex(),
-            prevState: prevText,
-          },
-        ]);
-        setSelection({
-          nodeIndex: textNode.getIndex(),
-          offset: offset + text.length,
-        });
-      }
-
-      requestAnimationFrame(
-        () =>
-          inputRef.current != null &&
-          getSelection() != null &&
-          moveToNodeBySelection(getSelection()),
-      );
+      handleInsertText(key);
     }
 
     if (!delegateHandleToBrowser) event.preventDefault();
+  };
+
+  const handleInsertText = (text: string) => {
+    const newTree = removeNodesInSelection();
+
+    // todo: make sure selection is collapsed here
+    const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
+    if (node == null || node.getType() != 'text') {
+      const textNode = new TextNode(assignNodeIndex());
+      textNode.setChild(text);
+      const selection = getSelection();
+
+      setTree(() => {
+        const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+          newTree,
+          node?.getIndex(),
+        );
+        const finalTree = [...newTree];
+        if (subtreeIdx == -1 || selection == null) {
+          const newSubTree = [
+            finalTree[0][0],
+            textNode,
+            ...finalTree[0].slice(1),
+          ];
+          finalTree[0] = newSubTree;
+          return finalTree;
+        }
+
+        const subtree = finalTree[subtreeIdx];
+        const newsubTree = [
+          ...subtree.slice(0, nodeIdxInTree + 1),
+          textNode,
+          ...subtree.slice(nodeIdxInTree + 1),
+        ];
+        finalTree[subtreeIdx] = newsubTree;
+        return finalTree;
+      });
+      history.pushAndCommit([
+        {
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: textNode.getIndex(),
+          prevState: null,
+        },
+      ]);
+      setSelection({
+        nodeIndex: textNode.getIndex(),
+        offset: textNode.getChildLength(),
+      });
+    } else if (node.getType() == 'text') {
+      const textNode = node as TextNode;
+      const prevText = textNode.getChildren();
+      // selection should be always collapsed when it wants to insert the new node
+      const selectedNode = getSelection()?.startSelection.nodeIndex;
+      if (selectedNode == null) {
+        if (isDevelopment)
+          throw new Error('selectedNode cannot be null when inserting text');
+        else return;
+      }
+      const offset = getSelection()?.startSelection.offset ?? 0;
+      textNode.insertText(text, offset);
+      const subTreeIdx = getParagraphIndexInTree(newTree, selectedNode);
+
+      setTree(() => {
+        const finalTree = [...newTree];
+        finalTree[subTreeIdx] = [...newTree[subTreeIdx]];
+        return finalTree;
+      });
+
+      history.pushAndCommit([
+        {
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: textNode.getIndex(),
+          prevState: prevText,
+        },
+      ]);
+      setSelection({
+        nodeIndex: textNode.getIndex(),
+        offset: offset + text.length,
+      });
+    }
+
+    requestAnimationFrame(() => {
+      if (inputRef.current != null) {
+        const selection = getSelection();
+        if (selection != null) moveToNodeBySelection(selection.startSelection);
+      }
+    });
+  };
+
+  const removeNodesInSelection = () => {
+    const selection = getSelection();
+    const selectedNodes = getEditorSelectedNode();
+    const isSelectionCollapsed = isEditorSelectionCollapsed(selection);
+    const newTree: EditorNode[][] = isSelectionCollapsed ? [...tree] : [];
+
+    if (isSelectionCollapsed) return newTree;
+
+    if (selection != null && selectedNodes != null) {
+      const { startNode, endNode } = selectedNodes;
+      const { startSelection, endSelection } = selection;
+
+      const [startPIdx, startIdx] = getNodeIndexInTree(
+        tree,
+        startNode?.getIndex(),
+      );
+      const [endPIdx, endIdx] = getNodeIndexInTree(tree, endNode?.getIndex());
+
+      if (startPIdx == endPIdx) {
+        if (startIdx == endIdx) {
+          if (startNode?.isTextNode()) {
+            const textNode = startNode as TextNode;
+            const text = textNode.getChildren() ?? '';
+            const remainingText =
+              text.slice(0, startSelection.offset) +
+              text.slice(endSelection.offset);
+
+            const textNodeDescriptor = textNode.toDescriptor();
+            textNode.setChild(remainingText);
+            newTree.push(...tree);
+
+            history.push([
+              {
+                command: COMMAND_REPLACE_TEXT,
+                nodeIndex: textNode.getIndex(),
+                prevState: textNodeDescriptor,
+              },
+            ]);
+          } else {
+            if (isDevelopment)
+              throw new Error(
+                'impossible case and start end indices are equal only when selected node is text node or selection is collapsed.',
+              );
+          }
+        } else {
+          newTree.push(...tree.slice(0, startPIdx));
+          const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+          if (startNode) {
+            if (!startNode.isTextNode()) newStartP.push(startNode);
+            else {
+              const textNode = startNode as TextNode;
+              const currentText = textNode.getChildren() ?? '';
+              const remainingText = currentText.slice(
+                0,
+                selection.startSelection.offset,
+              );
+              if (currentText != remainingText) {
+                const textNodeDescriptor = textNode.toDescriptor();
+                history.push([
+                  {
+                    command: COMMAND_REPLACE_TEXT,
+                    nodeIndex: textNode.getIndex(),
+                    prevState: textNodeDescriptor,
+                  },
+                ]);
+                textNode.setChild(remainingText);
+              }
+              newStartP.push(textNode);
+            }
+          }
+
+          const deletedNodes = [];
+          for (let i = startIdx + 1; i < endIdx; i++) {
+            deletedNodes.push(tree[startPIdx][i]);
+          }
+
+          if (endNode?.getType() == 'emoji') deletedNodes.push(endNode);
+
+          const nextNodeInTree = endNode?.isTextNode()
+            ? endNode.getIndex()
+            : findNodeAfter(tree, endNode?.getIndex())?.getIndex();
+          history.push([
+            {
+              command: COMMAND_REMOVE_NODE,
+              nodeIndex: -1,
+              prevState: deletedNodes,
+              prevNodeIndexInTree: startNode?.getIndex(),
+              nextNodeIndexInTree: nextNodeInTree,
+            },
+          ]);
+
+          if (endNode && endNode.isTextNode()) {
+            const textNode = endNode as TextNode;
+            const currentText = textNode.getChildren() ?? '';
+            const textNodeDescriptor = textNode.toDescriptor();
+            const remainingText = currentText.slice(
+              selection.endSelection.offset,
+            );
+            if (currentText != remainingText) {
+              history.push([
+                {
+                  command: COMMAND_REPLACE_TEXT,
+                  nodeIndex: textNode.getIndex(),
+                  prevState: textNodeDescriptor,
+                },
+              ]);
+
+              textNode.setChild(remainingText);
+              newStartP.push(textNode);
+            }
+          }
+
+          newStartP.push(...tree[startPIdx].slice(endIdx + 1));
+          newTree.push(newStartP);
+          newTree.push(...tree.slice(endPIdx + 1));
+        }
+      } else {
+        newTree.push(...tree.slice(0, startPIdx));
+
+        const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+        if (startNode?.isTextNode()) {
+          const textNode = startNode as TextNode;
+          const currentText = textNode.getChildren() ?? '';
+          const remainingText = currentText.slice(
+            0,
+            selection.startSelection.offset,
+          );
+          if (currentText != remainingText) {
+            const textNodeDescriptor = textNode.toDescriptor();
+            history.push([
+              {
+                command: COMMAND_REPLACE_TEXT,
+                nodeIndex: textNode.getIndex(),
+                prevState: textNodeDescriptor,
+              },
+            ]);
+            textNode.setChild(remainingText);
+          }
+          newStartP.push(textNode);
+        } else if (startNode != null) newStartP.push(startNode);
+
+        const newEndP = [];
+
+        if (endNode && endNode.isTextNode()) {
+          const textNode = endNode as TextNode;
+          const currentText = textNode.getChildren() ?? '';
+          const textNodeDescriptor = textNode.toDescriptor();
+          const remainingText = currentText.slice(
+            selection.endSelection.offset,
+          );
+          if (currentText != remainingText) {
+            history.push([
+              {
+                command: COMMAND_REPLACE_TEXT,
+                nodeIndex: textNode.getIndex(),
+                prevState: textNodeDescriptor,
+              },
+            ]);
+
+            textNode.setChild(remainingText);
+            newEndP.push(textNode);
+          }
+        }
+
+        newEndP.push(...tree[endPIdx].slice(endIdx + 1));
+
+        const deletedNodes: (EditorNode | EditorNode[])[] = [];
+        deletedNodes.push(tree[startPIdx].slice(startIdx + 1));
+        for (let i = startPIdx + 1; i < endPIdx; ++i)
+          deletedNodes.push(tree[i]);
+        deletedNodes.push(tree[endPIdx].slice(0, endIdx));
+
+        const nextNodeIndexInTree = endNode?.isTextNode()
+          ? endNode.getIndex()
+          : findNodeAfter(tree, endNode?.getIndex())?.getIndex();
+
+        history.push([
+          {
+            command: COMMAND_REMOVE_NODE,
+            prevState: deletedNodes,
+            nodeIndex: -1,
+            nextNodeIndexInTree: nextNodeIndexInTree,
+            prevNodeIndexInTree: startNode?.getIndex(),
+          },
+        ]);
+
+        if (endNode && !endNode?.isTextNode()) deletedNodes.push(endNode);
+
+        newStartP.push(...newEndP);
+        newTree.push(newStartP);
+
+        newTree.push(...tree.slice(endPIdx + 1));
+      }
+    }
+    return [...newTree];
   };
 
   const handleInputSelectionChange = () => {
@@ -209,37 +498,57 @@ const useController = (
       return;
     }
 
-    const editorSelection = convertDomSelectionToEditorSelection(range);
-    if (editorSelection == null) return;
-    const { nodeIndex, offset } = editorSelection;
+    const startSelection = convertDomSelectionToEditorSelection(
+      range.startContainer,
+      range.startOffset,
+    );
+
+    const endSelection = convertDomSelectionToEditorSelection(
+      range.endContainer,
+      range.endOffset,
+    );
+
+    if (startSelection == null) return;
 
     const currentSelection = getSelection();
     if (currentSelection == null) {
       setSelection({
-        nodeIndex,
-        offset: offset,
+        ...startSelection,
+        ...endSelection,
       });
     } else if (
-      nodeIndex != currentSelection.nodeIndex ||
-      offset != currentSelection.offset
+      !areNodeSelectionEqual(currentSelection.startSelection, startSelection) ||
+      !areNodeSelectionEqual(currentSelection.endSelection, endSelection)
     ) {
-      setSelection({
-        nodeIndex,
-        offset: offset,
-      });
+      setSelection(
+        {
+          ...startSelection,
+        },
+        endSelection != undefined
+          ? {
+              ...endSelection,
+            }
+          : undefined,
+      );
     }
   };
 
   const insertNewParagraph = () => {
+    const newTree = removeNodesInSelection();
     const paragraphNode = new ParagraphNode(assignNodeIndex());
-    const selection = getSelection();
+    const selection = getSelection()?.startSelection; // todo:  check;
 
     if (selection == null) return; //todo: fix, selection cannot be null
 
-    const selectedNode = getEditorSelectedNode();
-    const [pIdx, nodeIdx] = getEditorSelectedNodeIndexInTree();
+    const selectedNodes = getEditorSelectedNode();
+    const selectedNode = selectedNodes?.startNode; // todo: check;
+    if (selectedNode == null) return;
+    const [pIdx, nodeIdx] = getNodeIndexInTree(
+      newTree,
+      selectedNode.getIndex(),
+    );
 
-    const selectedParagraphClone = [...tree[pIdx]];
+    const selectedParagraphClone = [...newTree[pIdx]];
     const selectedParagraphNode = selectedParagraphClone[0];
     const lastNodeOfSelectedP =
       selectedParagraphClone[selectedParagraphClone.length - 1];
@@ -259,17 +568,19 @@ const useController = (
 
       if (isInsertedAtBegining || isInsertedAtEnd) {
         const slicePostion = isInsertedAtBegining ? nodeIdx : nodeIdx + 1;
-        const pSubTree = tree[pIdx].slice(0, slicePostion);
-        const newPSubTree = [paragraphNode, ...tree[pIdx].slice(slicePostion)];
+        const pSubTree = newTree[pIdx].slice(0, slicePostion);
+        const newPSubTree = [
+          paragraphNode,
+          ...newTree[pIdx].slice(slicePostion),
+        ];
+        const finalTree = [
+          ...newTree.slice(0, pIdx),
+          pSubTree,
+          newPSubTree,
+          ...newTree.slice(pIdx + 1),
+        ];
 
-        setTree(() => {
-          return [
-            ...tree.slice(0, pIdx),
-            pSubTree,
-            newPSubTree,
-            ...tree.slice(pIdx + 1),
-          ];
-        });
+        setTree(finalTree);
 
         if (isInsertedAtBegining) {
           if (newPSubTree[1] != null && newPSubTree[1].getType() == 'text')
@@ -285,7 +596,7 @@ const useController = (
         }
       } else {
         if (text != null) {
-          const pSubTree = tree[pIdx].slice(0, nodeIdx);
+          const pSubTree = newTree[pIdx].slice(0, nodeIdx);
           const newPSubTree = [paragraphNode];
 
           const beforeText = text.slice(0, selection.offset);
@@ -302,19 +613,19 @@ const useController = (
             textNode.setChild(afterText);
             newPSubTree.push(textNode);
           }
-          newPSubTree.push(...tree[pIdx].slice(nodeIdx + 1));
+          newPSubTree.push(...newTree[pIdx].slice(nodeIdx + 1));
 
           if (newPSubTree[1] != null && newPSubTree[1].getType() == 'text')
             nextSelectionNodeIdx = newPSubTree[1].getIndex();
 
-          setTree(() => {
-            return [
-              ...tree.slice(0, pIdx),
-              pSubTree,
-              newPSubTree,
-              ...tree.slice(pIdx + 1),
-            ];
-          });
+          const finalTree = [
+            ...newTree.slice(0, pIdx),
+            pSubTree,
+            newPSubTree,
+            ...newTree.slice(pIdx + 1),
+          ];
+
+          setTree(finalTree);
 
           history.push([
             {
@@ -330,17 +641,16 @@ const useController = (
         }
       }
     } else {
-      const pSubTree = tree[pIdx].slice(0, nodeIdx + 1);
-      const newPSubTree = [paragraphNode, ...tree[pIdx].slice(nodeIdx + 1)];
+      const pSubTree = newTree[pIdx].slice(0, nodeIdx + 1);
+      const newPSubTree = [paragraphNode, ...newTree[pIdx].slice(nodeIdx + 1)];
+      const finalTree = [
+        ...newTree.slice(0, pIdx),
+        pSubTree,
+        newPSubTree,
+        ...newTree.slice(pIdx + 1),
+      ];
 
-      setTree(() => {
-        return [
-          ...tree.slice(0, pIdx),
-          pSubTree,
-          newPSubTree,
-          ...tree.slice(pIdx + 1),
-        ];
-      });
+      setTree(finalTree);
 
       history.push([
         {
@@ -366,11 +676,17 @@ const useController = (
   };
 
   const insertNodeInSelection = (node: EditorNode) => {
-    const selectedNode = getEditorSelectedNode();
-    const selectedNodeOffset = getSelection()?.offset ?? 0;
+    const newTree = removeNodesInSelection();
+    const selectedNodes = getEditorSelectedNode();
+    const selectedNodeOffset = getSelection()?.startSelection?.offset ?? 0; // todo: check
 
-    if (selectedNode != null) {
-      const [subtreeIdx, nodeIdxInTree] = getEditorSelectedNodeIndexInTree();
+    if (selectedNodes?.startNode != null) {
+      const selectedNode = selectedNodes?.startNode; //todo: check
+
+      const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+        newTree,
+        selectedNode.getIndex(),
+      );
       const isInsertAtBeginingOrEndOfTextNode =
         selectedNode.getType() == 'text' &&
         (selectedNodeOffset == (selectedNode as TextNode).getChildLength() ||
@@ -382,17 +698,16 @@ const useController = (
       ) {
         const offset =
           selectedNode.getType() == 'text' && selectedNodeOffset == 0 ? 0 : 1;
-        setTree((tree) => {
-          const newTree = [...tree];
-          const subTree = newTree[subtreeIdx];
-          const newSubTree = [
-            ...subTree.slice(0, nodeIdxInTree + offset),
-            node,
-            ...subTree.slice(nodeIdxInTree + offset),
-          ];
-          newTree[subtreeIdx] = newSubTree;
-          return newTree;
-        });
+
+        // calculating tree
+        const subTree = newTree[subtreeIdx];
+        const newSubTree = [
+          ...subTree.slice(0, nodeIdxInTree + offset),
+          node,
+          ...subTree.slice(nodeIdxInTree + offset),
+        ];
+        newTree[subtreeIdx] = newSubTree;
+        setTree(newTree);
       } else {
         const selectedTextNode = selectedNode as TextNode;
         const text = selectedTextNode.getChildren();
@@ -406,19 +721,17 @@ const useController = (
             return textNode;
           });
 
-          setTree((tree) => {
-            const newTree = [...tree];
-            const subTree = newTree[subtreeIdx];
-            const newSubTree = [
-              ...subTree.slice(0, nodeIdxInTree),
-              before,
-              node,
-              after,
-              ...subTree.slice(nodeIdxInTree + 1),
-            ];
-            newTree[subtreeIdx] = newSubTree;
-            return newTree;
-          });
+          // calculating tree
+          const subTree = newTree[subtreeIdx];
+          const newSubTree = [
+            ...subTree.slice(0, nodeIdxInTree),
+            before,
+            node,
+            after,
+            ...subTree.slice(nodeIdxInTree + 1),
+          ];
+          newTree[subtreeIdx] = newSubTree;
+          setTree(newTree);
 
           history.push([
             {
@@ -440,11 +753,8 @@ const useController = (
       }
     } else {
       // todo: remove: null selection is not meaningful anymore
-      setTree((tree) => {
-        const newTree = [...tree];
-        newTree[0] = [newTree[0][0], node, ...newTree[0].slice(1)];
-        return newTree;
-      });
+      newTree[0] = [newTree[0][0], node, ...newTree[0].slice(1)];
+      setTree(newTree);
     }
 
     history.pushAndCommit([
@@ -473,8 +783,13 @@ const useController = (
   };
 
   const getEditorSelectedNode = () => {
-    const nodeIndex = getSelection()?.nodeIndex;
-    return getNodeInTreeByIndex(nodeIndex);
+    const selection = getSelection();
+    if (selection == null) return null;
+    const startNodeIndex = selection.startSelection.nodeIndex;
+    const startNode = getNodeInTreeByIndex(startNodeIndex);
+    const endNodeIndex = selection.endSelection.nodeIndex;
+    const endNode = getNodeInTreeByIndex(endNodeIndex);
+    return { startNode, endNode };
   };
 
   const getNodeInTreeByIndex = (nodeIndex: number | undefined) => {
@@ -482,33 +797,16 @@ const useController = (
     return tree.flat().find((node) => node.getIndex() == nodeIndex) ?? null;
   };
 
-  const getEditorSelectedNodeIndexInTree = () => {
-    const subtreeIdx = tree.findIndex((subtree) =>
-      subtree.find((t) => t.getIndex() == getSelection()?.nodeIndex),
-    );
-
-    if (subtreeIdx == -1) return [-1, -1];
-    const nodeIdx = tree[subtreeIdx].findIndex(
-      (node) => node.getIndex() == getSelection()?.nodeIndex,
-    );
-
-    return [subtreeIdx, nodeIdx];
-  };
-
-  const getSelectedParagraphIndexInTree = () => {
-    const selection = getSelection();
-    if (selection == null) return 0;
-    const [subTreeIdx] = getEditorSelectedNodeIndexInTree();
-    return subTreeIdx;
-  };
-
   useLayoutEffect(() => {
     let selection = getSelection();
-    const selectedNode = getEditorSelectedNode();
+    const selectedNodes = getEditorSelectedNode();
+    // todo: check
     const nextSelectedNode =
-      selectedNode != null ? getNextNode(tree, selectedNode) : null;
+      selectedNodes?.startNode != null
+        ? getNextNode(tree, selectedNodes?.startNode)
+        : null;
     if (
-      selectedNode?.getType() == 'emoji' &&
+      selectedNodes?.startNode?.getType() == 'emoji' &&
       nextSelectedNode?.getType() == 'text'
     ) {
       setSelection({
@@ -518,16 +816,29 @@ const useController = (
     }
 
     selection = getSelection();
-    if (selection != null) {
-      const nodeIndex = selection.nodeIndex;
-      const node = getEditorSelectedNode();
-      let nodeElement = document.querySelectorAll(
-        `[data-node-index="${nodeIndex}"]`,
-      )?.[0] as Element | null;
+    if (selection == null) return;
+
+    const { startSelection, endSelection } = selection;
+    if (isEditorSelectionCollapsed(selection)) {
+      const nodeIndex = startSelection.nodeIndex;
+      const selectedNodes = getEditorSelectedNode();
+      const nodeElement = getDomNodeByNodeIndex(nodeIndex);
       if (nodeElement == null) return;
 
-      if (node?.isTextNode()) setCaretPosition(nodeElement, selection.offset);
+      if (selectedNodes?.startNode?.isTextNode())
+        setCaretPosition(nodeElement, startSelection.offset);
       else setCaretAfter(nodeElement);
+    } else {
+      const selectedNodes = getEditorSelectedNode();
+      const startNode = selectedNodes?.startNode;
+      const endNode = selectedNodes?.endNode;
+      if (startNode == null || endNode == null) return;
+      selectRangeInDom(
+        startNode,
+        startSelection.offset,
+        endNode,
+        endSelection.offset,
+      );
     }
   }, [tree]);
 
