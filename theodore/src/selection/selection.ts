@@ -56,6 +56,18 @@ export function setCaretPosition(element: Node, position: number) {
     }
   }
 
+  // this case happens when you select a range [text, emoji] and enter and emoji,
+  // the text node will remain but it is empty
+  if (element.childNodes.length == 0) {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.setStart(element, 0);
+    range.collapse();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    return -1;
+  }
+
   return position;
 }
 
