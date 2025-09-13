@@ -74,12 +74,13 @@ export const getNodeTextContentLength = (node: Node): number => {
 };
 
 export const convertRangeBoundyPointToParagraphBoundaryPoint = (
-  range: Range,
+  container: Node,
+  initialOffset: number,
 ) => {
-  const startOffset = range.startOffset;
-  let startContainer = range.startContainer;
+  const startOffset = initialOffset;
+  let startContainer = container;
   let node = startContainer;
-  let offset = range.startOffset;
+  let offset = initialOffset;
 
   if (node.nodeType == Node.TEXT_NODE && node.parentNode != null) {
     const spanParentNode = node.parentNode;
@@ -114,3 +115,4 @@ export const convertRangeBoundyPointToParagraphBoundaryPoint = (
 };
 
 export const isTextNode = (node: Node) => node.nodeType == Node.TEXT_NODE;
+export const isDevelopment = process.env.NODE_ENV == 'development';

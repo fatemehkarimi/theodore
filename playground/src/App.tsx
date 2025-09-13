@@ -45,12 +45,6 @@ const App = () => {
     selectionPreviewRef.current?.onSelectionUpdate(newSelection);
   }, []);
 
-  const listeners = useMemo(() => {
-    return {
-      onSelectionChange: handleOnSelectionChange,
-    };
-  }, [handleOnSelectionChange]);
-
   return (
     <div className={styles.container}>
       <div className={styles.editorWrapper}>
@@ -58,7 +52,7 @@ const App = () => {
           className={styles.editor}
           ref={theodoreRef}
           renderEmoji={renderEmoji}
-          listeners={listeners}
+          onSelectionChange={handleOnSelectionChange}
         />
         <Picker
           data={appleEmojisData}
@@ -85,7 +79,22 @@ const SelectionPreview = React.forwardRef<{
     };
   }, []);
 
-  return <div className={styles.selection}>{JSON.stringify(selection)}</div>;
+  return (
+    <div className={styles.selection}>
+      <span>
+        start:{' '}
+        {selection?.startSelection == null
+          ? 'null'
+          : JSON.stringify(selection?.startSelection)}
+      </span>
+      <span>
+        end:{' '}
+        {selection?.startSelection == null
+          ? 'null'
+          : JSON.stringify(selection?.endSelection)}
+      </span>
+    </div>
+  );
 });
 
 export default App;
