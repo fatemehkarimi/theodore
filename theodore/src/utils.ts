@@ -76,7 +76,7 @@ export const getNodeTextContentLength = (node: Node): number => {
 export const convertRangeBoundyPointToParagraphBoundaryPoint = (
   container: Node,
   initialOffset: number,
-) => {
+): { node: Node; offset: number } => {
   const startOffset = initialOffset;
   let startContainer = container;
   let node = startContainer;
@@ -94,9 +94,10 @@ export const convertRangeBoundyPointToParagraphBoundaryPoint = (
     return { node: pNode as Node, offset };
   }
 
-  /*  firefox differs from chrome and safari in startContainer. in chrome and safari,
+  /* firefox differs from chrome and safari in startContainer. in chrome and safari,
       the start container is the P tag, but in firefox it is the span. here we convert
-      firefox range to chrome range */
+      firefox range to chrome range.
+    */
   if (!isPTag(node)) {
     node = node.parentNode as HTMLElement;
     const indexOfChild = Array.from(node.childNodes).findIndex(

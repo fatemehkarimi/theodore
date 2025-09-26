@@ -1,5 +1,5 @@
 import { getDomNodeByNodeIndex } from '../controller/utils';
-import { EditorNodeSelection as EditorSelection } from '../types';
+import type { EditorNodeSelection as EditorSelection, Tree } from '../types';
 import { Node as EditorNode } from '../nodes/Node';
 import {
   convertRangeBoundyPointToParagraphBoundaryPoint,
@@ -285,6 +285,56 @@ export const convertDomSelectionToEditorSelection = (
 ): EditorSelection => {
   let node = container;
   let offset = initialOffset;
+
+  /* on firefox, when pressing ctrl + a, the entire editor is the start container node.
+  this behavior is different from chrome and safari.
+  */
+  const hasNodeIndex =
+    node.nodeType == Node.TEXT_NODE
+      ? true
+      : (node as HTMLElement)?.dataset?.nodeIndex != undefined;
+  if (!hasNodeIndex) {
+    const editorChildren = Array.from(container.childNodes);
+    if (initialOffset == 0) {
+      const pNodeIdx = (editorChildren[0] as HTMLElement)?.dataset?.nodeIndex;
+      if (pNodeIdx == null) return null;
+      return {
+        nodeIndex: Number(pNodeIdx),
+        offset: 0,
+      };
+    }
+
+    const lastNode = editorChildren[offset - 1];
+    const lastNodeNodeIndex = (lastNode as HTMLElement)?.dataset?.nodeIndex;
+    const childrenOfPNode = Array.from(lastNode.childNodes);
+    const lastChild = childrenOfPNode[childrenOfPNode.length - 1]; // span or br
+    if (lastChild.nodeName == 'BR') {
+      if (lastNodeNodeIndex != undefined)
+        return {
+          nodeIndex: Number(lastNodeNodeIndex),
+          offset: 0,
+        };
+      else return null;
+    }
+
+    const lastChildNodeIndex = (lastChild as HTMLElement)?.dataset?.nodeIndex;
+    if (lastChildNodeIndex == null) return null;
+    const lastChildContent = lastChild.childNodes[0];
+
+    if (
+      lastChildContent != undefined &&
+      lastChildContent.nodeType == Node.TEXT_NODE
+    ) {
+      return {
+        nodeIndex: Number(lastChildNodeIndex),
+        offset: lastChildContent.textContent?.length ?? 0,
+      };
+    } else
+      return {
+        nodeIndex: Number(lastChildNodeIndex),
+        offset: 0,
+      };
+  }
 
   if (node.nodeType == Node.ELEMENT_NODE) {
     const pBounrayPoint = convertRangeBoundyPointToParagraphBoundaryPoint(
