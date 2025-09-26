@@ -1,5 +1,11 @@
 import type { Node } from '../../nodes/Node';
-import type { Tree } from '../../types';
+import type { SelectionDesc, Tree } from '../../types';
+
+export const ALWAYS_IN_DOM_NODE_INDEX = 1;
+export const ALWAYS_IN_DOM_NODE_SELECTION = {
+  nodeIndex: ALWAYS_IN_DOM_NODE_INDEX,
+  offset: 0,
+};
 
 export function getNode(
   tree: readonly Node[][] | null,
@@ -90,7 +96,7 @@ export const findNode = (tree: Tree, nodeIndex: number | undefined) => {
 export const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
   if (nodeIndex == undefined) return null;
   const [pIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
-
+  if (pIdx == -1 || nodeIdx == -1) return null;
   if (nodeIdx + 1 < tree[pIdx].length) {
     return tree[pIdx][nodeIdx + 1];
   } else if (pIdx + 1 < tree.length) {
@@ -99,8 +105,66 @@ export const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
   return null;
 };
 
+export const findNodeBefore = (tree: Tree, nodeIndex: number | undefined) => {
+  if (nodeIndex == undefined) return null;
+  const [pIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
+  if (pIdx == -1 || nodeIdx == -1) return null;
+  if (nodeIdx - 1 >= 0) {
+    return tree[pIdx][nodeIdx - 1];
+  }
+  if (tree.length > 1) {
+    return tree[pIdx - 1][tree[pIdx - 1].length - 1];
+  }
+  return null;
+};
+
 export const getDomNodeByNodeIndex = (nodeIndex: number) => {
   return document.querySelectorAll(
     `[data-node-index="${nodeIndex}"]`,
   )?.[0] as Element | null;
+};
+
+export const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {
+  const [subTreeIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
+  const newTree = [...tree];
+  newTree[subTreeIdx] = [
+    ...tree[subTreeIdx].slice(0, nodeIdx),
+    ...tree[subTreeIdx].slice(nodeIdx + 1),
+  ];
+  return newTree;
+};
+
+export const getSelectionAfterNodeRemove = (
+  tree: Tree,
+  nodeIndex: number,
+): SelectionDesc => {
+  const prevNode = findNodeBefore(tree, nodeIndex);
+  if (prevNode) {
+    if (prevNode.isTextNode())
+      return {
+        nodeIndex: prevNode.getIndex(),
+        offset: prevNode.getChildLength(),
+      };
+    /*else if (prevNode.getType() == 'paragraph') {
+      const pIdx = getParagraphIndexInTree(tree, prevNode.getIndex());
+      if (pIdx == -1) return ALWAYS_IN_DOM_NODE_SELECTION;
+      const p = tree[pIdx];
+      if (p.length == 1)
+        return {
+          nodeIndex: prevNode.getIndex(),
+          offset: 0,
+        };
+      const lastChildOfPrevNode = p[p.length - 1];
+      return {
+        nodeIndex: lastChildOfPrevNode.getIndex(),
+        offset: lastChildOfPrevNode.isTextNode()
+          ? lastChildOfPrevNode.getChildLength()
+          : 0,
+      };
+    }*/ else
+      return {
+        nodeIndex: prevNode.getIndex(),
+        offset: 0,
+      };
+  } else return ALWAYS_IN_DOM_NODE_SELECTION;
 };

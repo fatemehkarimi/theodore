@@ -25,3 +25,13 @@ export type TextNodeDesc = {
 };
 
 export type Tree = EditorNode[][];
+
+export type History = {
+  command: string;
+  nodeIndex: number;
+  prevState: string | TextNodeDesc | (EditorNode | EditorNode[])[] | null;
+  transactionId: number;
+  selection: EditorSelection;
+  prevNodeIndexInTree?: number;
+  nextNodeIndexInTree?: number;
+};

@@ -1,16 +1,5 @@
 import { useRef } from 'react';
-import { Node as EditorNode } from '../nodes/Node';
-import type { EditorSelection, Optional, TextNodeDesc } from '../types';
-
-type History = {
-  command: string;
-  nodeIndex: number;
-  prevState: string | TextNodeDesc | (EditorNode | EditorNode[])[] | null;
-  transactionId: number;
-  selection: EditorSelection;
-  prevNodeIndexInTree?: number;
-  nextNodeIndexInTree?: number;
-};
+import type { EditorSelection, History, Optional } from '../types';
 
 type pushFn = (
   newHistory: Optional<Omit<History, 'transactionId'>, 'selection'>[],
@@ -51,7 +40,7 @@ const useHistory = (getSelection: () => EditorSelection) => {
     return history.current[history.current.length - 1];
   };
 
-  return { top, pop, push, pushAndCommit };
+  return { top, pop, push, pushAndCommit, commit };
 };
 
 export { useHistory };
