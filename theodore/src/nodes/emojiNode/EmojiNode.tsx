@@ -34,4 +34,4 @@ class EmojiNode extends Node {
   }
 }
 
-export default EmojiNode;
+export { EmojiNode };

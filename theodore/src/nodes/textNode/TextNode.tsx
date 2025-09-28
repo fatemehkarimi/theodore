@@ -58,4 +58,4 @@ class TextNode extends Node {
   }
 }
 
-export default TextNode;
+export { TextNode };

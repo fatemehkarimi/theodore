@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { Node as EditorNode } from './nodes/Node';
+import { HistoryHandle } from './controller/useHistory';
 
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type TheodoreHandle = {
@@ -26,7 +27,7 @@ export type TextNodeDesc = {
 
 export type Tree = EditorNode[][];
 
-export type History = {
+export type HistoryCommand = {
   command: string;
   nodeIndex: number;
   prevState: string | TextNodeDesc | (EditorNode | EditorNode[])[] | null;
@@ -35,3 +36,15 @@ export type History = {
   prevNodeIndexInTree?: number;
   nextNodeIndexInTree?: number;
 };
+export type HistoryStack = HistoryCommand[];
+
+export type EditorState = {
+  tree: Tree;
+  historyHandle: HistoryHandle;
+};
+
+export type onEditorStateChangeFn = (
+  newTree: Tree,
+  newHistory: HistoryStack,
+  newSelection: EditorSelection,
+) => void;

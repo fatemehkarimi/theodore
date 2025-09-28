@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 type NodeType = 'text' | 'emoji' | 'paragraph';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
-export class Node {
+class Node {
   protected type: NodeType = 'text';
   protected style: NodeStyle[] = [];
 
@@ -39,3 +39,5 @@ export class Node {
     return ['text', 'mention'].includes(this.getType());
   }
 }
+
+export { Node };

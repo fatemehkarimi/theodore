@@ -1,2 +1,7 @@
 export { Theodore } from './component/Theodore';
-export type { TheodoreHandle, EditorSelection as Selection } from './types';
+export { useEditorState } from './controller/useEditorState';
+export type {
+  TheodoreHandle,
+  EditorSelection as Selection,
+  onEditorStateChangeFn as onTreeChangeFn,
+} from './types';

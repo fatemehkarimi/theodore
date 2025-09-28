@@ -26,4 +26,4 @@ class ParagraphNode extends Node {
   }
 }
 
-export default ParagraphNode;
+export { ParagraphNode };

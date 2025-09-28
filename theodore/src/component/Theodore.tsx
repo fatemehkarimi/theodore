@@ -1,6 +1,8 @@
 import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { useController } from '../controller/useController';
 import type {
+  EditorState,
+  onEditorStateChangeFn,
   onSelectionChangeFn,
   RenderEmoji,
   TheodoreHandle,
@@ -11,20 +13,23 @@ type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
   'contentEditable'
 > & {
+  editorState: EditorState;
   renderEmoji: RenderEmoji;
+  onStateChange?: onEditorStateChangeFn;
   onSelectionChange?: onSelectionChangeFn;
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
-  ({ className, renderEmoji, onSelectionChange, ...props }, ref) => {
+  (
+    { editorState, renderEmoji, onSelectionChange, className, ...props },
+    ref,
+  ) => {
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const { tree } = editorState;
     const {
-      tree,
       insertEmoji,
       insertNewParagraph,
       handlers: { handleKeyDown, handleSelectionChange },
-    } = useController(inputRef, renderEmoji, {
-      onSelectionChange: onSelectionChange,
-    });
+    } = useController(editorState, inputRef, renderEmoji, onSelectionChange);
 
     useImperativeHandle(ref, () => {
       return {

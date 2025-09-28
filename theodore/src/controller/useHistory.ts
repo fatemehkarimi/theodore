@@ -1,46 +1,87 @@
 import { useRef } from 'react';
-import type { EditorSelection, History, Optional } from '../types';
+import type {
+  EditorSelection,
+  HistoryCommand,
+  HistoryStack,
+  Optional,
+} from '../types';
 
-type pushFn = (
-  newHistory: Optional<Omit<History, 'transactionId'>, 'selection'>[],
-) => void;
-const useHistory = (getSelection: () => EditorSelection) => {
-  const history = useRef<History[]>([]);
-  const transactionIdRef = useRef<number>(0);
+class History {
+  private stack: HistoryStack = [];
+  private transactionId: number = 0;
 
-  const pop = () => {
-    return history.current.pop();
-  };
+  constructor(private getSelection: () => EditorSelection) {}
 
-  const push: pushFn = (newHistory) => {
-    const transactionId = assignTransactionId();
-    history.current.push(
+  assignTransactionId() {
+    return this.transactionId;
+  }
+
+  commit() {
+    this.transactionId += 1;
+  }
+
+  pop() {
+    return this.stack.pop();
+  }
+
+  push(
+    newHistory: Optional<Omit<HistoryCommand, 'transactionId'>, 'selection'>[],
+  ) {
+    const transactionId = this.assignTransactionId();
+    this.stack.push(
       ...newHistory.map((h) => ({
         ...h,
         transactionId,
-        selection: h.selection != undefined ? h.selection : getSelection(),
+        selection: h.selection != undefined ? h.selection : this.getSelection(),
       })),
     );
+  }
+
+  pushAndCommit(
+    newHistory: Optional<Omit<HistoryCommand, 'transactionId'>, 'selection'>[],
+  ) {
+    this.push(newHistory);
+    this.commit();
+  }
+
+  top() {
+    return this.stack[this.stack.length - 1];
+  }
+
+  setHistoryStack(historyStack: HistoryStack) {
+    this.stack = historyStack;
+  }
+
+  getHistoryStack() {
+    return this.stack;
+  }
+
+  setTransactionId(transactionId: number) {
+    this.transactionId = transactionId;
+  }
+
+  clone() {
+    const newHistory = new History(this.getSelection);
+    newHistory.setHistoryStack([...this.stack]);
+    newHistory.setTransactionId(this.transactionId);
+    return newHistory;
+  }
+}
+
+export interface HistoryHandle {
+  clone(): History;
+}
+
+const useHistory = (getSelection: () => EditorSelection): HistoryHandle => {
+  const historyRef = useRef<History>(new History(getSelection));
+
+  const clone = () => {
+    return historyRef.current.clone();
   };
 
-  const pushAndCommit: pushFn = (newHistory) => {
-    push(newHistory);
-    commit();
+  return {
+    clone,
   };
-
-  const assignTransactionId = () => {
-    return transactionIdRef.current;
-  };
-
-  const commit = () => {
-    transactionIdRef.current += 1;
-  };
-
-  const top = () => {
-    return history.current[history.current.length - 1];
-  };
-
-  return { top, pop, push, pushAndCommit, commit };
 };
 
 export { useHistory };
