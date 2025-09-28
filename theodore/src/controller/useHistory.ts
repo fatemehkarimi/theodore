@@ -6,7 +6,7 @@ import type {
   Optional,
 } from '../types';
 
-class History {
+export class History {
   private stack: HistoryStack = [];
   private transactionId: number = 0;
 

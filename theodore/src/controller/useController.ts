@@ -23,6 +23,7 @@ import {
 } from '../selection/selection';
 import type {
   EditorState,
+  onEditorStateChangeFn,
   onSelectionChangeFn,
   RenderEmoji,
   TextNodeDesc,
@@ -60,9 +61,10 @@ const useController = (
   editorState: EditorState,
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
+  onEditorStateChange?: onEditorStateChangeFn,
   onSelectionChange?: onSelectionChangeFn,
 ) => {
-  const { tree, setTree, historyHandle } = editorState;
+  const { tree: _tree, historyHandle } = editorState;
   const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
@@ -70,143 +72,141 @@ const useController = (
     let delegateHandleToBrowser = false;
 
     if (event.ctrlKey && key == 'z') {
-      if (tree == null) return;
+      const treeClone = [..._tree];
+      if (treeClone == null) return;
       let transactionId = undefined;
       const historyClone = historyHandle.clone();
+      let newSelection = undefined;
+      let newTree = treeClone;
+
       do {
         const prevState = historyClone.pop();
         if (prevState == null) return;
         if (transactionId == undefined) transactionId = prevState.transactionId;
-        setTree((tree) => {
-          if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
+        if (treeClone.length <= 1 && treeClone[0]?.[0]?.getIndex() == 0)
+          return treeClone;
 
-          if (prevState.command == COMMAND_REMOVE_NODE) {
-            const prevNode = prevState.prevNodeIndexInTree;
-            const nextNode = prevState.nextNodeIndexInTree;
+        if (prevState.command == COMMAND_REMOVE_NODE) {
+          const prevNode = prevState.prevNodeIndexInTree;
+          const nextNode = prevState.nextNodeIndexInTree;
 
-            const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
-              tree,
-              prevNode,
-            );
-            const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
-              tree,
-              nextNode,
-            );
+          const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
+            treeClone,
+            prevNode,
+          );
+          const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
+            treeClone,
+            nextNode,
+          );
 
-            if (prevNodeIdx == -1) return tree;
-            const newTree = tree.slice(0, prevNodePIdx);
+          if (prevNodeIdx == -1) return treeClone;
+          newTree = treeClone.slice(0, prevNodePIdx);
 
-            const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
-            let newStartPAppended = false;
+          const newStartP = treeClone[prevNodePIdx].slice(0, prevNodeIdx + 1);
+          let newStartPAppended = false;
 
-            const deletedNodes = prevState.prevState as (
-              | EditorNode
-              | EditorNode[]
-            )[];
-            for (const node of deletedNodes) {
-              if (Array.isArray(node)) {
-                if (node.length == 0) continue;
-                const firstNode = node[0];
-                if (firstNode.getType() == 'paragraph') {
-                  if (!newStartPAppended) {
-                    newTree.push(newStartP);
-                    newStartPAppended = true;
-                  }
-                  newTree.push(node);
-                } else newStartP.push(...node);
-              } else if (node.getType() == 'paragraph') {
+          const deletedNodes = prevState.prevState as (
+            | EditorNode
+            | EditorNode[]
+          )[];
+          for (const node of deletedNodes) {
+            if (Array.isArray(node)) {
+              if (node.length == 0) continue;
+              const firstNode = node[0];
+              if (firstNode.getType() == 'paragraph') {
                 if (!newStartPAppended) {
                   newTree.push(newStartP);
                   newStartPAppended = true;
                 }
-                newTree.push([node]);
-              } else if (!newStartPAppended) {
-                newStartP.push(node);
-              } else newTree[newTree.length - 1].push(node);
-            }
-
-            if (!newStartPAppended) newTree.push(newStartP);
-            if (nextNodeIdx != -1) {
-              const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
-              const firstNode =
-                remainingNodes.length > 0 ? remainingNodes[0] : null;
-              if (firstNode != null && firstNode.getType() == 'paragraph')
-                newTree.push(remainingNodes);
-              else newTree[newTree.length - 1].push(...remainingNodes);
-              newTree.push(...tree.slice(nextNodePIdx + 1));
-            }
-            return newTree;
+                newTree.push(node);
+              } else newStartP.push(...node);
+            } else if (node.getType() == 'paragraph') {
+              if (!newStartPAppended) {
+                newTree.push(newStartP);
+                newStartPAppended = true;
+              }
+              newTree.push([node]);
+            } else if (!newStartPAppended) {
+              newStartP.push(node);
+            } else newTree[newTree.length - 1].push(node);
           }
 
+          if (!newStartPAppended) newTree.push(newStartP);
+          if (nextNodeIdx != -1) {
+            const remainingNodes = treeClone[nextNodePIdx].slice(nextNodeIdx);
+            const firstNode =
+              remainingNodes.length > 0 ? remainingNodes[0] : null;
+            if (firstNode != null && firstNode.getType() == 'paragraph')
+              newTree.push(remainingNodes);
+            else newTree[newTree.length - 1].push(...remainingNodes);
+            newTree.push(...treeClone.slice(nextNodePIdx + 1));
+          }
+        } else {
           if (prevState.command == COMMAND_INSERT_PARAGRAPH_AFTER) {
-            if (prevState.prevState == null) return tree;
+            if (prevState.prevState == null) return treeClone;
             if (prevState.prevNodeIndexInTree == undefined)
-              return [prevState.prevState as EditorNode[], ...tree];
+              return [prevState.prevState as EditorNode[], ...treeClone];
             const basePIdx = getParagraphIndexInTree(
-              tree,
+              treeClone,
               prevState.prevNodeIndexInTree,
             );
 
-            const newTree = tree.slice(0, basePIdx + 1);
+            newTree = treeClone.slice(0, basePIdx + 1);
             newTree.push(prevState.prevState as EditorNode[]);
-            newTree.push(...tree.slice(basePIdx + 1));
+            newTree.push(...treeClone.slice(basePIdx + 1));
+          } else {
+            newTree = treeClone
+              .map((subTree) => {
+                const pNode = subTree[0];
+                if (
+                  pNode.getIndex() == prevState.nodeIndex &&
+                  prevState.command == COMMAND_REPLACE_PARAGRAPH
+                ) {
+                  if (prevState.prevState != null) {
+                    const prevNodes = prevState.prevState as EditorNode[];
+                    return prevNodes;
+                  }
+                } else if (
+                  pNode.getIndex() == prevState.nodeIndex &&
+                  prevState.command == COMMAND_INSERT_PARAGRAPH
+                )
+                  return [];
 
-            return newTree;
+                return subTree
+                  .map((node) => {
+                    if (node.getIndex() == prevState.nodeIndex) {
+                      if (prevState.command == COMMAND_INSERT_TEXT) {
+                        if (prevState.prevState != null && node.isTextNode()) {
+                          (node as TextNode).setChild(
+                            prevState.prevState as string,
+                          );
+                          return node;
+                        } else return null;
+                      } else if (prevState.command == COMMAND_REPLACE_TEXT) {
+                        if (prevState.prevState != null) {
+                          const newNode = TextNode.fromDescriptor(
+                            prevState.prevState as TextNodeDesc,
+                          );
+                          // we keep the original node because it may be in the
+                          // history of other commands
+                          const newText = newNode.getChildren();
+                          if (newText != null)
+                            (node as TextNode).setChild(newText);
+                          return node;
+                        } else return null;
+                      } else return null;
+                    } else return node;
+                  })
+                  .filter((node) => node != null);
+              })
+              .filter((subTree) => subTree.length > 0);
           }
+        }
 
-          const newTree = tree
-            .map((subTree) => {
-              const pNode = subTree[0];
-              if (
-                pNode.getIndex() == prevState.nodeIndex &&
-                prevState.command == COMMAND_REPLACE_PARAGRAPH
-              ) {
-                if (prevState.prevState != null) {
-                  const prevNodes = prevState.prevState as EditorNode[];
-                  return prevNodes;
-                }
-              } else if (
-                pNode.getIndex() == prevState.nodeIndex &&
-                prevState.command == COMMAND_INSERT_PARAGRAPH
-              )
-                return [];
-
-              return subTree
-                .map((node) => {
-                  if (node.getIndex() == prevState.nodeIndex) {
-                    if (prevState.command == COMMAND_INSERT_TEXT) {
-                      if (prevState.prevState != null && node.isTextNode()) {
-                        (node as TextNode).setChild(
-                          prevState.prevState as string,
-                        );
-                        return node;
-                      } else return null;
-                    } else if (prevState.command == COMMAND_REPLACE_TEXT) {
-                      if (prevState.prevState != null) {
-                        const newNode = TextNode.fromDescriptor(
-                          prevState.prevState as TextNodeDesc,
-                        );
-                        // we keep the original node because it may be in the
-                        // history of other commands
-                        const newText = newNode.getChildren();
-                        if (newText != null)
-                          (node as TextNode).setChild(newText);
-                        return node;
-                      } else return null;
-                    } else return null;
-                  } else return node;
-                })
-                .filter((node) => node != null);
-            })
-            .filter((subTree) => subTree.length > 0);
-          return newTree;
-        });
-        if (prevState.selection != null)
-          setSelection(
-            prevState.selection?.startSelection,
-            prevState.selection?.endSelection,
-          );
+        newSelection =
+          prevState.selection != null ? prevState.selection : undefined;
       } while (transactionId == historyClone.top()?.transactionId);
+      onEditorStateChange?.(newTree, historyClone, newSelection);
       return;
     }
 

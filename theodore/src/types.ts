@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { Node as EditorNode } from './nodes/Node';
-import { HistoryHandle } from './controller/useHistory';
+import { History, HistoryHandle } from './controller/useHistory';
 
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type TheodoreHandle = {
@@ -45,6 +45,6 @@ export type EditorState = {
 
 export type onEditorStateChangeFn = (
   newTree: Tree,
-  newHistory: HistoryStack,
-  newSelection: EditorSelection,
+  newHistory?: History,
+  newSelection?: EditorSelection,
 ) => void;
