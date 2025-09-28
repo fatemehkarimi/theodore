@@ -16,6 +16,10 @@ export type EditorSelection = {
   startSelection: SelectionDesc;
   endSelection: SelectionDesc;
 } | null;
+export type EditorSelectionChangeEvent = Optional<
+  NonNullable<EditorSelection>,
+  'endSelection'
+> | null;
 export type RenderEmoji = (emoji: string) => ReactElement;
 export type onSelectionChangeFn = (selection: EditorSelection) => void;
 
@@ -41,10 +45,11 @@ export type HistoryStack = HistoryCommand[];
 export type EditorState = {
   tree: Tree;
   historyHandle: HistoryHandle;
+  getSelection: () => EditorSelection;
 };
 
 export type onEditorStateChangeFn = (
   newTree: Tree,
   newHistory?: History,
-  newSelection?: EditorSelection,
+  selectionChangeEvent?: EditorSelectionChangeEvent,
 ) => void;

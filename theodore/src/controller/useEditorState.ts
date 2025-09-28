@@ -35,6 +35,7 @@ export const useEditorState = (onSelectionChange?: onSelectionChangeFn) => {
   return {
     tree,
     historyHandle,
+    getSelection,
     onEditorStateChange,
   };
 };

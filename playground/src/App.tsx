@@ -25,12 +25,16 @@ const renderEmoji = (emoji: string) => {
 };
 
 const App = () => {
-  const editorState = useEditorState();
-  const theodoreRef = useRef<TheodoreHandle>(null);
-
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: Selection) => void;
   }>(null);
+
+  const handleOnSelectionChange = useCallback((newSelection: Selection) => {
+    selectionPreviewRef.current?.onSelectionUpdate(newSelection);
+  }, []);
+
+  const editorState = useEditorState(handleOnSelectionChange);
+  const theodoreRef = useRef<TheodoreHandle>(null);
 
   const handleSelectEmoji = (emoji: {
     id: string;
@@ -44,10 +48,6 @@ const App = () => {
       theodoreRef.current.insertEmoji(emoji.native);
     }
   };
-
-  const handleOnSelectionChange = useCallback((newSelection: Selection) => {
-    selectionPreviewRef.current?.onSelectionUpdate(newSelection);
-  }, []);
 
   const handleOnStateChange: onTreeChangeFn = useCallback(
     (newTree, newHistory, newSelection) => {
@@ -64,7 +64,6 @@ const App = () => {
           className={styles.editor}
           ref={theodoreRef}
           renderEmoji={renderEmoji}
-          onSelectionChange={handleOnSelectionChange}
           onStateChange={handleOnStateChange}
         />
         <Picker

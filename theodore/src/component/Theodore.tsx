@@ -16,20 +16,16 @@ type Props = Omit<
   editorState: EditorState;
   renderEmoji: RenderEmoji;
   onStateChange?: onEditorStateChangeFn;
-  onSelectionChange?: onSelectionChangeFn;
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
-  (
-    { editorState, renderEmoji, onSelectionChange, className, ...props },
-    ref,
-  ) => {
+  ({ editorState, renderEmoji, onStateChange, className, ...props }, ref) => {
     const inputRef = useRef<HTMLDivElement | null>(null);
     const { tree } = editorState;
     const {
       insertEmoji,
       insertNewParagraph,
       handlers: { handleKeyDown, handleSelectionChange },
-    } = useController(editorState, inputRef, renderEmoji, onSelectionChange);
+    } = useController(editorState, inputRef, renderEmoji);
 
     useImperativeHandle(ref, () => {
       return {

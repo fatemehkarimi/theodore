@@ -62,9 +62,8 @@ const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
   onEditorStateChange?: onEditorStateChangeFn,
-  onSelectionChange?: onSelectionChangeFn,
 ) => {
-  const { tree: _tree, historyHandle } = editorState;
+  const { tree: _tree, getSelection, historyHandle } = editorState;
   const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
@@ -224,7 +223,7 @@ const useController = (
     if (!delegateHandleToBrowser) event.preventDefault();
   };
 
-  const handleInsertText = (text: string) => {
+  const handleInsertText = (text: string): void => {
     const newTree = removeNodesInSelection();
     const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
     const historyClone = historyHandle.clone();
@@ -234,31 +233,28 @@ const useController = (
       textNode.setChild(text);
       const selection = getSelection();
 
-      setTree(() => {
-        const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
-          newTree,
-          node?.getIndex(),
-        );
-        const finalTree = [...newTree];
-        if (subtreeIdx == -1 || selection == null) {
-          const newSubTree = [
-            finalTree[0][0],
-            textNode,
-            ...finalTree[0].slice(1),
-          ];
-          finalTree[0] = newSubTree;
-          return finalTree;
-        }
-
-        const subtree = finalTree[subtreeIdx];
-        const newsubTree = [
-          ...subtree.slice(0, nodeIdxInTree + 1),
+      const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+        newTree,
+        node?.getIndex(),
+      );
+      const finalTree = [...newTree];
+      if (subtreeIdx == -1 || selection == null) {
+        const newSubTree = [
+          finalTree[0][0],
           textNode,
-          ...subtree.slice(nodeIdxInTree + 1),
+          ...finalTree[0].slice(1),
         ];
-        finalTree[subtreeIdx] = newsubTree;
-        return finalTree;
-      });
+        finalTree[0] = newSubTree;
+      }
+
+      const subtree = finalTree[subtreeIdx];
+      const newsubTree = [
+        ...subtree.slice(0, nodeIdxInTree + 1),
+        textNode,
+        ...subtree.slice(nodeIdxInTree + 1),
+      ];
+      finalTree[subtreeIdx] = newsubTree;
+
       historyClone.pushAndCommit([
         {
           command: COMMAND_INSERT_TEXT,
@@ -266,9 +262,11 @@ const useController = (
           prevState: null,
         },
       ]);
-      setSelection({
-        nodeIndex: textNode.getIndex(),
-        offset: textNode.getChildLength(),
+      onEditorStateChange?.(finalTree, historyClone, {
+        startSelection: {
+          nodeIndex: textNode.getIndex(),
+          offset: textNode.getChildLength(),
+        },
       });
     } else if (node.getType() == 'text') {
       const textNode = node as TextNode;
@@ -284,11 +282,8 @@ const useController = (
       textNode.insertText(text, offset);
       const subTreeIdx = getParagraphIndexInTree(newTree, selectedNode);
 
-      setTree(() => {
-        const finalTree = [...newTree];
-        finalTree[subTreeIdx] = [...newTree[subTreeIdx]];
-        return finalTree;
-      });
+      const finalTree = [...newTree];
+      finalTree[subTreeIdx] = [...newTree[subTreeIdx]];
 
       historyClone.pushAndCommit([
         {
@@ -297,9 +292,11 @@ const useController = (
           prevState: prevText,
         },
       ]);
-      setSelection({
-        nodeIndex: textNode.getIndex(),
-        offset: offset + text.length,
+      onEditorStateChange?.(finalTree, historyClone, {
+        startSelection: {
+          nodeIndex: textNode.getIndex(),
+          offset: offset + text.length,
+        },
       });
     }
 
