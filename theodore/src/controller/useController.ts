@@ -56,6 +56,7 @@ import {
   getSelectionAfterNodeRemove,
   removeNodeFromTree,
 } from './utils';
+import { History } from './useHistory';
 
 const useController = (
   editorState: EditorState,
@@ -316,8 +317,7 @@ const useController = (
 
     const isCollapsed = isEditorSelectionCollapsed(selection);
     if (!isCollapsed) {
-      setTree(newTree);
-      historyClone.commit();
+      onEditorStateChange?.(newTree, historyClone);
       return;
     }
 
@@ -337,8 +337,14 @@ const useController = (
         (!isBackward &&
           startTextNode.getChildLength() == selection.startSelection.offset)
       ) {
-        removeCharOrNode(newTree, isBackward, startNode);
-        historyClone.commit();
+        const { tree, history, selection } = removeCharOrNode(
+          newTree,
+          historyClone,
+          isBackward,
+          startNode,
+        );
+        history.commit();
+        onEditorStateChange?.(tree, history, selection);
         return;
       }
       const text = startTextNode.getChildren() ?? '';
@@ -358,18 +364,18 @@ const useController = (
         ]);
 
         startTextNode.setChild(remainingText);
-        setTree(makeTreeNonEmpty(newTree));
-        setSelection({
-          nodeIndex: startTextNode.getIndex(),
-          offset: isBackward
-            ? selection.startSelection.offset - 1
-            : selection.startSelection.offset,
+        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
+          startSelection: {
+            nodeIndex: startTextNode.getIndex(),
+            offset: isBackward
+              ? selection.startSelection.offset - 1
+              : selection.startSelection.offset,
+          },
         });
       } else {
         const nodeBefore = findNodeBefore(newTree, startTextNode.getIndex());
         const nodeAfter = findNodeAfter(newTree, startTextNode.getIndex());
         newTree = removeNodeFromTree(newTree, startTextNode.getIndex());
-        setTree(makeTreeNonEmpty(newTree));
         historyClone.pushAndCommit([
           {
             command: COMMAND_REMOVE_NODE,
@@ -380,16 +386,18 @@ const useController = (
           },
         ]);
 
-        setSelection(
-          getSelectionAfterNodeRemove(tree, startTextNode.getIndex()),
-        );
+        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
+          startSelection: getSelectionAfterNodeRemove(
+            _tree,
+            startTextNode.getIndex(),
+          ),
+        });
       }
     } else if (startNode.getType() == 'emoji') {
       const nodeBefore = findNodeBefore(newTree, startNode.getIndex());
       const nodeAfter = findNodeAfter(newTree, startNode.getIndex());
       if (isBackward) {
         newTree = removeNodeFromTree(newTree, startNode.getIndex());
-        setTree(makeTreeNonEmpty(newTree));
         historyClone.pushAndCommit([
           {
             command: COMMAND_REMOVE_NODE,
@@ -400,25 +408,44 @@ const useController = (
           },
         ]);
 
-        setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
+        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
+          startSelection: getSelectionAfterNodeRemove(
+            _tree,
+            startNode.getIndex(),
+          ),
+        });
       } else {
-        removeCharOrNode(newTree, false, startNode);
-        historyClone.commit();
+        const { tree, history, selection } = removeCharOrNode(
+          newTree,
+          historyClone,
+          false,
+          startNode,
+        );
+        history.commit();
+        onEditorStateChange?.(tree, history, selection);
       }
     } else if (startNode.getType() == 'paragraph') {
       if (isBackward) {
         newTree = concatParagraph(newTree, startNode.getIndex(), isBackward);
-        setTree(makeTreeNonEmpty(newTree));
         historyClone.commit();
+        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone);
       } else {
-        removeCharOrNode(newTree, isBackward, startNode);
-        historyClone.commit();
+        const { tree, history, selection } = removeCharOrNode(
+          newTree,
+          historyClone,
+          isBackward,
+          startNode,
+        );
+        history.commit();
+        onEditorStateChange?.(tree, history, selection);
       }
     }
   };
 
+  // todo: move to utils
   const removeCharOrNode = (
     _newTree: Tree,
+    history: History,
     isBackward: boolean,
     startNode: EditorNode,
   ) => {
@@ -426,7 +453,6 @@ const useController = (
     const targetNode = isBackward
       ? findNodeBefore(newTree, startNode.getIndex())
       : findNodeAfter(newTree, startNode.getIndex());
-    const historyClone = historyHandle.clone();
     if (targetNode) {
       if (targetNode.isTextNode() && targetNode.getChildLength() > 1) {
         const textNode = targetNode as TextNode;
@@ -439,21 +465,27 @@ const useController = (
           throw new Error(
             'remaining text length is empty and node should be removed from the tree',
           );
-        historyClone.push([
+        history.push([
           {
             command: COMMAND_REPLACE_TEXT,
             nodeIndex: textNode.getIndex(),
             prevState: textNode.toDescriptor(),
           },
         ]);
-        setTree(makeTreeNonEmpty(newTree));
-        textNode.setChild(remainingText);
 
-        if (isBackward)
-          setSelection({
-            nodeIndex: textNode.getIndex(),
-            offset: remainingText.length,
-          });
+        textNode.setChild(remainingText);
+        return {
+          tree: makeTreeNonEmpty(newTree),
+          history,
+          selection: isBackward
+            ? {
+                startSelection: {
+                  nodeIndex: textNode.getIndex(),
+                  offset: remainingText.length,
+                },
+              }
+            : undefined,
+        };
       } else if (targetNode.getType() == 'paragraph') {
         const [pIdx] = getNodeIndexInTree(newTree, startNode.getIndex());
         const paragraphNode = newTree[pIdx][0];
@@ -462,14 +494,13 @@ const useController = (
           paragraphNode.getIndex(),
           isBackward,
         );
-        historyClone.commit();
-        setTree(makeTreeNonEmpty(newTree));
+        history.commit();
+        return { tree: makeTreeNonEmpty(newTree), history };
       } else {
         const beforeTargetNode = findNodeBefore(newTree, targetNode.getIndex());
         const afterTargetNode = findNodeAfter(newTree, targetNode.getIndex());
         newTree = removeNodeFromTree(newTree, targetNode.getIndex());
-        setTree(makeTreeNonEmpty(newTree));
-        historyClone.push([
+        history.push([
           {
             command: COMMAND_REMOVE_NODE,
             nodeIndex: -1,
@@ -478,8 +509,10 @@ const useController = (
             nextNodeIndexInTree: afterTargetNode?.getIndex(),
           },
         ]);
+        return { tree: makeTreeNonEmpty(newTree), history };
       }
     }
+    return { tree: _tree, history: history };
   };
 
   const concatParagraph = (
