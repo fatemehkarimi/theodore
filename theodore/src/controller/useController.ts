@@ -337,14 +337,14 @@ const useController = (
         (!isBackward &&
           startTextNode.getChildLength() == selection.startSelection.offset)
       ) {
-        const { tree, history, selection } = removeCharOrNode(
+        const { tree, selection } = removeCharOrNode(
           newTree,
           historyClone,
           isBackward,
           startNode,
         );
-        history.commit();
-        onEditorStateChange?.(tree, history, selection);
+        historyClone.commit();
+        onEditorStateChange?.(tree, historyClone, selection);
         return;
       }
       const text = startTextNode.getChildren() ?? '';
@@ -415,14 +415,14 @@ const useController = (
           ),
         });
       } else {
-        const { tree, history, selection } = removeCharOrNode(
+        const { tree, selection } = removeCharOrNode(
           newTree,
           historyClone,
           false,
           startNode,
         );
-        history.commit();
-        onEditorStateChange?.(tree, history, selection);
+        historyClone.commit();
+        onEditorStateChange?.(tree, historyClone, selection);
       }
     } else if (startNode.getType() == 'paragraph') {
       if (isBackward) {
@@ -430,14 +430,14 @@ const useController = (
         historyClone.commit();
         onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone);
       } else {
-        const { tree, history, selection } = removeCharOrNode(
+        const { tree, selection } = removeCharOrNode(
           newTree,
           historyClone,
           isBackward,
           startNode,
         );
-        history.commit();
-        onEditorStateChange?.(tree, history, selection);
+        historyClone.commit();
+        onEditorStateChange?.(tree, historyClone, selection);
       }
     }
   };
@@ -512,7 +512,7 @@ const useController = (
         return { tree: makeTreeNonEmpty(newTree), history };
       }
     }
-    return { tree: _tree, history: history };
+    return { tree: _tree };
   };
 
   const concatParagraph = (
@@ -1163,7 +1163,7 @@ const useController = (
 
   const getNodeInTreeByIndex = (nodeIndex: number | undefined) => {
     if (nodeIndex == undefined) return null;
-    return tree.flat().find((node) => node.getIndex() == nodeIndex) ?? null;
+    return _tree.flat().find((node) => node.getIndex() == nodeIndex) ?? null;
   };
 
   const makeTreeNonEmpty = (tree: Tree): Tree => {
@@ -1180,7 +1180,7 @@ const useController = (
     // todo: check
     const nextSelectedNode =
       selectedNodes?.startNode != null
-        ? getNextNode(tree, selectedNodes?.startNode)
+        ? getNextNode(_tree, selectedNodes?.startNode)
         : null;
     if (
       selectedNodes?.startNode?.getType() == 'emoji' &&
@@ -1216,7 +1216,7 @@ const useController = (
         endSelection.offset,
       );
     }
-  }, [tree]);
+  }, [_tree]);
 
   return {
     insertEmoji,
