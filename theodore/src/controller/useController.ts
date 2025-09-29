@@ -22,6 +22,8 @@ import {
   setCaretPosition,
 } from '../selection/selection';
 import type {
+  EditorSelection,
+  EditorSelectionChangeEvent,
   EditorState,
   onEditorStateChangeFn,
   onSelectionChangeFn,
@@ -64,7 +66,12 @@ const useController = (
   renderEmoji: RenderEmoji,
   onEditorStateChange?: onEditorStateChangeFn,
 ) => {
-  const { tree: _tree, getSelection, historyHandle } = editorState;
+  const {
+    tree: _tree,
+    getSelection,
+    setSelection,
+    historyHandle,
+  } = editorState;
   const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
@@ -225,21 +232,21 @@ const useController = (
   };
 
   const handleInsertText = (text: string): void => {
-    const newTree = removeNodesInSelection();
-    const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
     const historyClone = historyHandle.clone();
+    const { tree: newTree, selection } = removeNodesInSelection(historyClone);
+    const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
+    let newSelection = selection ?? getSelection();
 
     if (node == null || node.getType() != 'text') {
       const textNode = new TextNode(assignNodeIndex());
       textNode.setChild(text);
-      const selection = getSelection();
 
       const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
         newTree,
         node?.getIndex(),
       );
       const finalTree = [...newTree];
-      if (subtreeIdx == -1 || selection == null) {
+      if (subtreeIdx == -1 || newSelection == null) {
         const newSubTree = [
           finalTree[0][0],
           textNode,
@@ -273,13 +280,13 @@ const useController = (
       const textNode = node as TextNode;
       const prevText = textNode.getChildren();
       // selection should be always collapsed when it wants to insert the new node
-      const selectedNode = getSelection()?.startSelection.nodeIndex;
+      const selectedNode = newSelection?.startSelection.nodeIndex;
       if (selectedNode == null) {
         if (isDevelopment)
           throw new Error('selectedNode cannot be null when inserting text');
         else return;
       }
-      const offset = getSelection()?.startSelection.offset ?? 0;
+      const offset = newSelection?.startSelection.offset ?? 0;
       textNode.insertText(text, offset);
       const subTreeIdx = getParagraphIndexInTree(newTree, selectedNode);
 
@@ -310,14 +317,16 @@ const useController = (
   };
 
   const handleDelete = (key: typeof BACKSPACE | typeof DELETE) => {
-    const selection = getSelection();
-    if (selection == null) return;
-    let newTree = removeNodesInSelection(true);
+    const initialSelection = getSelection();
+    if (initialSelection == null) return;
     const historyClone = historyHandle.clone();
+    let { tree, selection } = removeNodesInSelection(historyClone, true);
+    let newTree = tree;
+    let newSelection = selection;
 
-    const isCollapsed = isEditorSelectionCollapsed(selection);
+    const isCollapsed = isEditorSelectionCollapsed(initialSelection);
     if (!isCollapsed) {
-      onEditorStateChange?.(newTree, historyClone);
+      onEditorStateChange?.(newTree, historyClone, selection);
       return;
     }
 
@@ -333,9 +342,10 @@ const useController = (
 
       // if selection is at the begining or end of text node
       if (
-        (isBackward && selection.startSelection.offset == 0) ||
+        (isBackward && initialSelection.startSelection.offset == 0) ||
         (!isBackward &&
-          startTextNode.getChildLength() == selection.startSelection.offset)
+          startTextNode.getChildLength() ==
+            initialSelection.startSelection.offset)
       ) {
         const { tree, selection } = removeCharOrNode(
           newTree,
@@ -343,16 +353,18 @@ const useController = (
           isBackward,
           startNode,
         );
+        newTree = tree;
+        newSelection = selection;
         historyClone.commit();
-        onEditorStateChange?.(tree, historyClone, selection);
+        onEditorStateChange?.(_tree, historyClone, selection);
         return;
       }
       const text = startTextNode.getChildren() ?? '';
       const remainingText = isBackward
-        ? text.slice(0, selection.startSelection.offset - 1) +
-          text.slice(selection.startSelection.offset)
-        : text.slice(0, selection.startSelection.offset) +
-          text.slice(selection.startSelection.offset + 1);
+        ? text.slice(0, initialSelection.startSelection.offset - 1) +
+          text.slice(initialSelection.startSelection.offset)
+        : text.slice(0, initialSelection.startSelection.offset) +
+          text.slice(initialSelection.startSelection.offset + 1);
 
       if (remainingText.length > 0) {
         historyClone.pushAndCommit([
@@ -364,14 +376,15 @@ const useController = (
         ]);
 
         startTextNode.setChild(remainingText);
-        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
+        const { tree: finalTree, selection } = makeTreeNonEmpty(newTree, {
           startSelection: {
             nodeIndex: startTextNode.getIndex(),
             offset: isBackward
-              ? selection.startSelection.offset - 1
-              : selection.startSelection.offset,
+              ? initialSelection.startSelection.offset - 1
+              : initialSelection.startSelection.offset,
           },
         });
+        onEditorStateChange?.(finalTree, historyClone, selection);
       } else {
         const nodeBefore = findNodeBefore(newTree, startTextNode.getIndex());
         const nodeAfter = findNodeAfter(newTree, startTextNode.getIndex());
@@ -386,12 +399,16 @@ const useController = (
           },
         ]);
 
-        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
-          startSelection: getSelectionAfterNodeRemove(
-            _tree,
-            startTextNode.getIndex(),
-          ),
-        });
+        onEditorStateChange?.(
+          makeTreeNonEmpty(newTree, undefined).tree,
+          historyClone,
+          {
+            startSelection: getSelectionAfterNodeRemove(
+              _tree,
+              startTextNode.getIndex(),
+            ),
+          },
+        );
       }
     } else if (startNode.getType() == 'emoji') {
       const nodeBefore = findNodeBefore(newTree, startNode.getIndex());
@@ -408,12 +425,16 @@ const useController = (
           },
         ]);
 
-        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone, {
-          startSelection: getSelectionAfterNodeRemove(
-            _tree,
-            startNode.getIndex(),
-          ),
-        });
+        onEditorStateChange?.(
+          makeTreeNonEmpty(newTree, undefined).tree,
+          historyClone,
+          {
+            startSelection: getSelectionAfterNodeRemove(
+              _tree,
+              startNode.getIndex(),
+            ),
+          },
+        );
       } else {
         const { tree, selection } = removeCharOrNode(
           newTree,
@@ -426,9 +447,18 @@ const useController = (
       }
     } else if (startNode.getType() == 'paragraph') {
       if (isBackward) {
-        newTree = concatParagraph(newTree, startNode.getIndex(), isBackward);
+        const { tree, selection } = concatParagraph(
+          newTree,
+          historyClone,
+          startNode.getIndex(),
+          isBackward,
+        );
         historyClone.commit();
-        onEditorStateChange?.(makeTreeNonEmpty(newTree), historyClone);
+        onEditorStateChange?.(
+          makeTreeNonEmpty(tree, undefined).tree,
+          historyClone,
+          selection,
+        );
       } else {
         const { tree, selection } = removeCharOrNode(
           newTree,
@@ -475,7 +505,7 @@ const useController = (
 
         textNode.setChild(remainingText);
         return {
-          tree: makeTreeNonEmpty(newTree),
+          tree: makeTreeNonEmpty(newTree, undefined).tree,
           history,
           selection: isBackward
             ? {
@@ -489,13 +519,18 @@ const useController = (
       } else if (targetNode.getType() == 'paragraph') {
         const [pIdx] = getNodeIndexInTree(newTree, startNode.getIndex());
         const paragraphNode = newTree[pIdx][0];
-        newTree = concatParagraph(
+        const { tree, selection } = concatParagraph(
           newTree,
+          history,
           paragraphNode.getIndex(),
           isBackward,
         );
         history.commit();
-        return { tree: makeTreeNonEmpty(newTree), history };
+        return {
+          tree: makeTreeNonEmpty(tree, undefined).tree,
+          history,
+          selection,
+        };
       } else {
         const beforeTargetNode = findNodeBefore(newTree, targetNode.getIndex());
         const afterTargetNode = findNodeAfter(newTree, targetNode.getIndex());
@@ -509,20 +544,23 @@ const useController = (
             nextNodeIndexInTree: afterTargetNode?.getIndex(),
           },
         ]);
-        return { tree: makeTreeNonEmpty(newTree), history };
+        return { tree: makeTreeNonEmpty(newTree, undefined).tree, history };
       }
     }
-    return { tree: _tree };
+    return { tree: _tree, history };
   };
 
   const concatParagraph = (
     tree: Tree,
+    history: History,
     pNodeIdx: number,
     isBackward: boolean,
   ) => {
     const [idx] = getNodeIndexInTree(tree, pNodeIdx);
-    if (idx == 0 && isBackward) return [...tree];
-    if (idx == tree.length - 1 && !isBackward) return [...tree];
+    if (idx == 0 && isBackward)
+      return { tree: [...tree], selection: undefined };
+    if (idx == tree.length - 1 && !isBackward)
+      return { tree: [...tree], selection: undefined };
 
     const selectedNode = isBackward
       ? findNodeBefore(tree, pNodeIdx)
@@ -542,9 +580,8 @@ const useController = (
       ? getParagraphIndexInTree(tree, nodeBefore?.getIndex())
       : undefined;
     const pBeforeNode = pBeforeIdx != undefined ? tree[pBeforeIdx][0] : null;
-    const historyClone = historyHandle.clone();
 
-    historyClone.push([
+    history.push([
       {
         command: COMMAND_INSERT_PARAGRAPH_AFTER,
         nodeIndex: -1,
@@ -553,7 +590,7 @@ const useController = (
       },
     ]);
 
-    historyClone.push([
+    history.push([
       {
         command: COMMAND_REPLACE_PARAGRAPH,
         nodeIndex: firstParagaphClone[0].getIndex(),
@@ -561,33 +598,42 @@ const useController = (
       },
     ]);
 
-    if (isBackward && selectedNode) {
-      setSelection({
-        nodeIndex: selectedNode.getIndex(),
-        offset: selectedNode.isTextNode() ? selectedNode.getChildLength() : 0,
-      });
-    }
-    return newTree;
+    let selection =
+      isBackward && selectedNode
+        ? {
+            startSelection: {
+              nodeIndex: selectedNode.getIndex(),
+              offset: selectedNode.isTextNode()
+                ? selectedNode.getChildLength()
+                : 0,
+            },
+          }
+        : undefined;
+    return { tree: newTree, selection };
   };
 
-  const removeNodesInSelection = (shouldRemoveEmptyTextNodes?: boolean) => {
+  const removeNodesInSelection = (
+    history: History,
+    shouldRemoveEmptyTextNodes?: boolean,
+  ) => {
     const selection = getSelection();
     const selectedNodes = getEditorSelectedNode();
     const isSelectionCollapsed = isEditorSelectionCollapsed(selection);
-    const newTree: EditorNode[][] = isSelectionCollapsed ? [...tree] : [];
+    const newTree: EditorNode[][] = isSelectionCollapsed ? [..._tree] : [];
 
-    if (isSelectionCollapsed) return newTree;
-    if (selection == null || selectedNodes == null) return newTree;
+    if (isSelectionCollapsed) return { tree: newTree, selection: undefined };
+    if (selection == null || selectedNodes == null)
+      return { tree: newTree, selection: undefined };
 
-    const historyClone = historyHandle.clone();
     const { startNode, endNode } = selectedNodes;
     const { startSelection, endSelection } = selection;
 
     const [startPIdx, startIdx] = getNodeIndexInTree(
-      tree,
+      _tree,
       startNode?.getIndex(),
     );
-    const [endPIdx, endIdx] = getNodeIndexInTree(tree, endNode?.getIndex());
+    const [endPIdx, endIdx] = getNodeIndexInTree(_tree, endNode?.getIndex());
+    let newSelection = undefined;
 
     if (startPIdx == endPIdx) {
       if (startIdx == endIdx) {
@@ -600,40 +646,45 @@ const useController = (
 
           const textNodeDescriptor = textNode.toDescriptor();
           if (shouldRemoveEmptyTextNodes && remainingText.length == 0) {
-            newTree.push(...removeNodeFromTree(tree, textNode.getIndex()));
-            historyClone.push([
+            newTree.push(...removeNodeFromTree(_tree, textNode.getIndex()));
+            history.push([
               {
                 command: COMMAND_REMOVE_NODE,
                 nodeIndex: textNode.getIndex(),
                 prevState: [textNode],
                 prevNodeIndexInTree: findNodeBefore(
-                  tree,
+                  _tree,
                   textNode.getIndex(),
                 )?.getIndex(),
                 nextNodeIndexInTree: findNodeAfter(
-                  tree,
+                  _tree,
                   textNode.getIndex(),
                 )?.getIndex(),
               },
             ]);
-            setSelection(
-              getSelectionAfterNodeRemove(tree, textNode.getIndex()),
-            );
+            newSelection = {
+              startSelection: getSelectionAfterNodeRemove(
+                _tree,
+                textNode.getIndex(),
+              ),
+            };
           } else {
             textNode.setChild(remainingText);
-            newTree.push(...tree);
+            newTree.push(..._tree);
 
-            historyClone.push([
+            history.push([
               {
                 command: COMMAND_REPLACE_TEXT,
                 nodeIndex: textNode.getIndex(),
                 prevState: textNodeDescriptor,
               },
             ]);
-            setSelection({
-              nodeIndex: textNode.getIndex(),
-              offset: startSelection.offset,
-            });
+            newSelection = {
+              startSelection: {
+                nodeIndex: textNode.getIndex(),
+                offset: startSelection.offset,
+              },
+            };
           }
         } else {
           if (isDevelopment)
@@ -642,11 +693,12 @@ const useController = (
             );
         }
 
-        return makeTreeNonEmpty(newTree);
+        const { tree, selection } = makeTreeNonEmpty(newTree, newSelection);
+        return { tree, selection };
       }
 
-      newTree.push(...tree.slice(0, startPIdx));
-      const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+      newTree.push(..._tree.slice(0, startPIdx));
+      const newStartP = [..._tree[startPIdx].slice(0, startIdx)];
       const deletedNodes = [];
 
       if (startNode) {
@@ -663,7 +715,7 @@ const useController = (
           else {
             if (currentText != remainingText) {
               const textNodeDescriptor = textNode.toDescriptor();
-              historyClone.push([
+              history.push([
                 {
                   command: COMMAND_REPLACE_TEXT,
                   nodeIndex: textNode.getIndex(),
@@ -678,7 +730,7 @@ const useController = (
       }
 
       for (let i = startIdx + 1; i < endIdx; i++) {
-        deletedNodes.push(tree[startPIdx][i]);
+        deletedNodes.push(_tree[startPIdx][i]);
       }
 
       if (endNode?.getType() == 'emoji') deletedNodes.push(endNode);
@@ -692,7 +744,7 @@ const useController = (
           deletedNodes.push(textNode);
         } else {
           if (currentText != remainingText) {
-            historyClone.push([
+            history.push([
               {
                 command: COMMAND_REPLACE_TEXT,
                 nodeIndex: textNode.getIndex(),
@@ -707,44 +759,55 @@ const useController = (
       }
 
       if (deletedNodes.length > 0)
-        historyClone.push([
+        history.push([
           {
             command: COMMAND_REMOVE_NODE,
             nodeIndex: -1,
             prevState: deletedNodes,
             prevNodeIndexInTree: findNodeBefore(
-              tree,
+              _tree,
               deletedNodes[0].getIndex(),
             )?.getIndex(),
             nextNodeIndexInTree: findNodeAfter(
-              tree,
+              _tree,
               deletedNodes[deletedNodes.length - 1].getIndex(),
             )?.getIndex(),
           },
         ]);
 
-      newStartP.push(...tree[startPIdx].slice(endIdx + 1));
+      newStartP.push(..._tree[startPIdx].slice(endIdx + 1));
       newTree.push(newStartP);
-      newTree.push(...tree.slice(endPIdx + 1));
+      newTree.push(..._tree.slice(endPIdx + 1));
       if (startNode) {
         const isStartNodeRemoved =
           deletedNodes.find((n) => n.getIndex() == startNode?.getIndex()) !=
           undefined;
 
         if (!isStartNodeRemoved)
-          setSelection({
-            nodeIndex: startNode.getIndex(),
-            offset: startSelection.offset,
-          });
+          newSelection = {
+            startSelection: {
+              nodeIndex: startNode.getIndex(),
+              offset: startSelection.offset,
+            },
+          };
         else {
-          setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
+          newSelection = {
+            startSelection: getSelectionAfterNodeRemove(
+              _tree,
+              startNode.getIndex(),
+            ),
+          };
         }
-      } else setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
-      return makeTreeNonEmpty(newTree);
+      } else newSelection = { startSelection: ALWAYS_IN_DOM_NODE_SELECTION };
+      const { tree: finalTree, selection: finalSelection } = makeTreeNonEmpty(
+        newTree,
+        newSelection,
+      );
+      return { tree: finalTree, selection: finalSelection };
     }
 
-    newTree.push(...tree.slice(0, startPIdx));
-    const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+    newTree.push(..._tree.slice(0, startPIdx));
+    const newStartP = [..._tree[startPIdx].slice(0, startIdx)];
     const deletedNodes: (EditorNode | EditorNode[])[] = [];
 
     if (startNode?.isTextNode()) {
@@ -760,7 +823,7 @@ const useController = (
       } else {
         if (currentText != remainingText) {
           const textNodeDescriptor = textNode.toDescriptor();
-          historyClone.push([
+          history.push([
             {
               command: COMMAND_REPLACE_TEXT,
               nodeIndex: textNode.getIndex(),
@@ -773,11 +836,11 @@ const useController = (
       }
     } else if (startNode != null) newStartP.push(startNode);
 
-    const startPToBeRemovedNodes = tree[startPIdx].slice(startIdx + 1);
+    const startPToBeRemovedNodes = _tree[startPIdx].slice(startIdx + 1);
     if (startPToBeRemovedNodes.length > 0)
       deletedNodes.push(startPToBeRemovedNodes);
-    for (let i = startPIdx + 1; i < endPIdx; ++i) deletedNodes.push(tree[i]);
-    const endPToBeRemovedNodes = tree[endPIdx].slice(0, endIdx);
+    for (let i = startPIdx + 1; i < endPIdx; ++i) deletedNodes.push(_tree[i]);
+    const endPToBeRemovedNodes = _tree[endPIdx].slice(0, endIdx);
     if (endPToBeRemovedNodes.length > 0)
       deletedNodes.push(endPToBeRemovedNodes);
 
@@ -792,7 +855,7 @@ const useController = (
         deletedNodes.push(textNode);
       } else {
         if (currentText != remainingText) {
-          historyClone.push([
+          history.push([
             {
               command: COMMAND_REPLACE_TEXT,
               nodeIndex: textNode.getIndex(),
@@ -806,7 +869,7 @@ const useController = (
       }
     }
 
-    newEndP.push(...tree[endPIdx].slice(endIdx + 1));
+    newEndP.push(..._tree[endPIdx].slice(endIdx + 1));
 
     if (endNode && !endNode?.isTextNode()) deletedNodes.push(endNode);
 
@@ -818,17 +881,17 @@ const useController = (
       ? deletedNodes[lastIdx][0]
       : deletedNodes[lastIdx];
 
-    historyClone.push([
+    history.push([
       {
         command: COMMAND_REMOVE_NODE,
         prevState: deletedNodes,
         nodeIndex: -1,
         prevNodeIndexInTree: findNodeBefore(
-          tree,
+          _tree,
           firstDeletedNode.getIndex(),
         )?.getIndex(),
         nextNodeIndexInTree: findNodeAfter(
-          tree,
+          _tree,
           lastDeletedNode.getIndex(),
         )?.getIndex(),
       },
@@ -837,7 +900,7 @@ const useController = (
     newStartP.push(...newEndP);
     newTree.push(newStartP);
 
-    newTree.push(...tree.slice(endPIdx + 1));
+    newTree.push(..._tree.slice(endPIdx + 1));
 
     if (startNode) {
       const isStartNodeRemoved =
@@ -846,14 +909,26 @@ const useController = (
           .find((n) => n.getIndex() == startNode?.getIndex()) != undefined;
 
       if (!isStartNodeRemoved)
-        setSelection({
-          nodeIndex: startNode.getIndex(),
-          offset: startSelection.offset,
-        });
-      else
-        setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
-    } else setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
-    return makeTreeNonEmpty(newTree);
+        newSelection = {
+          startSelection: {
+            nodeIndex: startNode.getIndex(),
+            offset: startSelection.offset,
+          },
+        };
+      else {
+        newSelection = {
+          startSelection: getSelectionAfterNodeRemove(
+            _tree,
+            startNode.getIndex(),
+          ),
+        };
+      }
+    } else newSelection = { startSelection: ALWAYS_IN_DOM_NODE_SELECTION };
+    const { tree: finalTree, selection: finalSelection } = makeTreeNonEmpty(
+      newTree,
+      newSelection,
+    );
+    return { tree: finalTree, selection: finalSelection };
   };
 
   const handleInputSelectionChange = () => {
@@ -1038,8 +1113,10 @@ const useController = (
     ]);
 
     setSelection({
-      nodeIndex: nextSelectionNodeIdx,
-      offset: 0,
+      startSelection: {
+        nodeIndex: nextSelectionNodeIdx,
+        offset: 0,
+      },
     });
   };
 
@@ -1134,8 +1211,10 @@ const useController = (
       },
     ]);
     setSelection({
-      nodeIndex: node.getIndex(),
-      offset: 0,
+      startSelection: {
+        nodeIndex: node.getIndex(),
+        offset: 0,
+      },
     });
 
     inputRef.current?.focus();
@@ -1166,12 +1245,17 @@ const useController = (
     return _tree.flat().find((node) => node.getIndex() == nodeIndex) ?? null;
   };
 
-  const makeTreeNonEmpty = (tree: Tree): Tree => {
+  const makeTreeNonEmpty = (
+    tree: Tree,
+    selection: EditorSelectionChangeEvent | undefined,
+  ) => {
     if (tree.length == 0) {
-      setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
-      return [[new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)]];
+      return {
+        tree: [[new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)]],
+        selection: { startSelection: ALWAYS_IN_DOM_NODE_SELECTION },
+      };
     }
-    return [...tree];
+    return { tree: [...tree], selection };
   };
 
   useLayoutEffect(() => {
@@ -1187,8 +1271,10 @@ const useController = (
       nextSelectedNode?.getType() == 'text'
     ) {
       setSelection({
-        nodeIndex: nextSelectedNode.getIndex(),
-        offset: 0,
+        startSelection: {
+          nodeIndex: nextSelectedNode.getIndex(),
+          offset: 0,
+        },
       });
     }
 

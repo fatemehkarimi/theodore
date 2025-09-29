@@ -46,6 +46,7 @@ export type EditorState = {
   tree: Tree;
   historyHandle: HistoryHandle;
   getSelection: () => EditorSelection;
+  setSelection: (selection: EditorSelectionChangeEvent) => void;
 };
 
 export type onEditorStateChangeFn = (
