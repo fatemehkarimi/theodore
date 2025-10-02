@@ -63,6 +63,7 @@ const useController = (
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
     let delegateHandleToBrowser = false;
+    console.log('handleKeyDown', key);
 
     if (event.ctrlKey && key == 'z') {
       if (tree == null) return;
@@ -216,6 +217,16 @@ const useController = (
     } else handleInsertText(key);
 
     if (!delegateHandleToBrowser) event.preventDefault();
+  };
+
+  const handleOnBeforeInput: React.FormEventHandler<HTMLDivElement> = (
+    event,
+  ) => {
+    event.preventDefault();
+    const native = event.nativeEvent as unknown as InputEvent;
+    const data = (native as any)?.data as string | null | undefined;
+
+    if (data) handleInsertText(data);
   };
 
   const handleInsertText = (text: string) => {
@@ -1174,6 +1185,7 @@ const useController = (
     insertNewParagraph,
     handlers: {
       handleKeyDown,
+      handleOnBeforeInput,
       handleSelectionChange: handleInputSelectionChange,
     },
   };

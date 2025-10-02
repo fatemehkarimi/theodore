@@ -26,7 +26,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     const {
       insertEmoji,
       insertNewParagraph,
-      handlers: { handleKeyDown, handleSelectionChange },
+      handlers: { handleKeyDown, handleOnBeforeInput, handleSelectionChange },
     } = useController(inputRef, renderEmoji, editorState);
 
     useImperativeHandle(ref, () => {
@@ -51,6 +51,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         className={`${styles.container} ${className}`}
         contentEditable="true"
         onKeyDown={handleKeyDown}
+        onBeforeInput={handleOnBeforeInput}
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
         {...props}
