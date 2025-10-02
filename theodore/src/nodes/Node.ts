@@ -38,4 +38,12 @@ export class Node {
   public isTextNode(): boolean {
     return ['text', 'mention'].includes(this.getType());
   }
+
+  public getChildren(): string | null {
+    throw new Error('not implemented');
+  }
+
+  public clone(): Node {
+    throw new Error('not implemented');
+  }
 }

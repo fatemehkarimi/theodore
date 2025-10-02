@@ -20,6 +20,19 @@ class EmojiNode extends Node {
     return this.emoji.length;
   }
 
+  public getChildren(): string | null {
+    return this.emoji;
+  }
+
+  public clone(): EmojiNode {
+    const emojiNode = new EmojiNode(
+      this.nodeIndex,
+      this.emoji,
+      this.renderEmoji,
+    );
+    return emojiNode;
+  }
+
   public render() {
     const emojiEl = this.renderEmoji(this.emoji);
     return (

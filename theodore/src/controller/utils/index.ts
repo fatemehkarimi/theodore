@@ -1,5 +1,6 @@
 import type { Node } from '../../nodes/Node';
-import type { SelectionDesc, Tree } from '../../types';
+import type { Tree } from '../../types';
+import type { SelectionDesc } from '../selection/types';
 
 export const ALWAYS_IN_DOM_NODE_INDEX = 1;
 export const ALWAYS_IN_DOM_NODE_SELECTION = {

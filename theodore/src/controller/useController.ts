@@ -1,9 +1,4 @@
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MutableRefObject,
-} from 'react';
+import { useLayoutEffect, type MutableRefObject } from 'react';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -18,7 +13,7 @@ import {
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
-import TextNode from '../nodes/textNode/TextNode';
+import { TextNode } from '../nodes/textNode/TextNode';
 import {
   convertDomSelectionToEditorSelection,
   moveToNodeBySelection,
@@ -26,12 +21,7 @@ import {
   setCaretAfter,
   setCaretPosition,
 } from '../selection/selection';
-import type {
-  onSelectionChangeFn,
-  RenderEmoji,
-  TextNodeDesc,
-  Tree,
-} from '../types';
+import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
 import { isDevelopment } from '../utils';
 import {
   COMMAND_INSERT_EMOJI,
@@ -42,12 +32,10 @@ import {
   COMMAND_REPLACE_PARAGRAPH,
   COMMAND_REPLACE_TEXT,
 } from './commands';
-import { useHistory } from './useHistory';
 import {
   areNodeSelectionEqual,
   isEditorSelectionCollapsed,
-  useSelection,
-} from './useSelection';
+} from './selection/useSelection';
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
@@ -65,19 +53,12 @@ import {
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
-  listeners?: {
-    onSelectionChange?: onSelectionChangeFn;
-  },
+  editorState: EditorState,
 ) => {
-  const { getSelection, setSelection } = useSelection(
-    ALWAYS_IN_DOM_NODE_SELECTION,
-    listeners?.onSelectionChange,
-  );
-  const history = useHistory(getSelection);
-  const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
-  const [tree, setTree] = useState<Tree>([
-    [new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)],
-  ]);
+  const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
+    editorState;
+  const { getSelection, setSelection } = selectionHandle;
+  const { history } = historyHandle;
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
@@ -1121,11 +1102,6 @@ const useController = (
     insertNodeInSelection(emojiNode);
   };
 
-  const assignNodeIndex = () => {
-    ++nodeIndexRef.current;
-    return nodeIndexRef.current;
-  };
-
   const getEditorSelectedNode = () => {
     const selection = getSelection();
     if (selection == null) return null;
@@ -1194,7 +1170,6 @@ const useController = (
   }, [tree]);
 
   return {
-    tree,
     insertEmoji,
     insertNewParagraph,
     handlers: {
