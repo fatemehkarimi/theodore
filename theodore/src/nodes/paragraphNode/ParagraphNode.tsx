@@ -13,6 +13,15 @@ class ParagraphNode extends Node {
     return `br-${this.getIndex()}`;
   }
 
+  public getChildren(): string | null {
+    return '';
+  }
+
+  public clone(): ParagraphNode {
+    const paragraphNode = new ParagraphNode(this.nodeIndex);
+    return paragraphNode;
+  }
+
   public render(children?: ReactNode | undefined): React.ReactNode {
     return (
       <p

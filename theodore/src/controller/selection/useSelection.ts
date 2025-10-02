@@ -1,46 +1,46 @@
 import { useRef } from 'react';
 import type {
-  EditorSelection,
   onSelectionChangeFn,
-  EditorNodeSelection,
-} from '../types';
+} from '../../types';
+import type { EditorSelection, EditorNodeSelection } from './types';
+import { Selection } from './selection';
 
+type SelectionHandle = {
+  clone(): Selection;
+  getSelection(): EditorSelection;
+  setSelection(
+    newStartSelection: EditorNodeSelection,
+    newEndSelection?: EditorNodeSelection,
+  ): void;
+};
 const useSelection = (
   initialSelection: EditorNodeSelection,
   onSelectionChange?: onSelectionChangeFn,
-) => {
-  const startSelection = useRef<EditorNodeSelection>(initialSelection);
-  const endSelection = useRef<EditorNodeSelection>(initialSelection);
+): SelectionHandle => {
+  const selectionRef = useRef<Selection>(
+    new Selection(initialSelection, onSelectionChange),
+  );
+
+  const clone = () => {
+    return selectionRef.current.clone();
+  };
+
+  const getSelection = () => {
+    return selectionRef.current.getSelection();
+  };
 
   const setSelection = (
     newStartSelection: EditorNodeSelection,
     newEndSelection?: EditorNodeSelection,
   ) => {
-    startSelection.current = newStartSelection;
-
-    if (newEndSelection != undefined) endSelection.current = newEndSelection;
-    else endSelection.current = newStartSelection;
-
-    onSelectionChange?.(
-      startSelection.current != undefined && endSelection.current != undefined
-        ? {
-            startSelection: { ...startSelection.current },
-            endSelection: { ...endSelection.current },
-          }
-        : null,
+    return selectionRef.current.setSelection(
+      newStartSelection,
+      newEndSelection,
     );
   };
 
-  const getSelection = () => {
-    return startSelection.current != null && endSelection.current != null
-      ? {
-          startSelection: { ...startSelection.current },
-          endSelection: { ...endSelection.current },
-        }
-      : null;
-  };
-
   return {
+    clone,
     getSelection,
     setSelection,
   };
@@ -70,4 +70,10 @@ const areNodeSelectionEqual = (
   );
 };
 
-export { isEditorSelectionCollapsed, useSelection, areNodeSelectionEqual };
+export {
+  isEditorSelectionCollapsed,
+  useSelection,
+  areNodeSelectionEqual,
+  Selection,
+  type SelectionHandle,
+};

@@ -1,18 +1,20 @@
 import appleEmojisData from '@emoji-mart/data/sets/15/apple.json';
 import Picker from '@emoji-mart/react';
 import type { Selection, TheodoreHandle } from '@theodore/theodore';
-import { Theodore } from '@theodore/theodore';
 import {
+  convertTreeToText,
+  Theodore,
+  useEditorState,
+} from '@theodore/theodore';
+import React, {
   useCallback,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import styles from './Editor.module.scss';
 import { nativeToUnified } from './emoji';
 import './index.css';
-import React from 'react';
 
 const renderEmoji = (emoji: string) => {
   if (emoji == '') return <></>;
@@ -23,10 +25,16 @@ const renderEmoji = (emoji: string) => {
 };
 
 const App = () => {
-  const theodoreRef = useRef<TheodoreHandle>(null);
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: Selection) => void;
   }>(null);
+
+  const handleOnSelectionChange = useCallback((newSelection: Selection) => {
+    selectionPreviewRef.current?.onSelectionUpdate(newSelection);
+  }, []);
+
+  const editorState = useEditorState(handleOnSelectionChange);
+  const theodoreRef = useRef<TheodoreHandle>(null);
 
   const handleSelectEmoji = (emoji: {
     id: string;
@@ -41,18 +49,14 @@ const App = () => {
     }
   };
 
-  const handleOnSelectionChange = useCallback((newSelection: Selection) => {
-    selectionPreviewRef.current?.onSelectionUpdate(newSelection);
-  }, []);
-
   return (
     <div className={styles.container}>
       <div className={styles.editorWrapper}>
         <Theodore
+          editorState={editorState}
           className={styles.editor}
           ref={theodoreRef}
           renderEmoji={renderEmoji}
-          onSelectionChange={handleOnSelectionChange}
         />
         <Picker
           data={appleEmojisData}
@@ -62,6 +66,9 @@ const App = () => {
         />
       </div>
       <SelectionPreview ref={selectionPreviewRef} />
+      <div style={{ whiteSpace: 'pre' }}>
+        text: {convertTreeToText(editorState.tree)}
+      </div>
     </div>
   );
 };

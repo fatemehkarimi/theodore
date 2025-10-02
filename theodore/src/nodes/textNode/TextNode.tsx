@@ -1,6 +1,5 @@
-import React from 'react';
-import { Node } from '../Node';
 import { TextNodeDesc } from '../../types';
+import { Node } from '../Node';
 
 class TextNode extends Node {
   private children: string | null = null;
@@ -39,6 +38,12 @@ class TextNode extends Node {
     return this.children?.length ?? 0;
   }
 
+  public clone(): TextNode {
+    const textNode = new TextNode(this.nodeIndex);
+    if (this.children != null) this.setChild(this.children);
+    return textNode;
+  }
+
   render() {
     if (this.children == null) return <p></p>;
     const inner = this.children;
@@ -58,4 +63,4 @@ class TextNode extends Node {
   }
 }
 
-export default TextNode;
+export { TextNode };

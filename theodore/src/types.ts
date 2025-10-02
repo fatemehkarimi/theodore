@@ -1,20 +1,14 @@
 import type { ReactElement } from 'react';
 import type { Node as EditorNode } from './nodes/Node';
+import type { SelectionHandle } from './controller/selection/useSelection';
+import { HistoryHandle } from './controller/history/types';
+import { EditorSelection } from './controller/selection/types';
 
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type TheodoreHandle = {
   insertEmoji: (emoji: string) => void;
 };
 
-export type SelectionDesc = {
-  readonly nodeIndex: number;
-  readonly offset: number;
-};
-export type EditorNodeSelection = SelectionDesc | null;
-export type EditorSelection = {
-  startSelection: SelectionDesc;
-  endSelection: SelectionDesc;
-} | null;
 export type RenderEmoji = (emoji: string) => ReactElement;
 export type onSelectionChangeFn = (selection: EditorSelection) => void;
 
@@ -26,12 +20,10 @@ export type TextNodeDesc = {
 
 export type Tree = EditorNode[][];
 
-export type History = {
-  command: string;
-  nodeIndex: number;
-  prevState: string | TextNodeDesc | (EditorNode | EditorNode[])[] | null;
-  transactionId: number;
-  selection: EditorSelection;
-  prevNodeIndexInTree?: number;
-  nextNodeIndexInTree?: number;
+export type EditorState = {
+  tree: Tree;
+  setTree: React.Dispatch<React.SetStateAction<Tree>>;
+  assignNodeIndex: () => number;
+  historyHandle: HistoryHandle;
+  selectionHandle: SelectionHandle;
 };

@@ -1,5 +1,6 @@
 import { getDomNodeByNodeIndex } from '../controller/utils';
-import type { EditorNodeSelection as EditorSelection, Tree } from '../types';
+import type { Tree } from '../types';
+import type { EditorNodeSelection as EditorSelection } from '../controller/selection/types';
 import { Node as EditorNode } from '../nodes/Node';
 import {
   convertRangeBoundyPointToParagraphBoundaryPoint,
