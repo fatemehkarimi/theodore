@@ -63,7 +63,6 @@ const useController = (
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
     let delegateHandleToBrowser = false;
-    console.log('handleKeyDown', key);
 
     if (event.ctrlKey && key == 'z') {
       if (tree == null) return;
