@@ -57,6 +57,8 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         onBeforeInput={handleOnBeforeInput}
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
+        autoCorrect="off"
+        spellCheck="false"
         {...props}
         suppressContentEditableWarning
       >

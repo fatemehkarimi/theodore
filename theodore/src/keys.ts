@@ -7,6 +7,8 @@ export const ARROW_LEFT = 'ArrowLeft';
 export const ENTER = 'Enter';
 export const DELETE = 'Delete';
 export const BACKSPACE = 'Backspace';
+export const TAB = 'Tab';
+export const SPACE = ' ';
 
 export const NavigationKeys = [ARROW_UP, ARROW_RIGHT, ARROW_DOWN, ARROW_LEFT];
 

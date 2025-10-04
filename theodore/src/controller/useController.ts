@@ -9,6 +9,8 @@ import {
   END,
   ENTER,
   HOME,
+  SPACE,
+  TAB,
 } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node as EditorNode } from '../nodes/Node';
@@ -213,7 +215,9 @@ const useController = (
     } else if (key == ENTER) insertNewParagraph();
     else if (key == BACKSPACE || key == DELETE) {
       handleDelete(key);
-    } else handleInsertText(key);
+    } else if (key == SPACE) handleInsertText(key);
+    else if (key == TAB) handleInsertText('\t');
+    else delegateHandleToBrowser = true;
 
     if (!delegateHandleToBrowser) event.preventDefault();
   };
