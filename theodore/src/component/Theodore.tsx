@@ -7,6 +7,9 @@ import type {
   TheodoreHandle,
 } from '../types';
 import styles from './Theodore.module.scss';
+import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
+import { TextNode } from '../nodes/textNode/TextNode';
+import { isRTL } from '../rtl';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -26,7 +29,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     const {
       insertEmoji,
       insertNewParagraph,
-      handlers: { handleKeyDown, handleSelectionChange },
+      handlers: { handleKeyDown, handleOnBeforeInput, handleSelectionChange },
     } = useController(inputRef, renderEmoji, editorState);
 
     useImperativeHandle(ref, () => {
@@ -51,15 +54,25 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         className={`${styles.container} ${className}`}
         contentEditable="true"
         onKeyDown={handleKeyDown}
+        onBeforeInput={handleOnBeforeInput}
         ref={inputRef}
         onInput={(e) => e.preventDefault()}
+        autoCorrect="off"
+        spellCheck="false"
         {...props}
         suppressContentEditableWarning
       >
         {tree?.map((subtree) => {
           if (subtree.length == 0) throw new Error('Subtree is empty');
-          const paragraph = subtree[0];
+          const paragraph = subtree[0] as ParagraphNode;
           const nodes = subtree.slice(1);
+          const startsWithRTL =
+            nodes.length == 0
+              ? false
+              : nodes[0].isTextNode() &&
+                  (nodes[0] as TextNode).getChildren() != null
+                ? isRTL((nodes[0] as TextNode).getChildren()?.slice(0, 1) ?? '')
+                : false;
           return paragraph.render(
             nodes.length == 0 ? undefined : (
               <>
@@ -68,6 +81,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
                 })}
               </>
             ),
+            startsWithRTL ? 'rtl' : 'ltr',
           );
         })}
       </div>

@@ -22,9 +22,13 @@ class ParagraphNode extends Node {
     return paragraphNode;
   }
 
-  public render(children?: ReactNode | undefined): React.ReactNode {
+  public render(
+    children?: ReactNode | undefined,
+    dir?: 'ltr' | 'rtl',
+  ): React.ReactNode {
     return (
       <p
+        dir={dir}
         key={this.getKey()}
         data-node-index={this.getIndex()}
         className={styles.paragraphContainer}

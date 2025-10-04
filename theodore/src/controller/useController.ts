@@ -9,6 +9,8 @@ import {
   END,
   ENTER,
   HOME,
+  SPACE,
+  TAB,
 } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
 import { Node as EditorNode } from '../nodes/Node';
@@ -213,9 +215,21 @@ const useController = (
     } else if (key == ENTER) insertNewParagraph();
     else if (key == BACKSPACE || key == DELETE) {
       handleDelete(key);
-    } else handleInsertText(key);
+    } else if (key == SPACE) handleInsertText(key);
+    else if (key == TAB) handleInsertText('\t');
+    else delegateHandleToBrowser = true;
 
     if (!delegateHandleToBrowser) event.preventDefault();
+  };
+
+  const handleOnBeforeInput: React.FormEventHandler<HTMLDivElement> = (
+    event,
+  ) => {
+    event.preventDefault();
+    const native = event.nativeEvent as unknown as InputEvent;
+    const data = (native as any)?.data as string | null | undefined;
+
+    if (data) handleInsertText(data);
   };
 
   const handleInsertText = (text: string) => {
@@ -1174,6 +1188,7 @@ const useController = (
     insertNewParagraph,
     handlers: {
       handleKeyDown,
+      handleOnBeforeInput,
       handleSelectionChange: handleInputSelectionChange,
     },
   };
