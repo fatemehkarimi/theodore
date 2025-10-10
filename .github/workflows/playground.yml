@@ -33,7 +33,9 @@ jobs:
         run: pnpm install
 
       - name: Build playground
-        run: pnpm -C playground build
+        run: |
+          pnpm -C theodore build
+          pnpm -C playground build
 
       - name: Build Docker image
         run: |
