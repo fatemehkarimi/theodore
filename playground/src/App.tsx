@@ -5,6 +5,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import styles from './App.module.scss';
 import { nativeToUnified } from './emoji';
 import EmojiOutlined from './icons/EmojiOutlined';
+import Github from './icons/Github';
 import './index.css';
 import { useShowTransition } from './hooks/useShowtransition';
 import { useDelayedValue } from './hooks/useDelayedValue';
@@ -15,7 +16,7 @@ const renderEmoji = (emoji: string) => {
   const unified = nativeToUnified(emoji);
   const path = `/img-apple-64/${unified}.png`;
 
-  return <img src={path} width={20} height={20} />;
+  return <img src={path} width={22} height={22} />;
 };
 
 const App = () => {
@@ -69,12 +70,24 @@ const App = () => {
     <div className={styles.mainPhone}>
       <div className={styles.backgroundImageEffect} />
       <div className={styles.header}>
-        <img
-          src="/playground/logo.png"
-          alt="Theodore"
-          className={styles.character}
-        />
-        <div className={styles.title}>THEOdore</div>
+        <div className={styles.logoWithTitle}>
+          <img
+            src="/playground/logo.png"
+            alt="Theodore"
+            className={styles.character}
+            draggable={false}
+          />
+          <div className={styles.title}>THEOdore</div>
+        </div>
+        <a
+          href="https://github.com/fatemehkarimi/theodore"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.githubLink}
+          aria-label="Open repository on GitHub"
+        >
+          <Github size={28} color="#000" />
+        </a>
       </div>
       <div className={styles.content}>
         <div className={styles.theodoreWrapper}>
