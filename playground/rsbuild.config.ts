@@ -4,4 +4,11 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 
 export default defineConfig({
   plugins: [pluginReact(), pluginSass()],
+  source: {
+    define: {
+      'process.env.REACT_APP_BUILD_NUMBER': JSON.stringify(
+        process.env.REACT_APP_BUILD_NUMBER ?? '1',
+      ),
+    },
+  },
 });

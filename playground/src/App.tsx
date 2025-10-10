@@ -1,20 +1,14 @@
 import appleEmojisData from '@emoji-mart/data/sets/15/apple.json';
 import Picker from '@emoji-mart/react';
-import type { Selection, TheodoreHandle } from '@theodore/theodore';
-import {
-  convertTreeToText,
-  Theodore,
-  useEditorState,
-} from '@theodore/theodore';
-import React, {
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
-import styles from './Editor.module.scss';
+import { Theodore, TheodoreHandle, useEditorState } from '@theodore/theodore';
+import React, { useCallback, useRef, useState } from 'react';
+import styles from './App.module.scss';
 import { nativeToUnified } from './emoji';
+import EmojiOutlined from './icons/EmojiOutlined';
 import './index.css';
+import { useShowTransition } from './hooks/useShowtransition';
+import { useDelayedValue } from './hooks/useDelayedValue';
+import clsx from 'clsx';
 
 const renderEmoji = (emoji: string) => {
   if (emoji == '') return <></>;
@@ -25,16 +19,38 @@ const renderEmoji = (emoji: string) => {
 };
 
 const App = () => {
+  const theodoreRef = useRef<TheodoreHandle>(null);
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: Selection) => void;
   }>(null);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const hideTimerRef = useRef<number | null>(null);
 
   const handleOnSelectionChange = useCallback((newSelection: Selection) => {
     selectionPreviewRef.current?.onSelectionUpdate(newSelection);
   }, []);
 
-  const editorState = useEditorState(handleOnSelectionChange);
-  const theodoreRef = useRef<TheodoreHandle>(null);
+  const editorState = useEditorState();
+
+  const cancelHide = useCallback(() => {
+    if (hideTimerRef.current != null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const showPicker = useCallback(() => {
+    cancelHide();
+    setIsPickerVisible(true);
+  }, [cancelHide]);
+
+  const scheduleHide = useCallback(() => {
+    cancelHide();
+    hideTimerRef.current = window.setTimeout(() => {
+      setIsPickerVisible(false);
+      hideTimerRef.current = null;
+    }, 300);
+  }, [cancelHide]);
 
   const handleSelectEmoji = (emoji: {
     id: string;
@@ -50,58 +66,91 @@ const App = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.editorWrapper}>
-        <Theodore
-          editorState={editorState}
-          className={styles.editor}
-          ref={theodoreRef}
-          renderEmoji={renderEmoji}
+    <div className={styles.mainPhone}>
+      <div className={styles.backgroundImageEffect} />
+      <div className={styles.header}>
+        <img
+          src="/playground/logo.png"
+          alt="Theodore"
+          className={styles.character}
         />
-        <Picker
-          data={appleEmojisData}
-          set="apple"
-          theme="light"
-          onEmojiSelect={handleSelectEmoji}
-        />
+        <div className={styles.title}>THEOdore</div>
       </div>
-      <SelectionPreview ref={selectionPreviewRef} />
-      <div style={{ whiteSpace: 'pre' }}>
-        text: {convertTreeToText(editorState.tree)}
+      <div className={styles.content}>
+        <div className={styles.theodoreWrapper}>
+          <Theodore
+            ref={theodoreRef}
+            editorState={editorState}
+            renderEmoji={renderEmoji}
+            className={styles.theodore}
+          />
+          <div className={styles.controller}>
+            <EmojiOutlined
+              className={styles.emojiIcon}
+              size={30}
+              color={`rgba(93, 91, 80, 1)`}
+              onMouseEnter={showPicker}
+              onMouseLeave={scheduleHide}
+            />
+            <AnimatedPicker
+              isVisible={isPickerVisible}
+              onEnter={showPicker}
+              onLeave={scheduleHide}
+              onSelectEmoji={handleSelectEmoji}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-const SelectionPreview = React.forwardRef<{
-  onSelectionUpdate: (newSelection: Selection) => void;
-}>((_, ref) => {
-  const [selection, setSelection] = useState<Selection>(null);
+const AnimatedPicker: React.FC<{
+  isVisible: boolean;
+  onEnter?: () => void;
+  onLeave?: () => void;
+  onSelectEmoji?: (emoji: {
+    id: string;
+    keywords: string[];
+    shortcodes: string;
+    name: string;
+    native: string;
+    unified: string;
+  }) => void;
+}> = ({ isVisible, onEnter, onLeave, onSelectEmoji }) => {
+  const { shouldRender, transitionClassNames } = useShowTransition(
+    {
+      open: styles.DesktopAnimationActive,
+      notOpen: styles.DesktopAnimationNotActive,
+    },
+    isVisible,
+    200,
+  );
 
-  useImperativeHandle(ref, () => {
-    return {
-      onSelectionUpdate(newSelection) {
-        setSelection(newSelection);
-      },
-    };
-  }, []);
+  const asyncTransitionClassNames = useDelayedValue<string>(
+    transitionClassNames,
+    0,
+    '',
+  );
+
+  if (!shouldRender) return null;
 
   return (
-    <div className={styles.selection}>
-      <span>
-        start:{' '}
-        {selection?.startSelection == null
-          ? 'null'
-          : JSON.stringify(selection?.startSelection)}
-      </span>
-      <span>
-        end:{' '}
-        {selection?.startSelection == null
-          ? 'null'
-          : JSON.stringify(selection?.endSelection)}
-      </span>
+    <div
+      className={clsx(styles.picker, asyncTransitionClassNames)}
+      onMouseEnter={isVisible ? onEnter : undefined}
+      onMouseLeave={isVisible ? onLeave : undefined}
+    >
+      <Picker
+        data={appleEmojisData}
+        set="apple"
+        theme="light"
+        onEmojiSelect={onSelectEmoji}
+        perLine={8}
+        emojiSize={28}
+      />
     </div>
   );
-});
+};
 
 export default App;
