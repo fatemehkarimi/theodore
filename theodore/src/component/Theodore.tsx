@@ -51,7 +51,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
 
     return (
       <div
-        className={`${styles.container} ${className}`}
+        className={`${styles.container} ${className ?? ''}`}
         contentEditable="true"
         onKeyDown={handleKeyDown}
         onBeforeInput={handleOnBeforeInput}
