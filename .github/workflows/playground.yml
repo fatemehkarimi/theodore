@@ -2,8 +2,7 @@
 name: Build playground
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - master
     paths:
@@ -11,7 +10,6 @@ on:
 
 jobs:
   build:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
