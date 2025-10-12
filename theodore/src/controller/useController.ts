@@ -24,7 +24,7 @@ import {
   setCaretPosition,
 } from '../selection/selection';
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
-import { isDevelopment } from '../utils';
+import { isDevelopment } from '../environment';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
@@ -95,10 +95,10 @@ const useController = (
             const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
             let newStartPAppended = false;
 
-            const deletedNodes = prevState.prevState as (
-              | EditorNode
-              | EditorNode[]
-            )[];
+            const deletedNodes = [
+              ...(prevState.prevState as (EditorNode | EditorNode[])[]),
+            ];
+
             for (const node of deletedNodes) {
               if (Array.isArray(node)) {
                 if (node.length == 0) continue;
@@ -146,7 +146,6 @@ const useController = (
             const newTree = tree.slice(0, basePIdx + 1);
             newTree.push(prevState.prevState as EditorNode[]);
             newTree.push(...tree.slice(basePIdx + 1));
-
             return newTree;
           }
 
@@ -197,6 +196,7 @@ const useController = (
             .filter((subTree) => subTree.length > 0);
           return newTree;
         });
+
         if (prevState.selection != null)
           setSelection(
             prevState.selection?.startSelection,
@@ -747,11 +747,11 @@ const useController = (
 
     const startPToBeRemovedNodes = tree[startPIdx].slice(startIdx + 1);
     if (startPToBeRemovedNodes.length > 0)
-      deletedNodes.push(startPToBeRemovedNodes);
-    for (let i = startPIdx + 1; i < endPIdx; ++i) deletedNodes.push(tree[i]);
+      deletedNodes.push(...startPToBeRemovedNodes);
+    for (let i = startPIdx + 1; i < endPIdx; ++i) deletedNodes.push(...tree[i]);
     const endPToBeRemovedNodes = tree[endPIdx].slice(0, endIdx);
     if (endPToBeRemovedNodes.length > 0)
-      deletedNodes.push(endPToBeRemovedNodes);
+      deletedNodes.push(...endPToBeRemovedNodes);
 
     const newEndP = [];
 
