@@ -1,6 +1,4 @@
-import type {
-  Optional,
-} from '../../types';
+import type { Optional } from '../../types';
 import type { EditorSelection } from '../selection/types';
 import type { HistoryStack, HistoryCommand } from './types';
 
