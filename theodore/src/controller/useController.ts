@@ -49,6 +49,7 @@ import {
   getNodeIndexInTree,
   getParagraphIndexInTree,
   getSelectionAfterNodeRemove,
+  isEmoji,
   removeNodeFromTree,
 } from './utils';
 
@@ -232,7 +233,13 @@ const useController = (
     const native = event.nativeEvent as unknown as InputEvent;
     const data = (native as any)?.data as string | null | undefined;
 
-    if (data) handleInsertText(data);
+    if (data) {
+      if (isEmoji(data)) {
+        insertEmoji(data);
+      } else {
+        handleInsertText(data);
+      }
+    }
   };
 
   const handleInsertText = (text: string) => {

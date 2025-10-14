@@ -169,3 +169,9 @@ export const getSelectionAfterNodeRemove = (
       };
   } else return ALWAYS_IN_DOM_NODE_SELECTION;
 };
+
+export const isEmoji = (text: string): boolean => {
+  if (!text || text.length === 0) return false;
+  const emojiRegex = /\p{Emoji}/u;
+  return emojiRegex.test(text);
+};
