@@ -66,143 +66,8 @@ const useController = (
     const key = event.key;
     let delegateHandleToBrowser = false;
 
-    if (event.ctrlKey && key == 'z') {
-      if (tree == null) return;
-      let transactionId = undefined;
-      do {
-        const prevState = history.pop();
-        if (prevState == null) return;
-        if (transactionId == undefined) transactionId = prevState.transactionId;
-        setTree((tree) => {
-          if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
-
-          if (prevState.command == COMMAND_REMOVE_NODE) {
-            const prevNode = prevState.prevNodeIndexInTree;
-            const nextNode = prevState.nextNodeIndexInTree;
-
-            const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
-              tree,
-              prevNode,
-            );
-            const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
-              tree,
-              nextNode,
-            );
-
-            if (prevNodeIdx == -1) return tree;
-            const newTree = tree.slice(0, prevNodePIdx);
-
-            const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
-            let newStartPAppended = false;
-
-            const deletedNodes = [
-              ...(prevState.prevState as (EditorNode | EditorNode[])[]),
-            ];
-
-            for (const node of deletedNodes) {
-              if (Array.isArray(node)) {
-                if (node.length == 0) continue;
-                const firstNode = node[0];
-                if (firstNode.getType() == 'paragraph') {
-                  if (!newStartPAppended) {
-                    newTree.push(newStartP);
-                    newStartPAppended = true;
-                  }
-                  newTree.push(node);
-                } else newStartP.push(...node);
-              } else if (node.getType() == 'paragraph') {
-                if (!newStartPAppended) {
-                  newTree.push(newStartP);
-                  newStartPAppended = true;
-                }
-                newTree.push([node]);
-              } else if (!newStartPAppended) {
-                newStartP.push(node);
-              } else newTree[newTree.length - 1].push(node);
-            }
-
-            if (!newStartPAppended) newTree.push(newStartP);
-            if (nextNodeIdx != -1) {
-              const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
-              const firstNode =
-                remainingNodes.length > 0 ? remainingNodes[0] : null;
-              if (firstNode != null && firstNode.getType() == 'paragraph')
-                newTree.push(remainingNodes);
-              else newTree[newTree.length - 1].push(...remainingNodes);
-              newTree.push(...tree.slice(nextNodePIdx + 1));
-            }
-            return newTree;
-          }
-
-          if (prevState.command == COMMAND_INSERT_PARAGRAPH_AFTER) {
-            if (prevState.prevState == null) return tree;
-            if (prevState.prevNodeIndexInTree == undefined)
-              return [prevState.prevState as EditorNode[], ...tree];
-            const basePIdx = getParagraphIndexInTree(
-              tree,
-              prevState.prevNodeIndexInTree,
-            );
-
-            const newTree = tree.slice(0, basePIdx + 1);
-            newTree.push(prevState.prevState as EditorNode[]);
-            newTree.push(...tree.slice(basePIdx + 1));
-            return newTree;
-          }
-
-          const newTree = tree
-            .map((subTree) => {
-              const pNode = subTree[0];
-              if (
-                pNode.getIndex() == prevState.nodeIndex &&
-                prevState.command == COMMAND_REPLACE_PARAGRAPH
-              ) {
-                if (prevState.prevState != null) {
-                  const prevNodes = prevState.prevState as EditorNode[];
-                  return prevNodes;
-                }
-              } else if (
-                pNode.getIndex() == prevState.nodeIndex &&
-                prevState.command == COMMAND_INSERT_PARAGRAPH
-              )
-                return [];
-
-              return subTree
-                .map((node) => {
-                  if (node.getIndex() == prevState.nodeIndex) {
-                    if (prevState.command == COMMAND_INSERT_TEXT) {
-                      if (prevState.prevState != null && node.isTextNode()) {
-                        (node as TextNode).setChild(
-                          prevState.prevState as string,
-                        );
-                        return node;
-                      } else return null;
-                    } else if (prevState.command == COMMAND_REPLACE_TEXT) {
-                      if (prevState.prevState != null) {
-                        const newNode = TextNode.fromDescriptor(
-                          prevState.prevState as TextNodeDesc,
-                        );
-                        // we keep the original node because it may be in the
-                        // history of other commands
-                        const newText = newNode.getChildren();
-                        if (newText != null)
-                          (node as TextNode).setChild(newText);
-                        return node;
-                      } else return null;
-                    } else return null;
-                  } else return node;
-                })
-                .filter((node) => node != null);
-            })
-            .filter((subTree) => subTree.length > 0);
-          return newTree;
-        });
-
-        if (prevState.selection != null)
-          setSelection(
-            prevState.selection?.startSelection,
-            prevState.selection?.endSelection,
-          );
-      } while (transactionId == history.top()?.transactionId);
+    if (event.ctrlKey && event.code === 'KeyZ') {
+      handleUndo();
       return;
     }
 
@@ -220,6 +85,144 @@ const useController = (
     else delegateHandleToBrowser = true;
 
     if (!delegateHandleToBrowser) event.preventDefault();
+  };
+
+  const handleUndo = () => {
+    if (tree == null) return;
+    let transactionId = undefined;
+    do {
+      const prevState = history.pop();
+      if (prevState == null) return;
+      if (transactionId == undefined) transactionId = prevState.transactionId;
+      setTree((tree) => {
+        if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
+
+        if (prevState.command == COMMAND_REMOVE_NODE) {
+          const prevNode = prevState.prevNodeIndexInTree;
+          const nextNode = prevState.nextNodeIndexInTree;
+
+          const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
+            tree,
+            prevNode,
+          );
+          const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
+            tree,
+            nextNode,
+          );
+
+          if (prevNodeIdx == -1) return tree;
+          const newTree = tree.slice(0, prevNodePIdx);
+
+          const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
+          let newStartPAppended = false;
+
+          const deletedNodes = [
+            ...(prevState.prevState as (EditorNode | EditorNode[])[]),
+          ];
+
+          for (const node of deletedNodes) {
+            if (Array.isArray(node)) {
+              if (node.length == 0) continue;
+              const firstNode = node[0];
+              if (firstNode.getType() == 'paragraph') {
+                if (!newStartPAppended) {
+                  newTree.push(newStartP);
+                  newStartPAppended = true;
+                }
+                newTree.push(node);
+              } else newStartP.push(...node);
+            } else if (node.getType() == 'paragraph') {
+              if (!newStartPAppended) {
+                newTree.push(newStartP);
+                newStartPAppended = true;
+              }
+              newTree.push([node]);
+            } else if (!newStartPAppended) {
+              newStartP.push(node);
+            } else newTree[newTree.length - 1].push(node);
+          }
+
+          if (!newStartPAppended) newTree.push(newStartP);
+          if (nextNodeIdx != -1) {
+            const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
+            const firstNode =
+              remainingNodes.length > 0 ? remainingNodes[0] : null;
+            if (firstNode != null && firstNode.getType() == 'paragraph')
+              newTree.push(remainingNodes);
+            else newTree[newTree.length - 1].push(...remainingNodes);
+            newTree.push(...tree.slice(nextNodePIdx + 1));
+          }
+          return newTree;
+        }
+
+        if (prevState.command == COMMAND_INSERT_PARAGRAPH_AFTER) {
+          if (prevState.prevState == null) return tree;
+          if (prevState.prevNodeIndexInTree == undefined)
+            return [prevState.prevState as EditorNode[], ...tree];
+          const basePIdx = getParagraphIndexInTree(
+            tree,
+            prevState.prevNodeIndexInTree,
+          );
+
+          const newTree = tree.slice(0, basePIdx + 1);
+          newTree.push(prevState.prevState as EditorNode[]);
+          newTree.push(...tree.slice(basePIdx + 1));
+          return newTree;
+        }
+
+        const newTree = tree
+          .map((subTree) => {
+            const pNode = subTree[0];
+            if (
+              pNode.getIndex() == prevState.nodeIndex &&
+              prevState.command == COMMAND_REPLACE_PARAGRAPH
+            ) {
+              if (prevState.prevState != null) {
+                const prevNodes = prevState.prevState as EditorNode[];
+                return prevNodes;
+              }
+            } else if (
+              pNode.getIndex() == prevState.nodeIndex &&
+              prevState.command == COMMAND_INSERT_PARAGRAPH
+            )
+              return [];
+
+            return subTree
+              .map((node) => {
+                if (node.getIndex() == prevState.nodeIndex) {
+                  if (prevState.command == COMMAND_INSERT_TEXT) {
+                    if (prevState.prevState != null && node.isTextNode()) {
+                      (node as TextNode).setChild(
+                        prevState.prevState as string,
+                      );
+                      return node;
+                    } else return null;
+                  } else if (prevState.command == COMMAND_REPLACE_TEXT) {
+                    if (prevState.prevState != null) {
+                      const newNode = TextNode.fromDescriptor(
+                        prevState.prevState as TextNodeDesc,
+                      );
+                      // we keep the original node because it may be in the
+                      // history of other commands
+                      const newText = newNode.getChildren();
+                      if (newText != null) (node as TextNode).setChild(newText);
+                      return node;
+                    } else return null;
+                  } else return null;
+                } else return node;
+              })
+              .filter((node) => node != null);
+          })
+          .filter((subTree) => subTree.length > 0);
+        return newTree;
+      });
+
+      if (prevState.selection != null)
+        setSelection(
+          prevState.selection?.startSelection,
+          prevState.selection?.endSelection,
+        );
+    } while (transactionId == history.top()?.transactionId);
   };
 
   const handleOnBeforeInput: React.FormEventHandler<HTMLDivElement> = (
