@@ -1,3 +1,4 @@
+import Graphemer from 'graphemer';
 import type { Node } from '../../nodes/Node';
 import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
@@ -172,6 +173,68 @@ export const getSelectionAfterNodeRemove = (
 
 export const isEmoji = (text: string): boolean => {
   if (!text || text.length === 0) return false;
-  const emojiRegex = /\p{Emoji}/u;
+  const emojiRegex = /\p{Extended_Pictographic}/u;
   return emojiRegex.test(text);
+};
+
+export const insertNodesInBetween = (
+  tree: Tree,
+  nodesToInsert: (Node | Node[])[],
+  prevNode: number | undefined,
+  nextNode: number | undefined,
+) => {
+  const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(tree, prevNode);
+  const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(tree, nextNode);
+
+  if (prevNodeIdx == -1) return tree;
+  const newTree = tree.slice(0, prevNodePIdx);
+
+  const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
+  let newStartPAppended = false;
+
+  for (const node of nodesToInsert) {
+    if (Array.isArray(node)) {
+      if (node.length == 0) continue;
+      const firstNode = node[0];
+      if (firstNode.getType() == 'paragraph') {
+        if (!newStartPAppended) {
+          newTree.push(newStartP);
+          newStartPAppended = true;
+        }
+        newTree.push(node);
+      } else newStartP.push(...node);
+    } else if (node.getType() == 'paragraph') {
+      if (!newStartPAppended) {
+        newTree.push(newStartP);
+        newStartPAppended = true;
+      }
+      newTree.push([node]);
+    } else if (!newStartPAppended) {
+      newStartP.push(node);
+    } else newTree[newTree.length - 1].push(node);
+  }
+
+  if (!newStartPAppended) newTree.push(newStartP);
+  if (nextNodeIdx != -1) {
+    const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
+    const firstNode = remainingNodes.length > 0 ? remainingNodes[0] : null;
+    if (firstNode != null && firstNode.getType() == 'paragraph')
+      newTree.push(remainingNodes);
+    else newTree[newTree.length - 1].push(...remainingNodes);
+    newTree.push(...tree.slice(nextNodePIdx + 1));
+  }
+  return newTree;
+};
+
+export const segmentText = (text: string): string[] => {
+  if (typeof (Intl as any).Segmenter === 'function') {
+    return [
+      ...new (Intl as any).Segmenter(undefined, {
+        granularity: 'grapheme',
+      }).segment(text),
+    ].map((data: any) => data.segment);
+  } else {
+    const graphemer = new Graphemer();
+    return graphemer.splitGraphemes(text);
+  }
 };

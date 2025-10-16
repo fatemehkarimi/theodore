@@ -42,5 +42,8 @@
     "@types/react": ">=18.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "graphemer": "^1.4.0"
   }
 }
