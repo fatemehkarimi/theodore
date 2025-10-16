@@ -49,8 +49,10 @@ import {
   getNodeIndexInTree,
   getParagraphIndexInTree,
   getSelectionAfterNodeRemove,
+  insertNodesInBetween,
   isEmoji,
   removeNodeFromTree,
+  segmentText,
 } from './utils';
 
 const useController = (
@@ -99,61 +101,13 @@ const useController = (
         if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
 
         if (prevState.command == COMMAND_REMOVE_NODE) {
-          const prevNode = prevState.prevNodeIndexInTree;
-          const nextNode = prevState.nextNodeIndexInTree;
-
-          const [prevNodePIdx, prevNodeIdx] = getNodeIndexInTree(
+          const newTree = insertNodesInBetween(
             tree,
-            prevNode,
+            prevState.prevState as (EditorNode | EditorNode[])[],
+            prevState.prevNodeIndexInTree,
+            prevState.nextNodeIndexInTree,
           );
-          const [nextNodePIdx, nextNodeIdx] = getNodeIndexInTree(
-            tree,
-            nextNode,
-          );
-
-          if (prevNodeIdx == -1) return tree;
-          const newTree = tree.slice(0, prevNodePIdx);
-
-          const newStartP = tree[prevNodePIdx].slice(0, prevNodeIdx + 1);
-          let newStartPAppended = false;
-
-          const deletedNodes = [
-            ...(prevState.prevState as (EditorNode | EditorNode[])[]),
-          ];
-
-          for (const node of deletedNodes) {
-            if (Array.isArray(node)) {
-              if (node.length == 0) continue;
-              const firstNode = node[0];
-              if (firstNode.getType() == 'paragraph') {
-                if (!newStartPAppended) {
-                  newTree.push(newStartP);
-                  newStartPAppended = true;
-                }
-                newTree.push(node);
-              } else newStartP.push(...node);
-            } else if (node.getType() == 'paragraph') {
-              if (!newStartPAppended) {
-                newTree.push(newStartP);
-                newStartPAppended = true;
-              }
-              newTree.push([node]);
-            } else if (!newStartPAppended) {
-              newStartP.push(node);
-            } else newTree[newTree.length - 1].push(node);
-          }
-
-          if (!newStartPAppended) newTree.push(newStartP);
-          if (nextNodeIdx != -1) {
-            const remainingNodes = tree[nextNodePIdx].slice(nextNodeIdx);
-            const firstNode =
-              remainingNodes.length > 0 ? remainingNodes[0] : null;
-            if (firstNode != null && firstNode.getType() == 'paragraph')
-              newTree.push(remainingNodes);
-            else newTree[newTree.length - 1].push(...remainingNodes);
-            newTree.push(...tree.slice(nextNodePIdx + 1));
-          }
-          return newTree;
+          return [...newTree];
         }
 
         if (prevState.command == COMMAND_INSERT_PARAGRAPH_AFTER) {
@@ -433,6 +387,92 @@ const useController = (
         history.commit();
       }
     }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const plainText = e.clipboardData.getData('text/plain');
+    let newTree = removeNodesInSelection();
+    const nodes = convertTextToNodes(plainText);
+    const flatNodes = nodes.flat();
+
+    const selection = getSelection();
+    if (selection == null) return;
+
+    const prevNodeIdx = selection.startSelection.nodeIndex;
+    newTree = insertNodesInBetween(newTree, nodes, prevNodeIdx, undefined);
+
+    const historyItems = [];
+    for (const n of flatNodes)
+      if (n.isTextNode()) {
+        historyItems.push({
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: n.getIndex(),
+          prevState: null,
+        });
+      } else if (n.getType() == 'emoji') {
+        historyItems.push({
+          command: COMMAND_INSERT_EMOJI,
+          nodeIndex: n.getIndex(),
+          prevState: null,
+        });
+      } else if (n.getType() == 'paragraph') {
+        historyItems.push({
+          command: COMMAND_INSERT_PARAGRAPH,
+          nodeIndex: n.getIndex(),
+          prevState: null,
+        });
+      }
+
+    if (historyItems.length > 0) history.pushAndCommit(historyItems);
+    const lastInsertedNode = flatNodes[flatNodes.length - 1];
+    setSelection({
+      nodeIndex: lastInsertedNode.getIndex(),
+      offset: lastInsertedNode.isTextNode()
+        ? lastInsertedNode.getChildLength()
+        : 0,
+    });
+    setTree(newTree);
+  };
+
+  const convertTextToNodes = (text: string): (EditorNode | EditorNode[])[] => {
+    const segmentedText = segmentText(text);
+    const result: (EditorNode | EditorNode[])[] = [];
+    for (const segment of segmentedText) {
+      const lastNode = result[result.length - 1];
+      if (isEmoji(segment)) {
+        const emojiNode = new EmojiNode(
+          assignNodeIndex(),
+          segment,
+          renderEmoji,
+        );
+
+        if (lastNode == undefined || !Array.isArray(lastNode))
+          result.push(emojiNode);
+        else lastNode.push(emojiNode);
+      } else if (segment == '\n') {
+        const paragraphNode = new ParagraphNode(assignNodeIndex());
+        result.push([paragraphNode]);
+      } else {
+        let baseNode = undefined;
+        let baseArray = result;
+
+        if (Array.isArray(lastNode)) {
+          baseNode = lastNode[lastNode.length - 1];
+          baseArray = lastNode;
+        } else baseNode = lastNode;
+
+        if (baseNode == undefined || !baseNode.isTextNode()) {
+          const textNode = new TextNode(assignNodeIndex());
+          textNode.setChild(segment);
+          baseArray.push(textNode);
+        } else {
+          const currentText = (baseNode as TextNode).getChildren();
+          (baseNode as TextNode).setChild(currentText + segment);
+        }
+      }
+    }
+    return result;
   };
 
   const removeCharOrNode = (
@@ -1200,6 +1240,7 @@ const useController = (
       handleKeyDown,
       handleOnBeforeInput,
       handleSelectionChange: handleInputSelectionChange,
+      handlePaste,
     },
   };
 };
