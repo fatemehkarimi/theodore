@@ -1,7 +1,18 @@
 import appleEmojisData from '@emoji-mart/data/sets/15/apple.json';
 import Picker from '@emoji-mart/react';
-import { Theodore, TheodoreHandle, useEditorState } from '@theodore/theodore';
-import React, { useCallback, useRef, useState } from 'react';
+import {
+  convertTreeToText,
+  Theodore,
+  TheodoreHandle,
+  useEditorState,
+  EditorSelection,
+} from '@theodore/theodore';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import styles from './App.module.scss';
 import { nativeToUnified } from './emoji';
 import EmojiOutlined from './icons/EmojiOutlined';
@@ -10,6 +21,7 @@ import './index.css';
 import { useShowTransition } from './hooks/useShowtransition';
 import { useDelayedValue } from './hooks/useDelayedValue';
 import clsx from 'clsx';
+import { BlurInput } from './BlurInput';
 
 const renderEmoji = (emoji: string) => {
   if (emoji == '') return <></>;
@@ -22,16 +34,19 @@ const renderEmoji = (emoji: string) => {
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const selectionPreviewRef = useRef<{
-    onSelectionUpdate: (newSelection: Selection) => void;
+    onSelectionUpdate: (newSelection: EditorSelection) => void;
   }>(null);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const hideTimerRef = useRef<number | null>(null);
 
-  const handleOnSelectionChange = useCallback((newSelection: Selection) => {
-    selectionPreviewRef.current?.onSelectionUpdate(newSelection);
-  }, []);
+  const handleOnSelectionChange = useCallback(
+    (newSelection: EditorSelection) => {
+      selectionPreviewRef.current?.onSelectionUpdate(newSelection);
+    },
+    [],
+  );
 
-  const editorState = useEditorState();
+  const editorState = useEditorState(handleOnSelectionChange);
 
   const cancelHide = useCallback(() => {
     if (hideTimerRef.current != null) {
@@ -90,28 +105,36 @@ const App = () => {
         </a>
       </div>
       <div className={styles.content}>
-        <div className={styles.theodoreWrapper}>
-          <Theodore
-            ref={theodoreRef}
-            editorState={editorState}
-            renderEmoji={renderEmoji}
-            className={styles.theodore}
-          />
-          <div className={styles.controller}>
-            <EmojiOutlined
-              className={styles.emojiIcon}
-              size={30}
-              color={`rgba(93, 91, 80, 1)`}
-              onMouseEnter={showPicker}
-              onMouseLeave={scheduleHide}
+        <div className={styles.wrapper}>
+          <div className={styles.theodoreWrapper}>
+            <Theodore
+              ref={theodoreRef}
+              editorState={editorState}
+              renderEmoji={renderEmoji}
+              className={styles.theodore}
             />
-            <AnimatedPicker
-              isVisible={isPickerVisible}
-              onEnter={showPicker}
-              onLeave={scheduleHide}
-              onSelectEmoji={handleSelectEmoji}
-            />
+            <div className={styles.controller}>
+              <EmojiOutlined
+                className={styles.emojiIcon}
+                size={30}
+                color={`rgba(93, 91, 80, 1)`}
+                onMouseEnter={showPicker}
+                onMouseLeave={scheduleHide}
+              />
+              <AnimatedPicker
+                isVisible={isPickerVisible}
+                onEnter={showPicker}
+                onLeave={scheduleHide}
+                onSelectEmoji={handleSelectEmoji}
+              />
+            </div>
           </div>
+          <div className={styles.theodoreStateInfo}>
+            <BlurInput label="Plain Text">
+              {convertTreeToText(editorState.tree)}
+            </BlurInput>
+          </div>
+          <SelectionPreview ref={selectionPreviewRef} />
         </div>
       </div>
     </div>
@@ -166,4 +189,32 @@ const AnimatedPicker: React.FC<{
   );
 };
 
+const SelectionPreview = React.forwardRef<{
+  onSelectionUpdate: (newSelection: EditorSelection) => void;
+}>((_, ref) => {
+  const [selection, setSelection] = useState<EditorSelection | null>(null);
+  useImperativeHandle(ref, () => {
+    return {
+      onSelectionUpdate: (newSelection: EditorSelection) => {
+        setSelection(newSelection);
+      },
+    };
+  }, []);
+  return (
+    <div className={styles.selectionPreview}>
+      <BlurInput label="Start Selection">
+        <div className={styles.selectionInfo}>
+          <p>Node Index: {selection?.startSelection.nodeIndex ?? 'null'}</p>
+          <p>Offset: {selection?.startSelection.offset ?? 'null'}</p>
+        </div>
+      </BlurInput>
+      <BlurInput label="Start Selection">
+        <div className={styles.selectionInfo}>
+          <p>Node Index: {selection?.endSelection.nodeIndex ?? 'null'}</p>
+          <p>Offset: {selection?.endSelection.offset ?? 'null'}</p>
+        </div>
+      </BlurInput>
+    </div>
+  );
+});
 export default App;
