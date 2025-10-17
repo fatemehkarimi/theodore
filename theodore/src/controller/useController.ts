@@ -147,9 +147,8 @@ const useController = (
                 if (node.getIndex() == prevState.nodeIndex) {
                   if (prevState.command == COMMAND_INSERT_TEXT) {
                     if (prevState.prevState != null && node.isTextNode()) {
-                      (node as TextNode).setChild(
-                        prevState.prevState as string,
-                      );
+                      const textNode = node as TextNode;
+                      textNode.setChild(prevState.prevState as string);
                       return node;
                     } else return null;
                   } else if (prevState.command == COMMAND_REPLACE_TEXT) {
@@ -1101,22 +1100,22 @@ const useController = (
         const selectedTextNode = selectedNode as TextNode;
         const text = selectedTextNode.getChildren();
         if (text != null) {
-          const [before, after] = [
+          const [beforeText, afterText] = [
             text.slice(0, selectedNodeOffset),
             text.slice(selectedNodeOffset),
-          ].map((part) => {
-            const textNode = new TextNode(assignNodeIndex());
-            textNode.setChild(part);
-            return textNode;
-          });
+          ];
+          const afterTextNode = new TextNode(assignNodeIndex());
+          afterTextNode.setChild(afterText);
+
+          selectedTextNode.setChild(beforeText);
 
           // calculating tree
           const subTree = newTree[subtreeIdx];
           const newSubTree = [
             ...subTree.slice(0, nodeIdxInTree),
-            before,
+            selectedTextNode,
             node,
-            after,
+            afterTextNode,
             ...subTree.slice(nodeIdxInTree + 1),
           ];
           newTree[subtreeIdx] = newSubTree;
@@ -1125,13 +1124,13 @@ const useController = (
           history.push([
             {
               command: COMMAND_INSERT_TEXT,
-              nodeIndex: after.getIndex(),
+              nodeIndex: afterTextNode.getIndex(),
               prevState: null,
             },
             {
-              command: COMMAND_REPLACE_TEXT,
-              nodeIndex: before.getIndex(),
-              prevState: selectedTextNode.toDescriptor(),
+              command: COMMAND_INSERT_TEXT,
+              nodeIndex: selectedTextNode.getIndex(),
+              prevState: text,
             },
           ]);
         } else {
