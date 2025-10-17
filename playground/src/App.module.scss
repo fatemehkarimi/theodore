@@ -61,18 +61,28 @@
 
 .content {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   position: relative;
   z-index: 10;
-  padding-top: 100px;
+  padding-block-start: 100px;
   padding-inline: 10px;
+  width: 100%;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 800px;
+  gap: 32px;
 }
 
 .theodoreWrapper {
   width: 100%;
-  max-width: 800px;
+  width: 100%;
   padding: 6px;
   background-color: #fff;
   border-radius: 10px;
@@ -152,4 +162,21 @@
   &:hover::before {
     opacity: 1;
   }
+}
+
+.theodoreStateInfo {
+  width: 100%;
+}
+
+.selectionPreview {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.selectionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
