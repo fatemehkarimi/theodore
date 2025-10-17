@@ -923,7 +923,7 @@ const useController = (
   };
 
   const insertNewParagraph = () => {
-    const newTree = removeNodesInSelection();
+    const newTree = removeNodesInSelection(true);
     const paragraphNode = new ParagraphNode(assignNodeIndex());
     const selection = getSelection()?.startSelection; // todo:  check;
 
@@ -1064,8 +1064,8 @@ const useController = (
     });
   };
 
-  const insertNodeInSelection = (node: EditorNode) => {
-    const newTree = removeNodesInSelection();
+  const insertEmojiNodeInSelection = (node: EditorNode) => {
+    const newTree = removeNodesInSelection(true);
     const selectedNodes = getEditorSelectedNode();
     const selectedNodeOffset = getSelection()?.startSelection?.offset ?? 0;
 
@@ -1163,7 +1163,7 @@ const useController = (
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-    insertNodeInSelection(emojiNode);
+    insertEmojiNodeInSelection(emojiNode);
   };
 
   const getEditorSelectedNode = () => {
