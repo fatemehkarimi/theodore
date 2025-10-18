@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import type { EditorState, onSelectionChangeFn, Tree } from '../types';
 import { useHistory } from './history/useHistory';
 import { useSelection } from './selection/useSelection';
@@ -6,9 +7,6 @@ import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
 } from './utils';
-import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
-import { TextNode } from '../nodes/textNode/TextNode';
-import EmojiNode from '../nodes/emojiNode/EmojiNode';
 
 const useEditorState = (
   onSelectionChange?: onSelectionChangeFn,
@@ -49,4 +47,9 @@ const convertTreeToText = (tree: Tree) => {
   }
   return result;
 };
-export { useEditorState, convertTreeToText };
+
+const isEditorEmpty = (tree: Tree) => {
+  return tree.length === 0 || (tree.length === 1 && tree[0].length <= 1);
+};
+
+export { convertTreeToText, useEditorState, isEditorEmpty };

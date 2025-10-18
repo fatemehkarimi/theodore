@@ -112,6 +112,8 @@ const App = () => {
               editorState={editorState}
               renderEmoji={renderEmoji}
               className={styles.theodore}
+              placeholderClassName={styles.theodorePlaceholder}
+              placeholder="write something and surprise the world..."
             />
             <div className={styles.controller}>
               <EmojiOutlined
