@@ -87,6 +87,9 @@ importers:
 
   theodore:
     dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       graphemer:
         specifier: ^1.4.0
         version: 1.4.0

@@ -10,6 +10,8 @@ import styles from './Theodore.module.scss';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
 import { isRTL } from '../rtl';
+import { isEditorEmpty } from '../controller/useEditorState';
+import clsx from 'clsx';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -17,14 +19,27 @@ type Props = Omit<
 > & {
   editorState: EditorState;
   renderEmoji: RenderEmoji;
+  placeholder?: string | React.ReactNode;
   onSelectionChange?: onSelectionChangeFn;
+  wrapperClassName?: string;
+  placeholderClassName?: string;
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
   (
-    { className, renderEmoji, onSelectionChange, editorState, ...props },
+    {
+      className,
+      renderEmoji,
+      onSelectionChange,
+      editorState,
+      placeholder,
+      wrapperClassName,
+      placeholderClassName,
+      ...props
+    },
     ref,
   ) => {
     const { tree } = editorState;
+    const isEmpty = isEditorEmpty(tree);
     const inputRef = useRef<HTMLDivElement | null>(null);
     const {
       insertEmoji,
@@ -55,41 +70,62 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     }, [handleSelectionChange]);
 
     return (
-      <div
-        className={`${styles.container} ${className ?? ''}`}
-        contentEditable="true"
-        onKeyDown={handleKeyDown}
-        onBeforeInput={handleOnBeforeInput}
-        onPaste={handlePaste}
-        ref={inputRef}
-        onInput={(e) => e.preventDefault()}
-        autoCorrect="off"
-        spellCheck="false"
-        {...props}
-        suppressContentEditableWarning
-      >
-        {tree?.map((subtree) => {
-          if (subtree.length == 0) throw new Error('Subtree is empty');
-          const paragraph = subtree[0] as ParagraphNode;
-          const nodes = subtree.slice(1);
-          const startsWithRTL =
-            nodes.length == 0
-              ? false
-              : nodes[0].isTextNode() &&
-                  (nodes[0] as TextNode).getChildren() != null
-                ? isRTL((nodes[0] as TextNode).getChildren()?.slice(0, 1) ?? '')
-                : false;
-          return paragraph.render(
-            nodes.length == 0 ? undefined : (
-              <>
-                {nodes.map((node) => {
-                  return node.render();
-                })}
-              </>
-            ),
-            startsWithRTL ? 'rtl' : 'ltr',
-          );
-        })}
+      <div className={clsx(styles.wrapper, wrapperClassName)}>
+        <div
+          className={`${styles.container} ${className ?? ''}`}
+          contentEditable="true"
+          onKeyDown={handleKeyDown}
+          onBeforeInput={handleOnBeforeInput}
+          onPaste={handlePaste}
+          ref={inputRef}
+          onInput={(e) => e.preventDefault()}
+          autoCorrect="off"
+          spellCheck="false"
+          {...props}
+          suppressContentEditableWarning
+        >
+          {tree?.map((subtree) => {
+            if (subtree.length == 0) throw new Error('Subtree is empty');
+            const paragraph = subtree[0] as ParagraphNode;
+            const nodes = subtree.slice(1);
+            const startsWithRTL =
+              nodes.length == 0
+                ? false
+                : nodes[0].isTextNode() &&
+                    (nodes[0] as TextNode).getChildren() != null
+                  ? isRTL(
+                      (nodes[0] as TextNode).getChildren()?.slice(0, 1) ?? '',
+                    )
+                  : false;
+            return paragraph.render(
+              nodes.length == 0 ? undefined : (
+                <>
+                  {nodes.map((node) => {
+                    return node.render();
+                  })}
+                </>
+              ),
+              startsWithRTL ? 'rtl' : 'ltr',
+            );
+          })}
+        </div>
+        {placeholder != undefined ? (
+          typeof placeholder == 'string' ? (
+            <div
+              className={clsx(
+                styles.placeholder,
+                {
+                  [styles.hiddenPlaceholder]: !isEmpty,
+                },
+                placeholderClassName,
+              )}
+            >
+              {placeholder}
+            </div>
+          ) : isEmpty ? (
+            placeholder
+          ) : null
+        ) : null}
       </div>
     );
   },

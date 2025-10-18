@@ -1,7 +1,33 @@
+.wrapper {
+  position: relative;
+}
+
 .container {
   padding: 10px;
   width: 100%;
   user-select: text;
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: 16px;
+}
+
+.placeholder {
+  color: #b3bac5;
+  pointer-events: none;
+  user-select: none;
+  width: fit-content;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  opacity: 1;
+  font-size: 16px;
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+
+  &.hiddenPlaceholder {
+    opacity: 0;
+    transform: translateX(20px);
+  }
 }
