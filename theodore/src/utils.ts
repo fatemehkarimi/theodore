@@ -116,3 +116,24 @@ export const convertRangeBoundyPointToParagraphBoundaryPoint = (
 };
 
 export const isTextNode = (node: Node) => node.nodeType == Node.TEXT_NODE;
+
+export function computeLineHeightPx(
+  computedStyle: CSSStyleDeclaration,
+): number | null {
+  const raw = computedStyle.lineHeight;
+  const fontSizePx = parseFloat(computedStyle.fontSize || '');
+  const hasFontSize = Number.isFinite(fontSizePx);
+
+  if (!raw) return null;
+  if (raw === 'normal') return hasFontSize ? fontSizePx * 1.2 : null;
+
+  const numeric = parseFloat(raw);
+  if (!Number.isFinite(numeric)) return null;
+
+  const trimmed = raw.trim();
+  if (trimmed.endsWith('px')) return numeric;
+  if (trimmed.endsWith('%'))
+    return hasFontSize ? (numeric / 100) * fontSizePx : null;
+
+  return hasFontSize ? numeric * fontSizePx : numeric;
+}

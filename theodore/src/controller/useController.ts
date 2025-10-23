@@ -50,6 +50,7 @@ import {
   getParagraphIndexInTree,
   getSelectionAfterNodeRemove,
   insertNodesInBetween,
+  isElementInView,
   isEmoji,
   removeNodeFromTree,
   segmentText,
@@ -1215,6 +1216,13 @@ const useController = (
       const selectedNodes = getEditorSelectedNode();
       const nodeElement = getDomNodeByNodeIndex(nodeIndex);
       if (nodeElement == null) return;
+
+      const container = inputRef?.current;
+      const shouldScroll = isElementInView(container, nodeElement);
+
+      if (shouldScroll)
+        nodeElement.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
       if (selectedNodes?.startNode?.isTextNode())
         setCaretPosition(nodeElement, startSelection.offset);
       else setCaretAfter(nodeElement);
@@ -1223,6 +1231,7 @@ const useController = (
       const startNode = selectedNodes?.startNode;
       const endNode = selectedNodes?.endNode;
       if (startNode == null || endNode == null) return;
+
       selectRangeInDom(
         startNode,
         startSelection.offset,

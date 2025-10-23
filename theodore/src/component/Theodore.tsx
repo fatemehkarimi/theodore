@@ -1,17 +1,18 @@
+import clsx from 'clsx';
 import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { useController } from '../controller/useController';
+import { isEditorEmpty } from '../controller/useEditorState';
+import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
+import { TextNode } from '../nodes/textNode/TextNode';
+import { isRTL } from '../rtl';
 import type {
   EditorState,
   onSelectionChangeFn,
   RenderEmoji,
   TheodoreHandle,
 } from '../types';
+import { computeLineHeightPx } from '../utils';
 import styles from './Theodore.module.scss';
-import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
-import { TextNode } from '../nodes/textNode/TextNode';
-import { isRTL } from '../rtl';
-import { isEditorEmpty } from '../controller/useEditorState';
-import clsx from 'clsx';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -23,6 +24,7 @@ type Props = Omit<
   onSelectionChange?: onSelectionChangeFn;
   wrapperClassName?: string;
   placeholderClassName?: string;
+  maxLines?: number;
 };
 const Theodore = React.forwardRef<TheodoreHandle, Props>(
   (
@@ -34,6 +36,8 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       placeholder,
       wrapperClassName,
       placeholderClassName,
+      maxLines,
+      style,
       ...props
     },
     ref,
@@ -41,6 +45,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     const { tree } = editorState;
     const isEmpty = isEditorEmpty(tree);
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const [maxHeight, setMaxHeight] = React.useState<number | null>(null);
     const {
       insertEmoji,
       insertNewParagraph,
@@ -69,6 +74,19 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
         document.removeEventListener('selectionchange', handleSelectionChange);
     }, [handleSelectionChange]);
 
+    useEffect(() => {
+      if (maxLines == null || maxLines <= 0) return;
+      const element = inputRef.current;
+      if (!element) return;
+      const computedStyle = window.getComputedStyle(element);
+      const lineHeightPx = computeLineHeightPx(computedStyle);
+      setMaxHeight(
+        lineHeightPx != null && Number.isFinite(lineHeightPx)
+          ? lineHeightPx * maxLines
+          : null,
+      );
+    }, [maxLines]);
+
     return (
       <div className={clsx(styles.wrapper, wrapperClassName)}>
         <div
@@ -81,6 +99,10 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
           onInput={(e) => e.preventDefault()}
           autoCorrect="off"
           spellCheck="false"
+          style={{
+            ...(maxHeight != null ? { maxHeight: `${maxHeight}px` } : {}),
+            ...style,
+          }}
           {...props}
           suppressContentEditableWarning
         >

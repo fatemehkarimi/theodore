@@ -238,3 +238,24 @@ export const segmentText = (text: string): string[] => {
     return graphemer.splitGraphemes(text);
   }
 };
+
+export const isElementInView = (
+  container: HTMLElement | null,
+  element: Element,
+) => {
+  const elRect = element.getBoundingClientRect();
+  let isInView = false;
+  if (container != null) {
+    const containerRect = container.getBoundingClientRect();
+    isInView =
+      elRect.top < containerRect.top ||
+      elRect.bottom > containerRect.bottom ||
+      elRect.left < containerRect.left ||
+      elRect.right > containerRect.right;
+  } else {
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    isInView = elRect.top < 0 || elRect.bottom > viewportHeight;
+  }
+  return isInView;
+};
