@@ -106,6 +106,7 @@ const App = () => {
       </div>
       <div className={styles.content}>
         <div className={styles.wrapper}>
+          <Slogan />
           <div className={styles.theodoreWrapper}>
             <Theodore
               ref={theodoreRef}
@@ -142,6 +143,15 @@ const App = () => {
           <SelectionPreview ref={selectionPreviewRef} />
         </div>
       </div>
+    </div>
+  );
+};
+
+const Slogan: React.FC = () => {
+  return (
+    <div className={styles.sloganWrapper}>
+      <h2>THEOodore is a text input that replaces emoji characters with</h2>
+      <h2>custom images, ensuring consistent display across all browsers</h2>
     </div>
   );
 };
