@@ -6,7 +6,7 @@ import {
   TheodoreHandle,
   useEditorState,
   EditorSelection,
-} from '@theodore/theodore';
+} from 'theodore-js';
 import React, {
   useCallback,
   useImperativeHandle,
