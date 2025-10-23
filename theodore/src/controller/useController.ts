@@ -75,8 +75,14 @@ const useController = (
       return;
     }
 
-    // todo: handle
-    if (event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (
+      event.ctrlKey &&
+      (event.code === 'KeyB' || event.code === 'KeyI' || event.code === 'KeyU')
+    ) {
+      event.preventDefault();
+      return;
+    }
+
     if (
       [ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END].includes(key)
     ) {
