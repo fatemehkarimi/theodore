@@ -114,6 +114,7 @@ const App = () => {
               className={styles.theodore}
               placeholderClassName={styles.theodorePlaceholder}
               placeholder="write something and surprise the world..."
+              maxLines={7}
             />
             <div className={styles.controller}>
               <EmojiOutlined
@@ -133,7 +134,9 @@ const App = () => {
           </div>
           <div className={styles.theodoreStateInfo}>
             <BlurInput label="Plain Text">
-              {convertTreeToText(editorState.tree)}
+              <p className={styles.textPreviewWrapper}>
+                {convertTreeToText(editorState.tree)}
+              </p>
             </BlurInput>
           </div>
           <SelectionPreview ref={selectionPreviewRef} />
