@@ -27,6 +27,7 @@
     "url": "https://github.com/fatemehkarimi/theodore",
     "directory": "packages/theodore"
   },
+  "homepage": "https://playground.theodore-js.dev",
   "engines": {
     "node": ">=16.0.0"
   },
