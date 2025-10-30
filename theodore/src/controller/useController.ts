@@ -1,4 +1,5 @@
 import { useLayoutEffect, type MutableRefObject } from 'react';
+import { isDevelopment } from '../environment';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -24,7 +25,6 @@ import {
   setCaretPosition,
 } from '../selection/selection';
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
-import { isDevelopment } from '../environment';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
@@ -406,7 +406,13 @@ const useController = (
     if (selection == null) return;
 
     const prevNodeIdx = selection.startSelection.nodeIndex;
-    newTree = insertNodesInBetween(newTree, nodes, prevNodeIdx, undefined);
+    const nextNodeIndex = findNodeAfter(newTree, prevNodeIdx);
+    newTree = insertNodesInBetween(
+      newTree,
+      nodes,
+      prevNodeIdx,
+      nextNodeIndex?.getIndex(),
+    );
 
     const historyItems = [];
     for (const n of flatNodes)

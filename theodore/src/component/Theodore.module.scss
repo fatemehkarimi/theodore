@@ -1,5 +1,7 @@
 .wrapper {
   position: relative;
+  text-align: initial;
+  box-sizing: border-box;
 }
 
 .container {
@@ -9,7 +11,6 @@
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 16px;
-  box-sizing: content-box;
   overflow-y: auto;
 }
 
