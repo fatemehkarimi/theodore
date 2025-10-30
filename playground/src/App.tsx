@@ -28,7 +28,7 @@ const renderEmoji = (emoji: string) => {
   const unified = nativeToUnified(emoji);
   const path = `/img-apple-64/${unified}.png`;
 
-  return <img src={path} width={22} height={22} />;
+  return <img src={path} width={22} height={22} alt={emoji} />;
 };
 
 const App = () => {

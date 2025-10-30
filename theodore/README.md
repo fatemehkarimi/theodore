@@ -29,7 +29,7 @@ const renderEmoji = (emoji: string) => {
   if (emoji === '') return <></>;
   const unified = nativeToUnified(emoji);
   const path = `/img-apple-64/${unified}.png`;
-  return <img src={path} width={22} height={22} alt="emoji" />;
+  return <img src={path} width={22} height={22} alt={emoji} />;
 };
 
 export const TheodoreTextInput: React.FC = () => {
@@ -62,6 +62,7 @@ Notes:
 - Theodore does not ship emoji images; point `renderEmoji` to your own assets.
 - Emojis passed to `renderEmoji` and returned from your emoji picker are native characters (e.g., "😀"). If your assets are named using unified codepoints (e.g., `1f600`), convert native to unified yourself and map to your asset paths however you prefer. The example uses a `nativeToUnified(emoji)` helper for illustration; Theodore only provides the native string.
 - Use the ref (`TheodoreHandle`) to programmatically insert emojis with `insertEmoji(native)`.
+- For correct copy/cut behavior: set the image `alt` attribute to the native emoji (e.g., `alt="😀"`). Browsers use an image's `alt` text when producing plain‑text clipboard data, so this ensures copying the editor content yields the emoji character.
 
 ### Props
 
