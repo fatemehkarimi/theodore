@@ -10,6 +10,7 @@ export default defineConfig({
         process.env.REACT_APP_BUILD_NUMBER ?? '1',
       ),
     },
+    include: [/node_modules[\\/]/],
   },
   html: {
     template: './public/index.html',
