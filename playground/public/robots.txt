@@ -1,0 +1,6 @@
+# robots.txt for Theodore Playground
+# Allow all crawlers and provide sitemap location.
+
+User-agent: *
+Allow: /
+Sitemap: https://playground.theodore-js.dev/sitemap.xml

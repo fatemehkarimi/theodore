@@ -28,6 +28,14 @@
     "directory": "packages/theodore"
   },
   "homepage": "https://playground.theodore-js.dev",
+  "keywords": [
+    "emoji",
+    "input",
+    "react",
+    "text",
+    "editor",
+    "contenteditable"
+  ],
   "engines": {
     "node": ">=16.0.0"
   },
