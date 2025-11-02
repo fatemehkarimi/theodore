@@ -37,6 +37,9 @@ jobs:
         run: |
           pnpm -C theodore build
           pnpm -C playground build
+        env:
+          SENTRY_AUTH_KEY: ${{ secrets.SENTRY_AUTH_KEY }}
+          run_number: ${{ github.run_number }}
 
       - name: Build Docker image
         run: |
