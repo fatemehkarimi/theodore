@@ -1,27 +1,27 @@
 import appleEmojisData from '@emoji-mart/data/sets/15/apple.json';
 import Picker from '@emoji-mart/react';
-import {
-  convertTreeToText,
-  Theodore,
-  TheodoreHandle,
-  useEditorState,
-  EditorSelection,
-} from 'theodore-js';
+import clsx from 'clsx';
 import React, {
   useCallback,
   useImperativeHandle,
   useRef,
   useState,
 } from 'react';
+import {
+  convertTreeToText,
+  EditorSelection,
+  Theodore,
+  TheodoreHandle,
+  useEditorState,
+} from 'theodore-js';
 import styles from './App.module.scss';
+import { BlurInput } from './BlurInput';
 import { nativeToUnified } from './emoji';
+import { useDelayedValue } from './hooks/useDelayedValue';
+import { useShowTransition } from './hooks/useShowtransition';
 import EmojiOutlined from './icons/EmojiOutlined';
 import Github from './icons/Github';
 import './index.css';
-import { useShowTransition } from './hooks/useShowtransition';
-import { useDelayedValue } from './hooks/useDelayedValue';
-import clsx from 'clsx';
-import { BlurInput } from './BlurInput';
 
 const renderEmoji = (emoji: string) => {
   if (emoji == '') return <></>;
