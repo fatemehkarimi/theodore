@@ -45,6 +45,7 @@ import {
   findNodeAfter,
   findNodeBefore,
   getDomNodeByNodeIndex,
+  getFirstEmoji,
   getNextNode,
   getNodeIndexInTree,
   getParagraphIndexInTree,
@@ -195,7 +196,8 @@ const useController = (
 
     if (data) {
       if (isEmoji(data)) {
-        insertEmoji(data);
+        const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
+        if (emoji != null) insertEmoji(emoji);
       } else {
         handleInsertText(data);
       }
