@@ -177,6 +177,11 @@ export const isEmoji = (text: string): boolean => {
   return emojiRegex.test(text);
 };
 
+export const getFirstEmoji = (s: string): string | null =>
+  s.match(
+    /\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*|[\u{1F1E6}-\u{1F1FF}]{2}/u,
+  )?.[0] ?? null;
+
 export const insertNodesInBetween = (
   tree: Tree,
   nodesToInsert: (Node | Node[])[],
