@@ -187,12 +187,9 @@ const useController = (
     } while (transactionId == history.top()?.transactionId);
   };
 
-  const handleOnBeforeInput: React.FormEventHandler<HTMLDivElement> = (
-    event,
-  ) => {
+  const handleOnBeforeInput = (event: InputEvent) => {
     event.preventDefault();
-    const native = event.nativeEvent as unknown as InputEvent;
-    const data = (native as any)?.data as string | null | undefined;
+    const data = (event as any)?.data as string | null | undefined;
 
     if (data) {
       if (isEmoji(data)) {
