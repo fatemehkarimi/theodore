@@ -189,15 +189,18 @@ const useController = (
 
   const handleOnBeforeInput = (event: InputEvent) => {
     event.preventDefault();
-    const data = (event as any)?.data as string | null | undefined;
-
-    if (data) {
-      if (isEmoji(data)) {
-        const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
-        if (emoji != null) insertEmoji(emoji);
-      } else {
-        handleInsertText(data);
+    if (event.inputType == 'insertText') {
+      const data = (event as any)?.data as string | null | undefined;
+      if (data) {
+        if (isEmoji(data)) {
+          const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
+          if (emoji != null) insertEmoji(emoji);
+        } else {
+          handleInsertText(data);
+        }
       }
+    } else if (event.inputType == 'deleteContentBackward') {
+      handleDelete(BACKSPACE);
     }
   };
 

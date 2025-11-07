@@ -75,6 +75,15 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     }, [handleSelectionChange]);
 
     useEffect(() => {
+      inputRef.current?.addEventListener('beforeinput', handleOnBeforeInput);
+      return () =>
+        inputRef.current?.removeEventListener(
+          'beforeinput',
+          handleOnBeforeInput,
+        );
+    }, [handleOnBeforeInput]);
+
+    useEffect(() => {
       if (maxLines == null || maxLines <= 0) return;
       const element = inputRef.current;
       if (!element) return;
@@ -86,15 +95,6 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
           : null,
       );
     }, [maxLines]);
-
-    useEffect(() => {
-      inputRef.current?.addEventListener('beforeinput', handleOnBeforeInput);
-      return () =>
-        inputRef.current?.removeEventListener(
-          'beforeinput',
-          handleOnBeforeInput,
-        );
-    }, [handleOnBeforeInput]);
 
     return (
       <div className={clsx(styles.wrapper, wrapperClassName)}>
