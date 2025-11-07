@@ -75,6 +75,15 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
     }, [handleSelectionChange]);
 
     useEffect(() => {
+      inputRef.current?.addEventListener('beforeinput', handleOnBeforeInput);
+      return () =>
+        inputRef.current?.removeEventListener(
+          'beforeinput',
+          handleOnBeforeInput,
+        );
+    }, [handleOnBeforeInput]);
+
+    useEffect(() => {
       if (maxLines == null || maxLines <= 0) return;
       const element = inputRef.current;
       if (!element) return;
@@ -93,7 +102,6 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
           className={`${styles.container} ${className ?? ''}`}
           contentEditable="true"
           onKeyDown={handleKeyDown}
-          onBeforeInput={handleOnBeforeInput}
           onPaste={handlePaste}
           ref={inputRef}
           onInput={(e) => e.preventDefault()}

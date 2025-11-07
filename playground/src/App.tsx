@@ -92,7 +92,7 @@ const App = () => {
             className={styles.character}
             draggable={false}
           />
-          <div className={styles.title}>THEOdore</div>
+          <div className={styles.title}>Theodore</div>
         </div>
         <a
           href="https://github.com/fatemehkarimi/theodore"
@@ -150,7 +150,7 @@ const App = () => {
 const Slogan: React.FC = () => {
   return (
     <div className={styles.sloganWrapper}>
-      <h2>THEOodore is a text input that replaces emoji characters with</h2>
+      <h2>Theodore is a text input that replaces emoji characters with</h2>
       <h2>custom images, ensuring consistent display across all browsers</h2>
     </div>
   );
