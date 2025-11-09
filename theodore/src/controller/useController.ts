@@ -189,7 +189,11 @@ const useController = (
 
   const handleOnBeforeInput = (event: InputEvent) => {
     event.preventDefault();
-    if (event.inputType == 'insertText') {
+
+    if (
+      event.inputType == 'insertText' ||
+      event.inputType == 'insertFromComposition'
+    ) {
       const data = (event as any)?.data as string | null | undefined;
       if (data) {
         if (isEmoji(data)) {
