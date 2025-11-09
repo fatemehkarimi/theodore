@@ -1,6 +1,6 @@
 {
   "name": "theodore-js",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "private": false,
   "description": "Theodore is a text input that replaces emoji characters with custom images, ensuring consistent display across all browsers",
   "author": "fatemeh karimi",
