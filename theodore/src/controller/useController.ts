@@ -71,7 +71,12 @@ const useController = (
     const key = event.key;
     let delegateHandleToBrowser = false;
 
-    if (event.ctrlKey && event.code === 'KeyZ') {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.code === 'KeyZ' &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
       handleUndo();
       return;
     }
