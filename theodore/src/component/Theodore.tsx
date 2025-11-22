@@ -25,8 +25,10 @@ type Props = Omit<
   wrapperClassName?: string;
   placeholderClassName?: string;
   maxLines?: number;
+  defaultDirection?: 'ltr' | 'rtl';
+  theodoreRef?: React.Ref<TheodoreHandle>;
 };
-const Theodore = React.forwardRef<TheodoreHandle, Props>(
+const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (
     {
       className,
@@ -37,7 +39,9 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       wrapperClassName,
       placeholderClassName,
       maxLines,
+      defaultDirection = 'ltr',
       style,
+      theodoreRef,
       ...props
     },
     ref,
@@ -57,7 +61,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       },
     } = useController(inputRef, renderEmoji, editorState);
 
-    useImperativeHandle(ref, () => {
+    useImperativeHandle(theodoreRef, () => {
       return {
         insertEmoji: (emoji) => {
           insertEmoji(emoji);
@@ -96,6 +100,18 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
       );
     }, [maxLines]);
 
+    const setRefs = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        inputRef.current = node;
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
+      },
+      [ref],
+    );
+
     return (
       <div className={clsx(styles.wrapper, wrapperClassName)}>
         <div
@@ -103,7 +119,7 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
           contentEditable="true"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          ref={inputRef}
+          ref={setRefs}
           onInput={(e) => e.preventDefault()}
           autoCorrect="off"
           spellCheck="false"
@@ -125,8 +141,9 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
                     (nodes[0] as TextNode).getChildren() != null
                   ? isRTL(
                       (nodes[0] as TextNode).getChildren()?.slice(0, 1) ?? '',
+                      defaultDirection,
                     )
-                  : false;
+                  : defaultDirection == 'rtl';
             return paragraph.render(
               nodes.length == 0 ? undefined : (
                 <>
@@ -161,4 +178,4 @@ const Theodore = React.forwardRef<TheodoreHandle, Props>(
   },
 );
 
-export { Theodore };
+export { Theodore, type Props as TheodoreProps };
