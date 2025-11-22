@@ -43,7 +43,7 @@ export const TheodoreTextInput: React.FC = () => {
   return (
     <>
       <Theodore
-        ref={theodoreRef}
+        theodoreRef={theodoreRef}
         editorState={editorState}
         renderEmoji={renderEmoji}
         placeholder="Write something..."
@@ -74,6 +74,8 @@ Notes:
 - **placeholderClassName (`string`)**: Extra class applied to the placeholder element.
 - **maxLines (`number`)**: Maximum visible line count before the editor scrolls.
 - **onSelectionChange (`(selection: EditorSelection) => void`)**: Optional selection change callback. Provide it to `useEditorState(onSelectionChange)` when creating `editorState` to receive updates.
+- **theodoreHandleRef (`React.Ref<TheodoreHandle>`)**: Optional ref to access the `TheodoreHandle` methods (e.g., `insertEmoji`).
+- **ref (`React.Ref<HTMLDivElement>`)**: Optional ref forwarded to the contentEditable div element.
 - **...div props**: All other `div` props (except `contentEditable`) are forwarded to the contentEditable element (e.g., `aria-*`, `data-*`, `onFocus`, `onBlur`).
 
 ### Converting to plain text

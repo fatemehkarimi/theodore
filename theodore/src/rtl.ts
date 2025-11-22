@@ -11,8 +11,8 @@ const rtlRanges = [
   [0x1ee00, 0x1eeff], // Arabic Mathematical Alphabetic Symbols
 ];
 
-
-export function isRTL(char: string) {
+export function isRTL(char: string, defaultDir: 'ltr' | 'rtl'): boolean {
+  if (char == '') return defaultDir == 'rtl';
   const code = char.charCodeAt(0);
   return rtlRanges.some(([start, end]) => code >= start && code <= end);
 }

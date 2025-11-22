@@ -33,6 +33,7 @@ const renderEmoji = (emoji: string) => {
 
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: EditorSelection) => void;
   }>(null);
@@ -109,13 +110,14 @@ const App = () => {
           <Slogan />
           <div className={styles.theodoreWrapper}>
             <Theodore
-              ref={theodoreRef}
+              theodoreRef={theodoreRef}
               editorState={editorState}
               renderEmoji={renderEmoji}
               className={styles.theodore}
               placeholderClassName={styles.theodorePlaceholder}
               placeholder="write something and surprise the world..."
               maxLines={7}
+              ref={editorRef}
             />
             <div className={styles.controller}>
               <EmojiOutlined

@@ -1,5 +1,5 @@
-export { Theodore } from './component/Theodore';
-export type { TheodoreHandle, EditorState } from './types';
+export { Theodore, type TheodoreProps } from './component/Theodore';
+export type { TheodoreHandle, EditorState, Tree as TheoodreTree } from './types';
 export type { EditorSelection } from './controller/selection/types';
 export {
   convertTreeToText,

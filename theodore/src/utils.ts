@@ -125,7 +125,8 @@ export function computeLineHeightPx(
   const hasFontSize = Number.isFinite(fontSizePx);
 
   if (!raw) return null;
-  if (raw === 'normal') return hasFontSize ? fontSizePx * 1.2 : null;
+  // https://medium.com/design-bootcamp/ux-golden-tip-1-the-magic-number-for-line-height-aae93cd1a35
+  if (raw === 'normal') return hasFontSize ? Math.ceil(fontSizePx * 1.4) : null;
 
   const numeric = parseFloat(raw);
   if (!Number.isFinite(numeric)) return null;
