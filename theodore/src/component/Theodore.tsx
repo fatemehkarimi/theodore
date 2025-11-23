@@ -136,7 +136,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
             const nodes = subtree.slice(1);
             const startsWithRTL =
               nodes.length == 0
-                ? false
+                ? defaultDirection == 'rtl'
                 : nodes[0].isTextNode() &&
                     (nodes[0] as TextNode).getChildren() != null
                   ? isRTL(
@@ -144,6 +144,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
                       defaultDirection,
                     )
                   : defaultDirection == 'rtl';
+
             return paragraph.render(
               nodes.length == 0 ? undefined : (
                 <>
