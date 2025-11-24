@@ -7,6 +7,7 @@ import { EditorSelection } from './controller/selection/types';
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type TheodoreHandle = {
   insertEmoji: (emoji: string) => void;
+  setContent: (content: string) => void;
 };
 
 export type RenderEmoji = (emoji: string) => ReactElement;

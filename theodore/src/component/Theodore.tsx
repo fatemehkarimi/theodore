@@ -27,6 +27,7 @@ type Props = Omit<
   maxLines?: number;
   defaultDirection?: 'ltr' | 'rtl';
   theodoreRef?: React.Ref<TheodoreHandle>;
+  shouldSuppressFocus?: boolean;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (
@@ -42,6 +43,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       defaultDirection = 'ltr',
       style,
       theodoreRef,
+      shouldSuppressFocus,
       ...props
     },
     ref,
@@ -58,6 +60,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         handleOnBeforeInput,
         handleSelectionChange,
         handlePaste,
+        clearAndSetContent,
       },
     } = useController(inputRef, renderEmoji, editorState);
 
@@ -68,6 +71,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         },
         insertNewParagraph: () => {
           insertNewParagraph();
+        },
+        setContent: (content: string) => {
+          clearAndSetContent(content);
         },
       };
     }, [insertEmoji, insertNewParagraph]);
@@ -99,6 +105,22 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           : null,
       );
     }, [maxLines]);
+
+    useEffect(() => {
+      const input = inputRef.current!;
+
+      function suppressFocus() {
+        input.blur();
+      }
+
+      if (shouldSuppressFocus) {
+        input.addEventListener('focus', suppressFocus);
+      }
+
+      return () => {
+        input.removeEventListener('focus', suppressFocus);
+      };
+    }, [shouldSuppressFocus]);
 
     const setRefs = React.useCallback(
       (node: HTMLDivElement | null) => {
@@ -136,7 +158,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
             const nodes = subtree.slice(1);
             const startsWithRTL =
               nodes.length == 0
-                ? false
+                ? defaultDirection == 'rtl'
                 : nodes[0].isTextNode() &&
                     (nodes[0] as TextNode).getChildren() != null
                   ? isRTL(
@@ -144,6 +166,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
                       defaultDirection,
                     )
                   : defaultDirection == 'rtl';
+
             return paragraph.render(
               nodes.length == 0 ? undefined : (
                 <>

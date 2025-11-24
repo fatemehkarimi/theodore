@@ -96,8 +96,8 @@ const useController = (
     } else if (key == ENTER) insertNewParagraph();
     else if (key == BACKSPACE || key == DELETE) {
       handleDelete(key);
-    } else if (key == SPACE) handleInsertText(key);
-    else if (key == TAB) handleInsertText('\t');
+    } else if (key == SPACE) handleInsertTextFromKeyboard(key);
+    else if (key == TAB) handleInsertTextFromKeyboard('\t');
     else delegateHandleToBrowser = true;
 
     if (!delegateHandleToBrowser) event.preventDefault();
@@ -205,7 +205,7 @@ const useController = (
           const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
           if (emoji != null) insertEmoji(emoji);
         } else {
-          handleInsertText(data);
+          handleInsertTextFromKeyboard(data);
         }
       }
     } else if (event.inputType == 'deleteContentBackward') {
@@ -213,7 +213,7 @@ const useController = (
     }
   };
 
-  const handleInsertText = (text: string) => {
+  const handleInsertTextFromKeyboard = (text: string) => {
     const newTree = removeNodesInSelection();
     const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
     if (node == null || node.getType() != 'text') {
@@ -409,6 +409,31 @@ const useController = (
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const plainText = e.clipboardData.getData('text/plain');
+    handleInsertPlainText(plainText);
+  };
+
+  const clearAndSetContent = (plainText: string) => {
+    const tree = editorState.tree;
+    const firstNode = tree[0][0];
+    const lastNode = tree[tree.length - 1][tree[tree.length - 1].length - 1];
+
+    setSelection(
+      {
+        nodeIndex: firstNode.getIndex(),
+        offset: 0,
+      },
+      lastNode
+        ? {
+            nodeIndex: lastNode.getIndex(),
+            offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
+          }
+        : undefined,
+    );
+    handleInsertPlainText(plainText);
+  };
+
+  const handleInsertPlainText = (plainText: string) => {
+    // plain text may contain emoji and paragraph
     let newTree = removeNodesInSelection();
     const nodes = convertTextToNodes(plainText);
     const flatNodes = nodes.flat();
@@ -1272,6 +1297,7 @@ const useController = (
       handleOnBeforeInput,
       handleSelectionChange: handleInputSelectionChange,
       handlePaste,
+      clearAndSetContent,
     },
   };
 };
