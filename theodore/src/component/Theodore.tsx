@@ -60,6 +60,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         handleOnBeforeInput,
         handleSelectionChange,
         handlePaste,
+        clearAndSetContent,
       },
     } = useController(inputRef, renderEmoji, editorState);
 
@@ -70,6 +71,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         },
         insertNewParagraph: () => {
           insertNewParagraph();
+        },
+        setContent: (content: string) => {
+          clearAndSetContent(content);
         },
       };
     }, [insertEmoji, insertNewParagraph]);
