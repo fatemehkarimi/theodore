@@ -118,6 +118,7 @@ const App = () => {
               placeholder="write something and surprise the world..."
               maxLines={7}
               ref={editorRef}
+              shouldSuppressFocus={isPickerVisible}
             />
             <div className={styles.controller}>
               <EmojiOutlined

@@ -27,6 +27,7 @@ type Props = Omit<
   maxLines?: number;
   defaultDirection?: 'ltr' | 'rtl';
   theodoreRef?: React.Ref<TheodoreHandle>;
+  shouldSuppressFocus?: boolean;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (
@@ -42,6 +43,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       defaultDirection = 'ltr',
       style,
       theodoreRef,
+      shouldSuppressFocus,
       ...props
     },
     ref,
@@ -99,6 +101,22 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           : null,
       );
     }, [maxLines]);
+
+    useEffect(() => {
+      const input = inputRef.current!;
+
+      function suppressFocus() {
+        input.blur();
+      }
+
+      if (shouldSuppressFocus) {
+        input.addEventListener('focus', suppressFocus);
+      }
+
+      return () => {
+        input.removeEventListener('focus', suppressFocus);
+      };
+    }, [shouldSuppressFocus]);
 
     const setRefs = React.useCallback(
       (node: HTMLDivElement | null) => {
