@@ -2,16 +2,15 @@
 name: Publish to npm
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
+    environment: NPM_TOKEN
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,6 +37,4 @@ jobs:
 
       - name: Publish to npm
         run: pnpm -C theodore publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
