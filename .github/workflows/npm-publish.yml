@@ -36,5 +36,5 @@ jobs:
         run: pnpm -C theodore build
 
       - name: Publish to npm
-        run: pnpm -C theodore publish --access public --no-git-checks
+        run: cd theodore && pnpm publish --access public --no-git-checks
 
