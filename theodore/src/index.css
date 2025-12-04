@@ -39,22 +39,22 @@
   margin: 0px 1.5px;
   pointer-events: none;
   user-select: initial;
+}
 
-  * {
-    user-select: initial;
-  }
+.theodore_emojiNode * {
+  user-select: initial;
 }
 
 .theodore_paragraphNode {
   margin: 0px;
   user-select: initial;
-
-  br {
-    user-select: initial;
-  }
 }
 
-.thedore_textNode {
+.theodore_paragraphNode br {
+  user-select: initial;
+}
+
+.theodore_textNode {
   white-space: pre-wrap;
   user-select: initial;
 }
