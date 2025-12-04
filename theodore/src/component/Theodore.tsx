@@ -12,7 +12,6 @@ import type {
   TheodoreHandle,
 } from '../types';
 import { computeLineHeightPx } from '../utils';
-import styles from './Theodore.module.scss';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -135,9 +134,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     );
 
     return (
-      <div className={clsx(styles.wrapper, wrapperClassName)}>
+      <div className={clsx('theodore_wrapper', wrapperClassName)}>
         <div
-          className={`${styles.container} ${className ?? ''}`}
+          className={`theodore_contentEditable ${className ?? ''}`}
           contentEditable="true"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
@@ -183,9 +182,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           typeof placeholder == 'string' ? (
             <div
               className={clsx(
-                styles.placeholder,
+                'theodore_placeholder',
                 {
-                  [styles.hiddenPlaceholder]: !isEmpty,
+                  theodore_hiddenPlaceholder: !isEmpty,
                 },
                 placeholderClassName,
               )}
