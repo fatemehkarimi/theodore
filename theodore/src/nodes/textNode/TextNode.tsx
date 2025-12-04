@@ -1,6 +1,5 @@
 import { TextNodeDesc } from '../../types';
 import { Node } from '../Node';
-import styles from './styles.module.scss';
 
 class TextNode extends Node {
   private children: string | null = null;
@@ -52,7 +51,7 @@ class TextNode extends Node {
       <span
         data-node-index={this.getIndex()}
         key={this.getKey()}
-        className={styles.textNode}
+        className="theodore_textNode"
       >
         {inner}
       </span>

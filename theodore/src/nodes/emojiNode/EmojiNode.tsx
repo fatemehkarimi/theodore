@@ -1,6 +1,5 @@
 import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
-import styles from './styles.module.scss';
 
 class EmojiNode extends Node {
   constructor(
@@ -39,7 +38,7 @@ class EmojiNode extends Node {
       <span
         key={this.getKey()}
         data-node-index={this.getIndex()}
-        className={styles.emojiContainer}
+        className="theodore_emojiNode"
       >
         {emojiEl}
       </span>

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import React from 'react';
 import { Node } from '../Node';
-import styles from './styles.module.scss';
 
 class ParagraphNode extends Node {
   constructor(nodeIndex: number) {
@@ -31,7 +30,7 @@ class ParagraphNode extends Node {
         dir={dir}
         key={this.getKey()}
         data-node-index={this.getIndex()}
-        className={styles.paragraphContainer}
+        className="theodore_paragraphNode"
       >
         {children ?? <br />}
       </p>

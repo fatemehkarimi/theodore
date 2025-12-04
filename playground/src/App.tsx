@@ -14,6 +14,7 @@ import {
   TheodoreHandle,
   useEditorState,
 } from 'theodore-js';
+import 'theodore-js/style.css';
 import styles from './App.module.scss';
 import { BlurInput } from './BlurInput';
 import { nativeToUnified } from './emoji';
