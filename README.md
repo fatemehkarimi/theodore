@@ -14,6 +14,12 @@ Try it in the playground: [Playground demo](https://playground.theodore-js.dev).
 npm install theodore-js
 ```
 
+**Important:** You must import the CSS file for Theodore to work correctly:
+
+```tsx
+import 'theodore-js/style.css';
+```
+
 ### Quick start
 
 Below is a minimal example showing how to:
@@ -24,6 +30,7 @@ Below is a minimal example showing how to:
 ```tsx
 import React, { useRef } from 'react';
 import { Theodore, TheodoreHandle, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
 
 const renderEmoji = (emoji: string) => {
   if (emoji === '') return <></>;
