@@ -24,6 +24,22 @@ import EmojiOutlined from './icons/EmojiOutlined';
 import Github from './icons/Github';
 import './index.css';
 
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const ua =
+    navigator.userAgent ||
+    (navigator as any).vendor ||
+    (window as any).opera ||
+    '';
+
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    ua,
+  );
+};
+
 const renderEmoji = (emoji: string) => {
   if (emoji == '') return <></>;
   const unified = nativeToUnified(emoji);
@@ -117,9 +133,9 @@ const App = () => {
               className={styles.theodore}
               placeholderClassName={styles.theodorePlaceholder}
               placeholder="write something and surprise the world..."
-              maxLines={7}
+              maxLines={isMobileDevice() ? 5 : 7}
               ref={editorRef}
-              shouldSuppressFocus={isPickerVisible}
+              shouldSuppressFocus={isMobileDevice() && isPickerVisible}
             />
             <div className={styles.controller}>
               <EmojiOutlined
