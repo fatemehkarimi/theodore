@@ -1,5 +1,10 @@
 import clsx from 'clsx';
-import React, { useEffect, useImperativeHandle, useRef } from 'react';
+import React, {
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 import { useController } from '../controller/useController';
 import { isEditorEmpty } from '../controller/useEditorState';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
@@ -132,6 +137,11 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       },
       [ref],
     );
+
+    useLayoutEffect(() => {
+      if (props.autoFocus) inputRef.current?.focus();
+      else inputRef.current?.blur();
+    }, [props.autoFocus]);
 
     return (
       <div className={clsx('theodore_wrapper', wrapperClassName)}>
