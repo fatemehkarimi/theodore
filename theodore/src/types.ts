@@ -23,7 +23,7 @@ export type Tree = EditorNode[][];
 
 export type EditorState = {
   tree: Tree;
-  setTree: React.Dispatch<React.SetStateAction<Tree>>;
+  setTree: (tree: Tree) => void;
   assignNodeIndex: () => number;
   historyHandle: HistoryHandle;
   selectionHandle: SelectionHandle;
