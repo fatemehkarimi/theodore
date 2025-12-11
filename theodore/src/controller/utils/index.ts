@@ -264,3 +264,15 @@ export const isElementInView = (
   }
   return isInView;
 };
+
+export const findSelectedNodeToInsertText = (
+  tree: Tree,
+  nodeIndex: number | undefined,
+) => {
+  const node = findNode(tree, nodeIndex);
+  if (node != null && node.getType() == 'paragraph') {
+    const nextNode = findNodeAfter(tree, node.getIndex());
+    if (nextNode != null && nextNode.getType() != 'paragraph') return nextNode;
+  }
+  return node;
+};

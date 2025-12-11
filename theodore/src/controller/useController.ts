@@ -44,6 +44,7 @@ import {
   findNode,
   findNodeAfter,
   findNodeBefore,
+  findSelectedNodeToInsertText,
   getDomNodeByNodeIndex,
   getFirstEmoji,
   getNextNode,
@@ -219,7 +220,11 @@ const useController = (
 
   const handleInsertTextFromKeyboard = (text: string) => {
     const newTree = removeNodesInSelection();
-    const node = findNode(newTree, getSelection()?.startSelection.nodeIndex);
+    const node = findSelectedNodeToInsertText(
+      newTree,
+      getSelection()?.startSelection.nodeIndex,
+    );
+
     if (node == null || node.getType() != 'text') {
       const textNode = new TextNode(assignNodeIndex());
       textNode.setChild(text);
