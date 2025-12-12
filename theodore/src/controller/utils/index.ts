@@ -272,7 +272,7 @@ export const findSelectedNodeToInsertText = (
   const node = findNode(tree, nodeIndex);
   if (node != null && node.getType() == 'paragraph') {
     const nextNode = findNodeAfter(tree, node.getIndex());
-    if (nextNode != null && nextNode.getType() != 'paragraph') return nextNode;
+    if (nextNode != null && nextNode.getType() == 'text') return nextNode;
   }
   return node;
 };
