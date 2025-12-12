@@ -23,6 +23,7 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'no-unused-vars': 'error',
       'no-restricted-syntax': [
         'error',
         {
