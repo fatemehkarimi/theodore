@@ -1,5 +1,5 @@
 import { useLayoutEffect, type MutableRefObject } from 'react';
-import { isDevelopment } from '../environment';
+import { IS_FIREFOX, isDevelopment } from '../environment';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -34,6 +34,7 @@ import {
   COMMAND_REPLACE_PARAGRAPH,
   COMMAND_REPLACE_TEXT,
 } from './commands';
+import { HistoryCommand } from './history/types';
 import {
   areNodeSelectionEqual,
   isEditorSelectionCollapsed,
@@ -41,7 +42,6 @@ import {
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
-  findNode,
   findNodeAfter,
   findNodeBefore,
   findSelectedNodeToInsertText,
@@ -57,7 +57,7 @@ import {
   removeNodeFromTree,
   segmentText,
 } from './utils';
-import { HistoryCommand } from './history/types';
+import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -80,6 +80,10 @@ const useController = (
     ) {
       event.preventDefault();
       handleUndo();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.code === 'KeyX') {
       return;
     }
 
@@ -195,6 +199,17 @@ const useController = (
       })
       .filter((subTree) => subTree.length > 0);
     return newTree;
+  };
+
+  const handleCut = () => {
+    if (!IS_FIREFOX) {
+      // firefox itself copies the text to the clipboard
+      const text = getTextFromDomSelection();
+      if (text) copyTextToClipboard(text);
+    }
+    const newTree = removeNodesInSelection(true);
+    history.commit();
+    setTree(newTree);
   };
 
   const handleOnBeforeInput = (event: InputEvent) => {
@@ -1298,13 +1313,12 @@ const useController = (
   return {
     insertEmoji,
     insertNewParagraph,
-    handlers: {
-      handleKeyDown,
-      handleOnBeforeInput,
-      handleSelectionChange: handleInputSelectionChange,
-      handlePaste,
-      clearAndSetContent,
-    },
+    handleKeyDown,
+    handleOnBeforeInput,
+    handleSelectionChange: handleInputSelectionChange,
+    handlePaste,
+    handleCut,
+    clearAndSetContent,
   };
 };
 

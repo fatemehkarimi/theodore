@@ -59,13 +59,12 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     const {
       insertEmoji,
       insertNewParagraph,
-      handlers: {
-        handleKeyDown,
-        handleOnBeforeInput,
-        handleSelectionChange,
-        handlePaste,
-        clearAndSetContent,
-      },
+      handleKeyDown,
+      handleOnBeforeInput,
+      handleSelectionChange,
+      handlePaste,
+      handleCut,
+      clearAndSetContent,
     } = useController(inputRef, renderEmoji, editorState);
 
     useImperativeHandle(theodoreRef, () => {
@@ -150,6 +149,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           contentEditable="true"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
+          onCut={handleCut}
           ref={setRefs}
           onInput={(e) => e.preventDefault()}
           autoCorrect="off"

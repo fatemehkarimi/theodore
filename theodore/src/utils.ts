@@ -138,3 +138,79 @@ export function computeLineHeightPx(
 
   return hasFontSize ? numeric * fontSizePx : numeric;
 }
+
+export const copyTextToClipboard = (text: string) => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  if (
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === 'function'
+  ) {
+    try {
+      navigator.clipboard.writeText(text);
+      return;
+    } catch {}
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'absolute';
+  textarea.style.left = '-9999px';
+
+  const selection = document.getSelection();
+  const originalRange =
+    selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand('copy');
+  } finally {
+    document.body.removeChild(textarea);
+    if (originalRange && selection) {
+      selection.removeAllRanges();
+      selection.addRange(originalRange);
+    }
+  }
+};
+
+export function getTextFromDomSelection() {
+  const selection = document.getSelection();
+  if (!selection || selection.rangeCount === 0) return undefined;
+
+  const parts: string[] = [];
+
+  for (let i = 0; i < selection.rangeCount; i++) {
+    const range = selection.getRangeAt(i);
+    const fragment = range.cloneContents();
+
+    const container = document.createElement('div');
+    container.appendChild(fragment);
+
+    const images = container.querySelectorAll('img');
+    images.forEach((img) => {
+      const alt = img.getAttribute('alt') || '';
+      const textNode = document.createTextNode(alt);
+      img.replaceWith(textNode);
+    });
+
+    const paragraphs = container.querySelectorAll('p');
+    Array.from(paragraphs)
+      .slice(0, paragraphs.length - 1)
+      .forEach((p) => {
+        const hasText =
+          (p.textContent && p.textContent.trim().length > 0) ||
+          p.querySelector('br');
+        if (!hasText) return;
+
+        p.appendChild(document.createTextNode('\n'));
+      });
+
+    const text = container.textContent || '';
+    parts.push(text);
+  }
+
+  return parts.join('');
+}
