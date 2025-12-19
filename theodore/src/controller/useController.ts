@@ -949,7 +949,7 @@ const useController = (
 
   const handleInputSelectionChange = () => {
     const selection = document.getSelection();
-    if (selection == null) return;
+    if (selection == null || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
     if (!inputRef.current?.contains(range.commonAncestorContainer)) {
@@ -1280,6 +1280,7 @@ const useController = (
     if (selection == null) return;
 
     const { startSelection, endSelection } = selection;
+
     if (isEditorSelectionCollapsed(selection)) {
       const nodeIndex = startSelection.nodeIndex;
       const selectedNodes = getEditorSelectedNode();
