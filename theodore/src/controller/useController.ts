@@ -19,12 +19,12 @@ import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
 import {
   convertDomSelectionToEditorSelection,
-  moveToNodeBySelection,
   selectRangeInDom,
   setCaretAfter,
-  setCaretPosition,
+  setCaretPosition
 } from '../selection/selection';
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
+import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
@@ -57,7 +57,6 @@ import {
   removeNodeFromTree,
   segmentText,
 } from './utils';
-import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -310,13 +309,6 @@ const useController = (
         offset: offset + text.length,
       });
     }
-
-    requestAnimationFrame(() => {
-      if (inputRef.current != null) {
-        const selection = getSelection();
-        if (selection != null) moveToNodeBySelection(selection.startSelection);
-      }
-    });
   };
 
   const handleDelete = (key: typeof BACKSPACE | typeof DELETE) => {
