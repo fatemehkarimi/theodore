@@ -21,7 +21,7 @@ import {
   convertDomSelectionToEditorSelection,
   selectRangeInDom,
   setCaretAfter,
-  setCaretPosition
+  setCaretPosition,
 } from '../selection/selection';
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
 import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
@@ -227,8 +227,40 @@ const useController = (
           handleInsertTextFromKeyboard(data);
         }
       }
+    } else if (event.inputType == 'insertReplacementText') {
+      handleInsertReplacementText(event);
     } else if (event.inputType == 'deleteContentBackward') {
       handleDelete(BACKSPACE);
+    }
+  };
+
+  const handleInsertReplacementText = (event: InputEvent) => {
+    event.preventDefault();
+
+    const target = event.target as HTMLElement | null;
+    if (!target || !(target instanceof HTMLSpanElement)) {
+      return;
+    }
+
+    const nodeIndexAttr = target.getAttribute('data-node-index');
+    const nodeIndex = nodeIndexAttr != null ? Number(nodeIndexAttr) : null;
+
+    if (nodeIndex == null) {
+      return;
+    }
+
+    const text = event.dataTransfer?.getData('text/plain');
+    const ranges = event.getTargetRanges();
+    if (ranges.length > 0 && text != undefined) {
+      const range = ranges[0];
+      const { startOffset, endOffset } = range;
+      const [pIdx, idx] = getNodeIndexInTree(tree, nodeIndex);
+      const node = tree[pIdx][idx];
+      if (node.isTextNode()) {
+        (node as TextNode).replaceText(text, startOffset, endOffset);
+        setTree([...tree]);
+        setSelection({ nodeIndex, offset: endOffset });
+      }
     }
   };
 

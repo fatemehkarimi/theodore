@@ -152,8 +152,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           onCut={handleCut}
           ref={setRefs}
           onInput={(e) => e.preventDefault()}
-          autoCorrect="off"
-          spellCheck="false"
           style={{
             ...(maxHeight != null ? { maxHeight: `${maxHeight}px` } : {}),
             ...style,

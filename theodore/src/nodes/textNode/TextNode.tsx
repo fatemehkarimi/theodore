@@ -15,6 +15,14 @@ class TextNode extends Node {
     return node;
   }
 
+  replaceText(text: string, startPosition: number, endPosition: number) {
+    const currentText = this.children ?? '';
+    this.children =
+      currentText.substring(0, startPosition) +
+      text +
+      currentText.substring(endPosition);
+  }
+
   insertText(text: string, place: number) {
     this.children =
       (this.children?.substring(0, place) ?? '') +
