@@ -1,6 +1,10 @@
 import Graphemer from 'graphemer';
-import type { Node } from '../../nodes/Node';
-import type { Tree } from '../../types';
+import { isDevelopment } from '../../environment';
+import EmojiNode from '../../nodes/emojiNode/EmojiNode';
+import type { Node as EditorNode } from '../../nodes/Node';
+import ParagraphNode from '../../nodes/paragraphNode/ParagraphNode';
+import { TextNode } from '../../nodes/textNode/TextNode';
+import type { RenderEmoji, Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
 export const ALWAYS_IN_DOM_NODE_INDEX = 1;
@@ -10,9 +14,9 @@ export const ALWAYS_IN_DOM_NODE_SELECTION = {
 };
 
 export function getNode(
-  tree: readonly Node[][] | null,
-  currentNode: Node,
-): Node | null {
+  tree: readonly EditorNode[][] | null,
+  currentNode: EditorNode,
+): EditorNode | null {
   if (tree == null) return null;
 
   let subTreeIdx = -1;
@@ -39,9 +43,9 @@ export function getNode(
 }
 
 export function getNextNode(
-  tree: readonly Node[][] | null,
-  currentNode: Node,
-): Node | null {
+  tree: readonly EditorNode[][] | null,
+  currentNode: EditorNode,
+): EditorNode | null {
   if (tree == null) return null;
 
   let subTreeIdx = -1;
@@ -126,6 +130,67 @@ export const getDomNodeByNodeIndex = (nodeIndex: number) => {
   )?.[0] as Element | null;
 };
 
+export const buildTheodoreTreeFromContentEditable = (
+  container: HTMLDivElement,
+  renderEmoji: RenderEmoji,
+): Tree | null => {
+  const renderedTree: Tree = [];
+  for (const child of Array.from(container.children)) {
+    const nodeIndex = (child as HTMLElement).getAttribute('data-node-index');
+    if (nodeIndex != null && child.tagName == 'P') {
+      const subtree = [new ParagraphNode(Number(nodeIndex))];
+      for (const grandChild of Array.from(child.children)) {
+        if (grandChild.tagName == 'BR') continue;
+        else if (grandChild.tagName == 'SPAN') {
+          const firstChild = grandChild.firstChild;
+          if (!firstChild) continue;
+          const isText = firstChild.nodeType === Node.TEXT_NODE;
+          const isImage = firstChild instanceof HTMLImageElement;
+          const nodeIndex = (grandChild as HTMLElement).getAttribute(
+            'data-node-index',
+          );
+          if (nodeIndex == null) {
+            if (isDevelopment)
+              throw new Error(
+                'invalid case. span first child has no data-node-index',
+              );
+            else return null;
+          }
+          if (isText) {
+            const textNode = new TextNode(Number(nodeIndex));
+            textNode.setChild(firstChild.textContent ?? '');
+            subtree.push(textNode);
+          } else if (isImage) {
+            const imageNode = new EmojiNode(
+              Number(nodeIndex),
+              firstChild.alt ?? '',
+              renderEmoji,
+            );
+            subtree.push(imageNode);
+          } else if (isDevelopment) {
+            throw new Error(
+              'invalid case. span first child is not text or image',
+            );
+          }
+        } else {
+          if (isDevelopment)
+            throw new Error(
+              'invalid case. saw tags other than br, span, img ' +
+                grandChild.tagName,
+            );
+        }
+      }
+      renderedTree.push(subtree);
+    } else {
+      if (isDevelopment)
+        throw new Error(
+          'invalid case. a non p tag or a node without nodeIndex is in contenteditable',
+        );
+    }
+  }
+  return renderedTree;
+};
+
 export const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {
   const [subTreeIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
   const newTree = [...tree];
@@ -184,7 +249,7 @@ export const getFirstEmoji = (s: string): string | null =>
 
 export const insertNodesInBetween = (
   tree: Tree,
-  nodesToInsert: (Node | Node[])[],
+  nodesToInsert: (EditorNode | EditorNode[])[],
   prevNode: number | undefined,
   nextNode: number | undefined,
 ) => {
@@ -275,4 +340,12 @@ export const findSelectedNodeToInsertText = (
     if (nextNode != null && nextNode.getType() == 'text') return nextNode;
   }
   return node;
+};
+
+export const isSelectionAnchorSameAsFocus = () => {
+  const selection = document.getSelection();
+  if (selection == null || selection.rangeCount == 0) return false;
+  const range = selection.getRangeAt(0);
+
+  return range.startContainer == range.endContainer;
 };

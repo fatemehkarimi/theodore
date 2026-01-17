@@ -61,6 +61,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       insertNewParagraph,
       handleKeyDown,
       handleOnBeforeInput,
+      handleOnInput,
       handleSelectionChange,
       handlePaste,
       handleCut,
@@ -95,6 +96,13 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           handleOnBeforeInput,
         );
     }, [handleOnBeforeInput]);
+
+    useEffect(() => {
+      inputRef.current?.addEventListener('input', handleOnInput);
+
+      return () =>
+        inputRef.current?.removeEventListener('input', handleOnInput);
+    }, [handleOnInput]);
 
     useEffect(() => {
       if (maxLines == null || maxLines <= 0) return;
@@ -151,7 +159,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           onPaste={handlePaste}
           onCut={handleCut}
           ref={setRefs}
-          onInput={(e) => e.preventDefault()}
           style={{
             ...(maxHeight != null ? { maxHeight: `${maxHeight}px` } : {}),
             ...style,

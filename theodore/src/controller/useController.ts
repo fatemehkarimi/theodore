@@ -1,5 +1,5 @@
 import { useLayoutEffect, type MutableRefObject } from 'react';
-import { IS_FIREFOX, isDevelopment } from '../environment';
+import { IS_ANDROID_CHROME, IS_FIREFOX, isDevelopment } from '../environment';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -42,6 +42,8 @@ import {
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
+  buildTheodoreTreeFromContentEditable,
+  findNode,
   findNodeAfter,
   findNodeBefore,
   findSelectedNodeToInsertText,
@@ -54,6 +56,7 @@ import {
   insertNodesInBetween,
   isElementInView,
   isEmoji,
+  isSelectionAnchorSameAsFocus,
   removeNodeFromTree,
   segmentText,
 } from './utils';
@@ -212,8 +215,7 @@ const useController = (
   };
 
   const handleOnBeforeInput = (event: InputEvent) => {
-    event.preventDefault();
-
+    let shouldLetBrowserHandleEvent = false;
     if (
       event.inputType == 'insertText' ||
       event.inputType == 'insertFromComposition'
@@ -227,10 +229,33 @@ const useController = (
           handleInsertTextFromKeyboard(data);
         }
       }
+    } else if (event.inputType == 'insertCompositionText') {
     } else if (event.inputType == 'insertReplacementText') {
+      // suggest autocorrect
       handleInsertReplacementText(event);
     } else if (event.inputType == 'deleteContentBackward') {
-      handleDelete(BACKSPACE);
+      const selection = getSelection();
+      const endSelectedNode =
+        selection?.endSelection.nodeIndex != undefined
+          ? getNodeInTreeByIndex(selection.endSelection.nodeIndex)
+          : undefined;
+      const hasSelectedAllTextInNode =
+        selection != null &&
+        endSelectedNode?.isTextNode() &&
+        selection.startSelection.offset == 0 &&
+        selection.endSelection.offset == endSelectedNode?.getChildLength();
+
+      const shouldLetBrowserHandleDelete =
+        IS_ANDROID_CHROME &&
+        isSelectionAnchorSameAsFocus() &&
+        !hasSelectedAllTextInNode;
+
+      shouldLetBrowserHandleEvent = shouldLetBrowserHandleDelete;
+      if (!shouldLetBrowserHandleDelete) handleDelete(BACKSPACE);
+    }
+
+    if (!shouldLetBrowserHandleEvent) {
+      event.preventDefault();
     }
   };
 
@@ -262,6 +287,27 @@ const useController = (
         setSelection({ nodeIndex, offset: endOffset });
       }
     }
+  };
+
+  const handleOnInput = (event: Event) => {
+    const { inputType } = event as InputEvent;
+    if (inputType != 'deleteContentBackward') return;
+    /* deleteContentBackward is used for autocorrect on android devices */
+    const target = event.currentTarget as HTMLDivElement;
+    const renderedTree = buildTheodoreTreeFromContentEditable(
+      target,
+      renderEmoji,
+    );
+    if (renderedTree == null) return;
+    const selection = getSelection();
+    if (isEditorSelectionCollapsed(selection)) {
+      const selectedNodeIndex = selection?.startSelection.nodeIndex;
+      const node = findNode(renderedTree, selectedNodeIndex);
+      if (selectedNodeIndex && node && node.isTextNode()) {
+        setSelection({ nodeIndex: selectedNodeIndex, offset: node.getChildLength() })
+      }
+    }
+    setTree(renderedTree);
   };
 
   const handleInsertTextFromKeyboard = (text: string) => {
@@ -378,9 +424,9 @@ const useController = (
       const text = startTextNode.getChildren() ?? '';
       const remainingText = isBackward
         ? text.slice(0, selection.startSelection.offset - 1) +
-          text.slice(selection.startSelection.offset)
+        text.slice(selection.startSelection.offset)
         : text.slice(0, selection.startSelection.offset) +
-          text.slice(selection.startSelection.offset + 1);
+        text.slice(selection.startSelection.offset + 1);
 
       if (remainingText.length > 0) {
         history.pushAndCommit([
@@ -469,9 +515,9 @@ const useController = (
       },
       lastNode
         ? {
-            nodeIndex: lastNode.getIndex(),
-            offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
-          }
+          nodeIndex: lastNode.getIndex(),
+          offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
+        }
         : undefined,
     );
     handleInsertPlainText(plainText);
@@ -1008,8 +1054,8 @@ const useController = (
         },
         endSelection != undefined
           ? {
-              ...endSelection,
-            }
+            ...endSelection,
+          }
           : undefined,
       );
     }
@@ -1343,6 +1389,7 @@ const useController = (
     handleSelectionChange: handleInputSelectionChange,
     handlePaste,
     handleCut,
+    handleOnInput,
     clearAndSetContent,
   };
 };
