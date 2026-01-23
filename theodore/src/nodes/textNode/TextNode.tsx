@@ -48,7 +48,7 @@ class TextNode extends Node {
 
   public clone(): TextNode {
     const textNode = new TextNode(this.nodeIndex);
-    if (this.children != null) this.setChild(this.children);
+    if (this.children != null) textNode.setChild(this.children);
     return textNode;
   }
 

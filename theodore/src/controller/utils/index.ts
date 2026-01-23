@@ -130,15 +130,18 @@ export const getDomNodeByNodeIndex = (nodeIndex: number) => {
   )?.[0] as Element | null;
 };
 
-export const buildTheodoreTreeFromContentEditable = (
+export const reconcileTextNodeContentFromContentEditable = (
   container: HTMLDivElement,
-  renderEmoji: RenderEmoji,
-): Tree | null => {
-  const renderedTree: Tree = [];
+  currentTree: Tree,
+): [Tree | null, boolean] => {
+  const renderedTree: Tree = [...currentTree];
+  const metTextNodes = new Set<number>();
+
   for (const child of Array.from(container.children)) {
-    const nodeIndex = (child as HTMLElement).getAttribute('data-node-index');
-    if (nodeIndex != null && child.tagName == 'P') {
-      const subtree = [new ParagraphNode(Number(nodeIndex))];
+    const pNodeIndexStr = (child as HTMLElement).getAttribute(
+      'data-node-index',
+    );
+    if (pNodeIndexStr != null && child.tagName == 'P') {
       for (const grandChild of Array.from(child.children)) {
         if (grandChild.tagName == 'BR') continue;
         else if (grandChild.tagName == 'SPAN') {
@@ -154,23 +157,16 @@ export const buildTheodoreTreeFromContentEditable = (
               throw new Error(
                 'invalid case. span first child has no data-node-index',
               );
-            else return null;
+            else return [null, false];
           }
           if (isText) {
-            const textNode = new TextNode(Number(nodeIndex));
-            textNode.setChild(firstChild.textContent ?? '');
-            subtree.push(textNode);
+            const textContent = firstChild.textContent ?? '';
+            const node = findNode(currentTree, Number(nodeIndex));
+            metTextNodes.add(Number(nodeIndex));
+            if (node != null && node.isTextNode()) {
+              (node as TextNode).setChild(textContent);
+            }
           } else if (isImage) {
-            const imageNode = new EmojiNode(
-              Number(nodeIndex),
-              firstChild.alt ?? '',
-              renderEmoji,
-            );
-            subtree.push(imageNode);
-          } else if (isDevelopment) {
-            throw new Error(
-              'invalid case. span first child is not text or image',
-            );
           }
         } else {
           if (isDevelopment)
@@ -180,7 +176,6 @@ export const buildTheodoreTreeFromContentEditable = (
             );
         }
       }
-      renderedTree.push(subtree);
     } else {
       if (isDevelopment)
         throw new Error(
@@ -188,7 +183,21 @@ export const buildTheodoreTreeFromContentEditable = (
         );
     }
   }
-  return renderedTree;
+
+  let doesBrowserRemovedAnyNode = false;
+  for (let i = 0; i < renderedTree.length; ++i) {
+    for (let j = 0; j < renderedTree[i].length; ++j) {
+      const node = renderedTree[i][j];
+      // if you haven't see the node in dom iteration, then the node is removed
+      // by the browser
+      if (node.isTextNode() && !metTextNodes.has(node.getIndex())) {
+        (node as TextNode).setChild('');
+        doesBrowserRemovedAnyNode = true;
+      }
+    }
+  }
+
+  return [renderedTree, doesBrowserRemovedAnyNode];
 };
 
 export const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {

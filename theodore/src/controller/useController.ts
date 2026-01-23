@@ -42,7 +42,7 @@ import {
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
-  buildTheodoreTreeFromContentEditable,
+  reconcileTextNodeContentFromContentEditable,
   findNode,
   findNodeAfter,
   findNodeBefore,
@@ -64,6 +64,7 @@ import {
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
+  forceRemountEditor: (fn: (key: number) => number) => void,
   editorState: EditorState,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
@@ -290,23 +291,36 @@ const useController = (
   };
 
   const handleOnInput = (event: Event) => {
+    event.preventDefault();
     const { inputType } = event as InputEvent;
     if (inputType != 'deleteContentBackward') return;
     /* deleteContentBackward is used for autocorrect on android devices */
     const target = event.currentTarget as HTMLDivElement;
-    const renderedTree = buildTheodoreTreeFromContentEditable(
-      target,
-      renderEmoji,
-    );
+    const [renderedTree, doesEditorRemovedAnyNode] =
+      reconcileTextNodeContentFromContentEditable(target, tree);
     if (renderedTree == null) return;
     const selection = getSelection();
     if (isEditorSelectionCollapsed(selection)) {
       const selectedNodeIndex = selection?.startSelection.nodeIndex;
-      const node = findNode(renderedTree, selectedNodeIndex);
-      if (selectedNodeIndex && node && node.isTextNode()) {
-        setSelection({ nodeIndex: selectedNodeIndex, offset: node.getChildLength() })
+      if (selectedNodeIndex != null) {
+        const [pIdx, idx] = getNodeIndexInTree(tree, selectedNodeIndex);
+
+        if (renderedTree[pIdx].length != tree[pIdx].length) {
+          // selected node might have been removed
+          setSelection(getSelectionAfterNodeRemove(tree, selectedNodeIndex));
+        } else {
+          const node = renderedTree[pIdx][idx];
+          if (selectedNodeIndex && node && node.isTextNode()) {
+            setSelection({
+              nodeIndex: selectedNodeIndex,
+              offset: node.getChildLength(),
+            });
+          }
+        }
       }
     }
+
+    if (doesEditorRemovedAnyNode) forceRemountEditor((key) => key + 1);
     setTree(renderedTree);
   };
 
@@ -424,9 +438,9 @@ const useController = (
       const text = startTextNode.getChildren() ?? '';
       const remainingText = isBackward
         ? text.slice(0, selection.startSelection.offset - 1) +
-        text.slice(selection.startSelection.offset)
+          text.slice(selection.startSelection.offset)
         : text.slice(0, selection.startSelection.offset) +
-        text.slice(selection.startSelection.offset + 1);
+          text.slice(selection.startSelection.offset + 1);
 
       if (remainingText.length > 0) {
         history.pushAndCommit([
@@ -515,9 +529,9 @@ const useController = (
       },
       lastNode
         ? {
-          nodeIndex: lastNode.getIndex(),
-          offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
-        }
+            nodeIndex: lastNode.getIndex(),
+            offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
+          }
         : undefined,
     );
     handleInsertPlainText(plainText);
@@ -1054,8 +1068,8 @@ const useController = (
         },
         endSelection != undefined
           ? {
-            ...endSelection,
-          }
+              ...endSelection,
+            }
           : undefined,
       );
     }
