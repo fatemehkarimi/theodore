@@ -64,7 +64,7 @@ import {
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
-  forceRemountEditor: (fn: (key: number) => number) => void,
+  updateEditorKey: (fn: (key: number) => number) => void,
   editorState: EditorState,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
@@ -231,6 +231,23 @@ const useController = (
         }
       }
     } else if (event.inputType == 'insertCompositionText') {
+      // on android, this event triggers when you type a word at the very begining
+      // and the spell is false(for example when you type خوس instead of خوش at the
+      // begining of sentence); hence browser triggers spellcheck and it is not
+      // cancelable. so we should let the browser do its work. this is the same
+      // for deleteContentBackward.
+      const newText = event.data;
+      const selection = getSelection();
+
+      if (isEditorSelectionCollapsed(selection)) {
+        const nodeIdx = selection?.startSelection.nodeIndex;
+        const node = findNode(tree, nodeIdx);
+
+        if (newText != undefined && node && node.isTextNode()) {
+          // let browser fill the node in the dom with correct value
+          (node as TextNode).setChild('');
+        }
+      }
     } else if (event.inputType == 'insertReplacementText') {
       // suggest autocorrect
       handleInsertReplacementText(event);
@@ -293,6 +310,31 @@ const useController = (
   const handleOnInput = (event: Event) => {
     event.preventDefault();
     const { inputType } = event as InputEvent;
+    if (inputType == 'insertCompositionText') {
+      const newText = (event as InputEvent).data;
+      const selection = getSelection();
+
+      if (newText && isEditorSelectionCollapsed(selection)) {
+        const node = findNode(tree, selection?.startSelection.nodeIndex);
+        if (node?.isTextNode()) {
+          (node as TextNode).setChild(newText);
+          setTree([...tree]);
+          setSelection({
+            nodeIndex: node.getIndex(),
+            offset: node.getChildLength(),
+          });
+
+          // if I remove force remove forceRemountEditor, then the text is not
+          // getting updated when user writes more character after corrected word.
+          // for example, if user writes مشافرت & editor converts it to مسافرت,
+          // then this happens fine but the rest of the input is not shown in
+          // dom.
+          forceRemountEditor();
+        }
+      }
+
+      return;
+    }
     if (inputType != 'deleteContentBackward') return;
     /* deleteContentBackward is used for autocorrect on android devices */
     const target = event.currentTarget as HTMLDivElement;
@@ -320,7 +362,7 @@ const useController = (
       }
     }
 
-    if (doesEditorRemovedAnyNode) forceRemountEditor((key) => key + 1);
+    if (doesEditorRemovedAnyNode) forceRemountEditor();
     setTree(renderedTree);
   };
 
@@ -1394,6 +1436,10 @@ const useController = (
       );
     }
   }, [tree]);
+
+  const forceRemountEditor = () => {
+    updateEditorKey((key) => key + 1);
+  };
 
   return {
     insertEmoji,
