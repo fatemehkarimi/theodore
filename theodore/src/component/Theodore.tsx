@@ -56,16 +56,18 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     const isEmpty = isEditorEmpty(tree);
     const inputRef = useRef<HTMLDivElement | null>(null);
     const [maxHeight, setMaxHeight] = React.useState<number | null>(null);
+    const [remountKey, setRemountKey] = React.useState(0);
     const {
       insertEmoji,
       insertNewParagraph,
       handleKeyDown,
       handleOnBeforeInput,
+      handleOnInput,
       handleSelectionChange,
       handlePaste,
       handleCut,
       clearAndSetContent,
-    } = useController(inputRef, renderEmoji, editorState);
+    } = useController(inputRef, renderEmoji, setRemountKey, editorState);
 
     useImperativeHandle(theodoreRef, () => {
       return {
@@ -95,6 +97,13 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           handleOnBeforeInput,
         );
     }, [handleOnBeforeInput]);
+
+    useEffect(() => {
+      inputRef.current?.addEventListener('input', handleOnInput);
+
+      return () =>
+        inputRef.current?.removeEventListener('input', handleOnInput);
+    }, [handleOnInput]);
 
     useEffect(() => {
       if (maxLines == null || maxLines <= 0) return;
@@ -151,14 +160,12 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           onPaste={handlePaste}
           onCut={handleCut}
           ref={setRefs}
-          onInput={(e) => e.preventDefault()}
-          autoCorrect="off"
-          spellCheck="false"
           style={{
             ...(maxHeight != null ? { maxHeight: `${maxHeight}px` } : {}),
             ...style,
           }}
           {...props}
+          key={`theodore-key-${remountKey}`}
           suppressContentEditableWarning
         >
           {tree?.map((subtree) => {

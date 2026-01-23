@@ -1,5 +1,5 @@
 import { useLayoutEffect, type MutableRefObject } from 'react';
-import { IS_FIREFOX, isDevelopment } from '../environment';
+import { IS_ANDROID_CHROME, IS_FIREFOX, isDevelopment } from '../environment';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -19,12 +19,12 @@ import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
 import {
   convertDomSelectionToEditorSelection,
-  moveToNodeBySelection,
   selectRangeInDom,
   setCaretAfter,
   setCaretPosition,
 } from '../selection/selection';
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
+import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 import {
   COMMAND_INSERT_EMOJI,
   COMMAND_INSERT_PARAGRAPH,
@@ -42,6 +42,8 @@ import {
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
+  reconcileTextNodeContentFromContentEditable,
+  findNode,
   findNodeAfter,
   findNodeBefore,
   findSelectedNodeToInsertText,
@@ -54,14 +56,15 @@ import {
   insertNodesInBetween,
   isElementInView,
   isEmoji,
+  isSelectionAnchorSameAsFocus,
   removeNodeFromTree,
   segmentText,
 } from './utils';
-import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
+  updateEditorKey: (fn: (key: number) => number) => void,
   editorState: EditorState,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
@@ -213,8 +216,7 @@ const useController = (
   };
 
   const handleOnBeforeInput = (event: InputEvent) => {
-    event.preventDefault();
-
+    let shouldLetBrowserHandleEvent = false;
     if (
       event.inputType == 'insertText' ||
       event.inputType == 'insertFromComposition'
@@ -228,9 +230,140 @@ const useController = (
           handleInsertTextFromKeyboard(data);
         }
       }
+    } else if (event.inputType == 'insertCompositionText') {
+      // on android, this event triggers when you type a word at the very begining
+      // and the spell is false(for example when you type خوس instead of خوش at the
+      // begining of sentence); hence browser triggers spellcheck and it is not
+      // cancelable. so we should let the browser do its work. this is the same
+      // for deleteContentBackward.
+      const newText = event.data;
+      const selection = getSelection();
+
+      if (isEditorSelectionCollapsed(selection)) {
+        const nodeIdx = selection?.startSelection.nodeIndex;
+        const node = findNode(tree, nodeIdx);
+
+        if (newText != undefined && node && node.isTextNode()) {
+          // let browser fill the node in the dom with correct value
+          (node as TextNode).setChild('');
+        }
+      }
+    } else if (event.inputType == 'insertReplacementText') {
+      // suggest autocorrect
+      handleInsertReplacementText(event);
     } else if (event.inputType == 'deleteContentBackward') {
-      handleDelete(BACKSPACE);
+      const selection = getSelection();
+      const endSelectedNode =
+        selection?.endSelection.nodeIndex != undefined
+          ? getNodeInTreeByIndex(selection.endSelection.nodeIndex)
+          : undefined;
+      const hasSelectedAllTextInNode =
+        selection != null &&
+        endSelectedNode?.isTextNode() &&
+        selection.startSelection.offset == 0 &&
+        selection.endSelection.offset == endSelectedNode?.getChildLength();
+
+      const shouldLetBrowserHandleDelete =
+        IS_ANDROID_CHROME &&
+        isSelectionAnchorSameAsFocus() &&
+        !hasSelectedAllTextInNode;
+
+      shouldLetBrowserHandleEvent = shouldLetBrowserHandleDelete;
+      if (!shouldLetBrowserHandleDelete) handleDelete(BACKSPACE);
     }
+
+    if (!shouldLetBrowserHandleEvent) {
+      event.preventDefault();
+    }
+  };
+
+  const handleInsertReplacementText = (event: InputEvent) => {
+    event.preventDefault();
+
+    const target = event.target as HTMLElement | null;
+    if (!target || !(target instanceof HTMLSpanElement)) {
+      return;
+    }
+
+    const nodeIndexAttr = target.getAttribute('data-node-index');
+    const nodeIndex = nodeIndexAttr != null ? Number(nodeIndexAttr) : null;
+
+    if (nodeIndex == null) {
+      return;
+    }
+
+    const text = event.dataTransfer?.getData('text/plain');
+    const ranges = event.getTargetRanges();
+    if (ranges.length > 0 && text != undefined) {
+      const range = ranges[0];
+      const { startOffset, endOffset } = range;
+      const [pIdx, idx] = getNodeIndexInTree(tree, nodeIndex);
+      const node = tree[pIdx][idx];
+      if (node.isTextNode()) {
+        (node as TextNode).replaceText(text, startOffset, endOffset);
+        setTree([...tree]);
+        setSelection({ nodeIndex, offset: endOffset });
+      }
+    }
+  };
+
+  const handleOnInput = (event: Event) => {
+    event.preventDefault();
+    const { inputType } = event as InputEvent;
+    if (inputType == 'insertCompositionText') {
+      const newText = (event as InputEvent).data;
+      const selection = getSelection();
+
+      if (newText && isEditorSelectionCollapsed(selection)) {
+        const node = findNode(tree, selection?.startSelection.nodeIndex);
+        if (node?.isTextNode()) {
+          (node as TextNode).setChild(newText);
+          setTree([...tree]);
+          setSelection({
+            nodeIndex: node.getIndex(),
+            offset: node.getChildLength(),
+          });
+
+          // if I remove force remove forceRemountEditor, then the text is not
+          // getting updated when user writes more character after corrected word.
+          // for example, if user writes مشافرت & editor converts it to مسافرت,
+          // then this happens fine but the rest of the input is not shown in
+          // dom.
+          forceRemountEditor();
+        }
+      }
+
+      return;
+    }
+    if (inputType != 'deleteContentBackward') return;
+    /* deleteContentBackward is used for autocorrect on android devices */
+    const target = event.currentTarget as HTMLDivElement;
+    const [renderedTree, doesEditorRemovedAnyNode] =
+      reconcileTextNodeContentFromContentEditable(target, tree);
+    if (renderedTree == null) return;
+    const selection = getSelection();
+    if (isEditorSelectionCollapsed(selection)) {
+      const selectedNodeIndex = selection?.startSelection.nodeIndex;
+      if (selectedNodeIndex != null) {
+        const [pIdx, idx] = getNodeIndexInTree(tree, selectedNodeIndex);
+
+        if (renderedTree[pIdx].length != tree[pIdx].length) {
+          // selected node might have been removed
+          setSelection(getSelectionAfterNodeRemove(tree, selectedNodeIndex));
+        } else {
+          const node = renderedTree[pIdx][idx];
+          if (selectedNodeIndex && node && node.isTextNode()) {
+            setSelection({
+              nodeIndex: selectedNodeIndex,
+              offset: node.getChildLength(),
+            });
+          }
+        }
+      }
+    }
+
+    if (doesEditorRemovedAnyNode) forceRemountEditor();
+    setTree(renderedTree);
   };
 
   const handleInsertTextFromKeyboard = (text: string) => {
@@ -310,13 +443,6 @@ const useController = (
         offset: offset + text.length,
       });
     }
-
-    requestAnimationFrame(() => {
-      if (inputRef.current != null) {
-        const selection = getSelection();
-        if (selection != null) moveToNodeBySelection(selection.startSelection);
-      }
-    });
   };
 
   const handleDelete = (key: typeof BACKSPACE | typeof DELETE) => {
@@ -949,7 +1075,7 @@ const useController = (
 
   const handleInputSelectionChange = () => {
     const selection = document.getSelection();
-    if (selection == null) return;
+    if (selection == null || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
     if (!inputRef.current?.contains(range.commonAncestorContainer)) {
@@ -1280,6 +1406,7 @@ const useController = (
     if (selection == null) return;
 
     const { startSelection, endSelection } = selection;
+
     if (isEditorSelectionCollapsed(selection)) {
       const nodeIndex = startSelection.nodeIndex;
       const selectedNodes = getEditorSelectedNode();
@@ -1310,6 +1437,10 @@ const useController = (
     }
   }, [tree]);
 
+  const forceRemountEditor = () => {
+    updateEditorKey((key) => key + 1);
+  };
+
   return {
     insertEmoji,
     insertNewParagraph,
@@ -1318,6 +1449,7 @@ const useController = (
     handleSelectionChange: handleInputSelectionChange,
     handlePaste,
     handleCut,
+    handleOnInput,
     clearAndSetContent,
   };
 };
