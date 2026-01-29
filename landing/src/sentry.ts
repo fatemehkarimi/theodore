@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { replayIntegration } from '@sentry/react';
-import packageJson from '../package.json';
+import packageJson from '../../package.json';
 
 export function initSentry() {
   Sentry.init({
