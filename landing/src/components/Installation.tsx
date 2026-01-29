@@ -1,23 +1,29 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Copy, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { highlightElement } from '@speed-highlight/core';
 
 export function Installation() {
   const [copiedNpm, setCopiedNpm] = useState(false);
   const [copiedYarn, setCopiedYarn] = useState(false);
   const [copiedPnpm, setCopiedPnpm] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const codeRef = useRef<HTMLElement | null>(null);
 
   const copyToClipboard = (text: string, setter: (val: boolean) => void) => {
     navigator.clipboard.writeText(text);
     setter(true);
     setTimeout(() => setter(false), 2000);
   };
+
+  useEffect(() => {
+    if (codeRef.current) {
+      highlightElement(codeRef.current, 'ts').catch(console.error);
+    }
+  }, []);
 
   const npmInstall = 'npm install theodore-js';
   const yarnInstall = 'yarn add theodore-js';
@@ -137,22 +143,24 @@ export const TheodoreTextInput: React.FC = () => {
             <Card className="p-6">
               <h3 className="text-lg font-medium mb-4">Basic Usage</h3>
               <div className="relative">
-                <SyntaxHighlighter
-                  language="tsx"
-                  style={vscDarkPlus}
-                  customStyle={{
+                <pre
+                  className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto"
+                  style={{
                     borderRadius: '0.5rem',
                     padding: '1rem',
                     margin: 0,
                   }}
-                  codeTagProps={{
-                    style: {
-                      fontSize: '1rem',
-                    },
-                  }}
                 >
-                  {codeExample}
-                </SyntaxHighlighter>
+                  <code
+                    ref={codeRef}
+                    className="shj-lang-ts"
+                    style={{
+                      fontSize: '1rem',
+                    }}
+                  >
+                    {codeExample}
+                  </code>
+                </pre>
                 <Button
                   variant="ghost"
                   size="sm"
