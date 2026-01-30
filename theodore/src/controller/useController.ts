@@ -115,12 +115,12 @@ const useController = (
   const handleUndo = () => {
     if (tree == null) return;
     let transactionId = undefined;
+    let newTree = tree;
     do {
       const prevState = history.pop();
       if (prevState == null) return;
       if (transactionId == undefined) transactionId = prevState.transactionId;
-      const newTree = getTreeAfterUndo(tree, prevState);
-      setTree(newTree);
+      newTree = getTreeAfterUndo(newTree, prevState);
 
       if (prevState.selection != null)
         setSelection(
@@ -128,6 +128,7 @@ const useController = (
           prevState.selection?.endSelection,
         );
     } while (transactionId == history.top()?.transactionId);
+    setTree(newTree);
   };
 
   const getTreeAfterUndo = (tree: Tree, prevState: HistoryCommand) => {

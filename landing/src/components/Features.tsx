@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from './ui/card';
-import { Globe, Zap, Package, Code } from 'lucide-react';
+import { Globe, Zap, Keyboard, Code } from 'lucide-react';
 
 const features = [
   {
@@ -10,16 +10,16 @@ const features = [
       'Ensures emojis look the same on Chrome, Firefox, Safari, Edge, and all modern browsers.',
   },
   {
+    icon: Keyboard,
+    title: 'Ctrl+Z Undo Support',
+    description:
+      'Built-in undo history so users can revert edits instantly with Ctrl+Z.',
+  },
+  {
     icon: Zap,
     title: 'Lightweight & Fast',
     description:
       "Minimal overhead with maximum performance. Won't slow down your application.",
-  },
-  {
-    icon: Package,
-    title: 'Easy Integration',
-    description:
-      'Simple API that works with any framework. Get started in minutes, not hours.',
   },
   {
     icon: Code,
@@ -31,7 +31,10 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="py-20 bg-gradient-to-br from-gray-50 to-violet-50">
+    <section
+      id="features"
+      className="py-20 bg-gradient-to-br from-gray-50 to-violet-50"
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">

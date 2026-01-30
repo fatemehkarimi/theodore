@@ -124,7 +124,7 @@ export function Footer() {
             </p>
             <p className="text-gray-400 text-sm flex items-center gap-2">
               Made with <Heart className="w-4 h-4 text-red-500 fill-current" />{' '}
-              by fatemeh karimi, for classy developers{' '}
+              by fatemeh karimi, for classy web apps{' '}
               <img
                 src="/1f485-1f3fb.png"
                 className="w-4 h-4"

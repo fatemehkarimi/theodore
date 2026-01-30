@@ -698,8 +698,8 @@
     max-height: var(--radix-select-content-available-height);
   }
 
-  .min-h-\[200px\] {
-    min-height: 200px;
+  .min-h-\[100px\] {
+    min-height: 100px;
   }
 
   .min-h-screen {
@@ -2259,4 +2259,8 @@ html {
       )
       rotate(var(--tw-exit-rotate, 0));
   }
+}
+
+.fit-content-select {
+  max-width: fit-content;
 }

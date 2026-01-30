@@ -1,5 +1,5 @@
 import { Check, Copy } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   convertTreeToText,
   Theodore,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import { nativeToUnified } from '../utils';
 
 const SelectedEmojis = [
   { name: '😀', path: '1f600' },
@@ -95,6 +96,7 @@ const copyTextToClipboard = (text: string) => {
 export function DemoSection() {
   const editorState = useEditorState();
   const [copied, setCopied] = useState(false);
+
   const [selectedSet, setSelectedSet] = useState<keyof typeof emojiSets>(() => {
     const keys = Object.keys(emojiSets) as Array<keyof typeof emojiSets>;
     return keys[Math.floor(Math.random() * keys.length)];
@@ -110,6 +112,26 @@ export function DemoSection() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const renderEmoji = useCallback(
+    (emoji: string) => {
+      if (emoji == '') return <></>;
+
+      if (['labubu', 'animated'].includes(selectedSet)) {
+        const isInSelectedEmojis = SelectedEmojis.some((e) => e.name === emoji);
+        if (!isInSelectedEmojis) {
+          const path = `/${emojiSets[selectedSet].dirname}/no-emoji.png`;
+          return <img src={path} className="w-6 h-6" alt={emoji} />;
+        }
+      }
+
+      const unified = nativeToUnified(emoji);
+
+      const path = `/${emojiSets[selectedSet].dirname}/${unified}.${emojiSets[selectedSet].type}`;
+      return <img src={path} className="w-6 h-6" alt={emoji} />;
+    },
+    [selectedSet],
+  );
+
   return (
     <section id="demo" className="py-20 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,7 +144,7 @@ export function DemoSection() {
           </div>
 
           <Card className="p-6 mb-8">
-            <div className="mb-4 flex justify-between items-center">
+            <div className="flex justify-between items-center">
               <label className="text-sm font-medium text-gray-700">
                 Interactive Editor
               </label>
@@ -143,31 +165,21 @@ export function DemoSection() {
                 )}
               </Button>
             </div>
-
             <Theodore
               editorState={editorState}
-              renderEmoji={(emoji: string) => {
-                const emojiPath = SelectedEmojis.find(
-                  (e) => e.name === emoji,
-                )?.path;
-                return (
-                  <img
-                    key={emoji}
-                    src={`/${selectedSet}/${emojiPath}.${emojiSets[selectedSet].type}`}
-                    alt={emoji}
-                    className="w-6 h-6"
-                  />
-                );
-              }}
-              className="min-h-[200px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800 mb-4"
+              renderEmoji={renderEmoji}
+              className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
               placeholder="Try typing with emojis! 😊"
-              style={{ fontSize: '16px', lineHeight: '24ppx' }}
+              style={{
+                fontSize: '16px',
+                lineHeight: '24ppx',
+              }}
               maxLines={7}
               theodoreRef={theodoreRef}
               ref={editorRef}
             />
 
-            <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <p className="text-sm text-gray-600">Quick Insert:</p>
               <Select
                 value={selectedSet}
@@ -175,7 +187,7 @@ export function DemoSection() {
                   setSelectedSet(value as keyof typeof emojiSets)
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] fit-content-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,7 +204,10 @@ export function DemoSection() {
               {SelectedEmojis.map((emoji) => (
                 <button
                   key={emoji.name}
-                  onClick={() => theodoreRef.current?.insertEmoji(emoji.name)}
+                  onClick={() => {
+                    theodoreRef.current?.insertEmoji(emoji.name);
+                    theodoreRef.current?.blur();
+                  }}
                   className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-violet-50"
                 >
                   <img
