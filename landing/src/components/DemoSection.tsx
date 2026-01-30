@@ -125,8 +125,8 @@ export function DemoSection() {
       }
 
       const unified = nativeToUnified(emoji);
-      const path = `/${emojiSets[selectedSet].dirname}/${unified}.${emojiSets[selectedSet].type}`;
 
+      const path = `/${emojiSets[selectedSet].dirname}/${unified}.${emojiSets[selectedSet].type}`;
       return <img src={path} className="w-6 h-6" alt={emoji} />;
     },
     [selectedSet],
