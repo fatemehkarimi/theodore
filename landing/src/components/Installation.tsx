@@ -156,6 +156,7 @@ export const TheodoreTextInput: React.FC = () => {
                     className="shj-lang-ts"
                     style={{
                       fontSize: '1rem',
+                      backgroundColor: 'var(--color-gray-900)',
                     }}
                   >
                     {codeExample}
