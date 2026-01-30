@@ -1,5 +1,5 @@
 import { Check, Copy } from 'lucide-react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   convertTreeToText,
   Theodore,
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { isMobile as detectIsMobile } from '../utils';
+import { nativeToUnified } from '../utils';
 
 const SelectedEmojis = [
   { name: '😀', path: '1f600' },
@@ -55,8 +55,6 @@ const emojiSets = {
     type: 'gif',
   },
 };
-
-const isMobile = detectIsMobile();
 
 const copyTextToClipboard = (text: string) => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -114,6 +112,26 @@ export function DemoSection() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const renderEmoji = useCallback(
+    (emoji: string) => {
+      if (emoji == '') return <></>;
+
+      if (['labubu', 'animated'].includes(selectedSet)) {
+        const isInSelectedEmojis = SelectedEmojis.some((e) => e.name === emoji);
+        if (!isInSelectedEmojis) {
+          const path = `/${emojiSets[selectedSet].dirname}/no-emoji.png`;
+          return <img src={path} className="w-6 h-6" alt={emoji} />;
+        }
+      }
+
+      const unified = nativeToUnified(emoji);
+      const path = `/${emojiSets[selectedSet].dirname}/${unified}.${emojiSets[selectedSet].type}`;
+
+      return <img src={path} className="w-6 h-6" alt={emoji} />;
+    },
+    [selectedSet],
+  );
+
   return (
     <section id="demo" className="py-20 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -149,19 +167,7 @@ export function DemoSection() {
             </div>
             <Theodore
               editorState={editorState}
-              renderEmoji={(emoji: string) => {
-                const emojiPath = SelectedEmojis.find(
-                  (e) => e.name === emoji,
-                )?.path;
-                return (
-                  <img
-                    key={emoji}
-                    src={`/${selectedSet}/${emojiPath}.${emojiSets[selectedSet].type}`}
-                    alt={emoji}
-                    className="w-6 h-6"
-                  />
-                );
-              }}
+              renderEmoji={renderEmoji}
               className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
               placeholder="Try typing with emojis! 😊"
               style={{
