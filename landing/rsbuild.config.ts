@@ -19,6 +19,11 @@ export default defineConfig({
   output: {
     sourceMap: true,
   },
+  performance: {
+    bundleAnalyze: {
+      generateStatsFile: true,
+    },
+  },
   tools: {
     rspack: (config, { appendPlugins }) => {
       appendPlugins(
