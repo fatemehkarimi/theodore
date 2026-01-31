@@ -44,11 +44,11 @@ const emojiSets = {
     dirname: 'android',
     type: 'png',
   },
-  // labubu: {
-  //   name: 'Labubu Emojis',
-  //   dirname: 'labubu',
-  //   type: 'png',
-  // },
+  labubu: {
+    name: 'Labubu Emojis',
+    dirname: 'labubu',
+    type: 'png',
+  },
   animated: {
     name: 'Animated Emojis',
     dirname: 'animated',
