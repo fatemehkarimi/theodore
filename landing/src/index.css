@@ -18,28 +18,20 @@
       --tw-gradient-via-position: 50%;
       --tw-gradient-to-position: 100%;
       --tw-leading: initial;
-      --tw-font-weight: initial;
       --tw-shadow: 0 0 #0000;
       --tw-shadow-color: initial;
-      --tw-shadow-alpha: 100%;
       --tw-inset-shadow: 0 0 #0000;
-      --tw-inset-shadow-color: initial;
-      --tw-inset-shadow-alpha: 100%;
       --tw-ring-color: initial;
       --tw-ring-shadow: 0 0 #0000;
-      --tw-inset-ring-color: initial;
       --tw-inset-ring-shadow: 0 0 #0000;
       --tw-ring-inset: initial;
       --tw-ring-offset-width: 0px;
-      --tw-ring-offset-color: #fff;
       --tw-ring-offset-shadow: 0 0 #0000;
       --tw-outline-style: solid;
       --tw-scale-x: 1;
       --tw-scale-y: 1;
-      --tw-scale-z: 1;
       --tw-translate-x: 0;
       --tw-translate-y: 0;
-      --tw-translate-z: 0;
     }
   }
 }
@@ -1233,7 +1225,6 @@
   }
 
   .font-medium {
-    --tw-font-weight: var(--font-weight-medium);
     font-weight: var(--font-weight-medium);
   }
 
@@ -1425,7 +1416,6 @@
     .hover\:scale-125:hover {
       --tw-scale-x: 125%;
       --tw-scale-y: 125%;
-      --tw-scale-z: 125%;
       scale: var(--tw-scale-x) var(--tw-scale-y);
     }
   }
@@ -1962,65 +1952,13 @@
   --accent: #e9ebef;
   --accent-foreground: #030213;
   --destructive: #d4183d;
-  --destructive-foreground: #fff;
   --border: #0000001a;
   --input: transparent;
   --input-background: #f3f3f5;
-  --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
 }
 
 html {
@@ -2095,11 +2033,6 @@ html {
   inherits: false;
 }
 
-@property --tw-font-weight {
-  syntax: '*';
-  inherits: false;
-}
-
 @property --tw-shadow {
   syntax: '*';
   inherits: false;
@@ -2111,27 +2044,10 @@ html {
   inherits: false;
 }
 
-@property --tw-shadow-alpha {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 100%;
-}
-
 @property --tw-inset-shadow {
   syntax: '*';
   inherits: false;
   initial-value: 0 0 #0000;
-}
-
-@property --tw-inset-shadow-color {
-  syntax: '*';
-  inherits: false;
-}
-
-@property --tw-inset-shadow-alpha {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 100%;
 }
 
 @property --tw-ring-color {
@@ -2143,11 +2059,6 @@ html {
   syntax: '*';
   inherits: false;
   initial-value: 0 0 #0000;
-}
-
-@property --tw-inset-ring-color {
-  syntax: '*';
-  inherits: false;
 }
 
 @property --tw-inset-ring-shadow {
@@ -2165,12 +2076,6 @@ html {
   syntax: '<length>';
   inherits: false;
   initial-value: 0;
-}
-
-@property --tw-ring-offset-color {
-  syntax: '*';
-  inherits: false;
-  initial-value: #fff;
 }
 
 @property --tw-ring-offset-shadow {
@@ -2197,12 +2102,6 @@ html {
   initial-value: 1;
 }
 
-@property --tw-scale-z {
-  syntax: '*';
-  inherits: false;
-  initial-value: 1;
-}
-
 @property --tw-translate-x {
   syntax: '*';
   inherits: false;
@@ -2210,12 +2109,6 @@ html {
 }
 
 @property --tw-translate-y {
-  syntax: '*';
-  inherits: false;
-  initial-value: 0;
-}
-
-@property --tw-translate-z {
   syntax: '*';
   inherits: false;
   initial-value: 0;
