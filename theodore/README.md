@@ -50,7 +50,7 @@ export const TheodoreTextInput: React.FC = () => {
   return (
     <>
       <Theodore
-        ref={theodoreRef}
+        theodoreRef={theodoreRef}
         editorState={editorState}
         renderEmoji={renderEmoji}
         placeholder="Write something..."
@@ -75,12 +75,16 @@ Notes:
 
 - **editorState (required, `EditorState`)**: The editor state returned by `useEditorState([onSelectionChange])`. Holds the tree, history, and selection. Create once and pass the same instance to `<Theodore />`.
 - **renderEmoji (required, `RenderEmoji`)**: `(emoji: string) => ReactElement`. Receives a native emoji character and returns the React element to render (e.g., an `<img />`). Used whenever emojis are typed, pasted, or inserted programmatically.
+- **theodoreRef (`TheodoreHandle`)**: Optional ref to control the editor programmatically. Use `insertEmoji(emoji)` to insert an emoji into the input, and `setContent(content)` to replace the editor content with a specific string (e.g., a saved draft).
 - **placeholder (`string | React.ReactNode`)**: Content shown only when the editor is empty. If a string, it is wrapped in a styled placeholder container; if a React node, it is rendered as-is when empty.
+- **ref (`HTMLDivElement`)**: Optional ref to the contentEditable div element.
 - **className (`string`)**: Extra class for the contentEditable div.
 - **wrapperClassName (`string`)**: Extra class for the contentEditable wrapper `div`.
 - **placeholderClassName (`string`)**: Extra class applied to the placeholder element.
 - **maxLines (`number`)**: Maximum visible line count before the editor scrolls.
 - **onSelectionChange (`(selection: EditorSelection) => void`)**: Optional selection change callback. Provide it to `useEditorState(onSelectionChange)` when creating `editorState` to receive updates.
+- **defualtDirection (`ltr` | `rtl`)**: the default direction of input when it is empty.
+- **shouldSuppressFocus (`boolean`)**: Mobile emoji panel helper. When true, the editor blurs on focus so the native keyboard does not open. This avoids showing both the system keyboard and your custom emoji panel at the same time.
 - **...div props**: All other `div` props (except `contentEditable`) are forwarded to the contentEditable element (e.g., `aria-*`, `data-*`, `onFocus`, `onBlur`).
 
 ### Converting to plain text
