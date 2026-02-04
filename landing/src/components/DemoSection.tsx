@@ -206,7 +206,6 @@ export function DemoSection() {
                   key={emoji.name}
                   onClick={() => {
                     theodoreRef.current?.insertEmoji(emoji.name);
-                    theodoreRef.current?.blur();
                   }}
                   className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-violet-50"
                 >
