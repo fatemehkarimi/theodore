@@ -37,12 +37,12 @@ const emojiSets = {
   ios: {
     name: 'iOS Emojis',
     dirname: 'ios',
-    type: 'png',
+    type: 'webp',
   },
   android: {
     name: 'Android Emojis',
     dirname: 'android',
-    type: 'png',
+    type: 'webp',
   },
   labubu: {
     name: 'Labubu Emojis',
