@@ -1,5 +1,5 @@
-import React, { type ComponentProps } from 'react';
 import { clsx } from 'clsx';
+import React from 'react';
 
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
@@ -74,7 +74,10 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-footer"
-      className={clsx('flex items-center px-6 pb-6 [.border-t]:pt-6', className)}
+      className={clsx(
+        'flex items-center px-6 pb-6 [.border-t]:pt-6',
+        className,
+      )}
       {...props}
     />
   );
@@ -82,10 +85,10 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
 
 export {
   Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
   CardAction,
-  CardDescription,
   CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 };
