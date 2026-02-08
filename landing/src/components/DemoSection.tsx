@@ -1,5 +1,7 @@
+'use client';
+
 import { Check, Copy } from 'lucide-react';
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   convertTreeToText,
   Theodore,
@@ -97,10 +99,14 @@ export function DemoSection() {
   const editorState = useEditorState();
   const [copied, setCopied] = useState(false);
 
-  const [selectedSet, setSelectedSet] = useState<keyof typeof emojiSets>(() => {
+  const [selectedSet, setSelectedSet] = useState<
+    keyof typeof emojiSets | 'placeholder'
+  >('placeholder');
+
+  useEffect(() => {
     const keys = Object.keys(emojiSets) as Array<keyof typeof emojiSets>;
-    return keys[Math.floor(Math.random() * keys.length)];
-  });
+    setSelectedSet(keys[Math.floor(Math.random() * keys.length)]);
+  }, []);
 
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -114,7 +120,7 @@ export function DemoSection() {
 
   const renderEmoji = useCallback(
     (emoji: string) => {
-      if (emoji == '') return <></>;
+      if (emoji == '' || selectedSet === 'placeholder') return <></>;
 
       if (['labubu', 'animated'].includes(selectedSet)) {
         const isInSelectedEmojis = SelectedEmojis.some((e) => e.name === emoji);
@@ -209,12 +215,16 @@ export function DemoSection() {
                   }}
                   className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-violet-50"
                 >
-                  <img
-                    key={emoji.name}
-                    src={`/${selectedSet}/${emoji.path}.${emojiSets[selectedSet].type}`}
-                    alt={emoji.name}
-                    className="w-8 h-8"
-                  />
+                  {selectedSet != 'placeholder' ? (
+                    <img
+                      key={emoji.name}
+                      src={`/${selectedSet}/${emoji.path}.${emojiSets[selectedSet].type}`}
+                      alt={emoji.name}
+                      className="w-8 h-8"
+                    />
+                  ) : (
+                    <span className="text-2xl">☺️</span>
+                  )}
                 </button>
               ))}
             </div>

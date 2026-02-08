@@ -1,23 +1,23 @@
-import React, { type ComponentProps } from 'react';
 import {
-  Root,
-  Group,
-  Value,
-  Trigger,
-  Icon,
   Content,
-  Portal,
-  Viewport,
-  Label,
+  Group,
+  Icon,
   Item,
   ItemIndicator,
   ItemText,
-  Separator,
-  ScrollUpButton,
+  Label,
+  Portal,
+  Root,
   ScrollDownButton,
+  ScrollUpButton,
+  Separator,
+  Trigger,
+  Value,
+  Viewport,
 } from '@radix-ui/react-select';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { clsx } from 'clsx';
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
+import { type ComponentProps } from 'react';
 
 function Select({ ...props }: ComponentProps<typeof Root>) {
   return <Root data-slot="select" {...props} />;
@@ -133,7 +133,10 @@ function SelectSeparator({
   return (
     <Separator
       data-slot="select-separator"
-      className={clsx('bg-border pointer-events-none -mx-1 my-1 h-px', className)}
+      className={clsx(
+        'bg-border pointer-events-none -mx-1 my-1 h-px',
+        className,
+      )}
       {...props}
     />
   );
