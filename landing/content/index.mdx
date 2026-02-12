@@ -1,0 +1,108 @@
+# Getting Started
+
+Welcome to the Theodore.js documentation. This guide will help you set up Theodore in under five minutes.
+
+## What is theodore-js?
+
+Theodore-js is a lightweight, content-editable editor for React that gives you control over how emojis are rendered inside the input.
+Use it when you need consistent emoji rendering across browsers, including support for custom emoji sets. Theodore also
+preserves undo (Ctrl/Cmd + Z) behavior, which can otherwise break when using `contentEditable`.
+
+## Installation
+
+Install Theodore-js with one of the following commands:
+
+import { Tabs } from 'nextra/components';
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+  <Tabs.Tab>
+    ```bash
+    npm install theodore-js
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    yarn add theodore-js
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    pnpm add theodore-js
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Using Theodore
+
+Here’s a minimal setup to use Theodore in a React app:
+
+```tsx
+import React from 'react';
+import { Theodore, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+const renderEmoji = (emoji: string) => {
+  if (emoji === '') return <></>;
+  const unified = nativeToUnified(emoji);
+  const path = `/img-apple-64/${unified}.png`;
+  return <img src={path} width={22} height={22} alt={emoji} />;
+};
+
+export const TheodoreTextInput: React.FC = () => {
+  const editorState = useEditorState();
+
+  return (
+      <Theodore
+        editorState={editorState}
+        renderEmoji={renderEmoji}
+      />
+  );
+};
+```
+First, import the default styles from `'theodore-js/style.css'` so the editor, placeholder, and emoji
+rendering styles are applied.
+
+To render the editor, you only need to provide two props:
+
+- **editorState (required, `EditorState`)**: Represents the current editor state (content, selection, and undo/redo history). You
+  don’t need to manage its internals—just create one with the `useEditorState` hook and pass it in.
+  If you want to be notified when the selection changes, pass an `onSelectionChange` callback to the
+  `useEditorState` hook.
+
+- **renderEmoji (required, `RenderEmoji`)**: A function Theodore calls whenever it needs to render an emoji. It receives the
+  native emoji character and should return a `ReactNode` (typically an `<img />`) that Theodore will
+  display in the editor. Returning something other than an image isn’t recommended, since it can
+  affect editor behavior.
+
+
+## Configuring Theodore
+
+In addition to `editorState` and `renderEmoji`, you can pass these optional props to customize the editor experience:
+
+- **placeholder (`string | React.ReactNode`)**: Content shown when the editor is empty. If you pass a string, Theodore renders it
+  with the default placeholder styling/animation. If you pass a `ReactNode`, Theodore will render
+  that instead.
+
+- **placeholderClassName (`string`)**: If `placeholder` is a string, you can style it by providing a CSS class
+  name here.
+
+- **defaultDirection (`ltr` | `rtl`)**: The text direction to use when the editor is empty. Once the editor has
+  content, direction is inferred from the content.
+
+- **maxLines (`number`)**: The maximum number of lines the editor is allowed to grow to. If the user enters more
+  lines, the editor becomes scrollable.
+
+- **wrapperClassName (`string`)**: Use this to style the wrapper around the `contentEditable` element.
+
+- **theodoreRef (`TheodoreHandle`)**: A ref/handle that exposes Theodore’s public API:
+  - `setContent`: Sets the editor content programmatically (for example, to load an initial draft or
+    replace the current content).
+  - `insertEmoji`: Inserts an emoji string at the current selection. The same value you pass here is
+    forwarded to `renderEmoji`, so make sure they match. This is typically used when inserting an
+    emoji from an external UI (for example, an emoji picker).
+
+- **shouldSuppressFocus (`boolean`)**: Mobile emoji panel helper. When true, the editor blurs on focus so the native keyboard does not open. This avoids showing both the system keyboard and your custom emoji panel at the same time.
+
+- **ref (`HTMLDivElement`)**: Optional ref to the contentEditable div element.
+
+- **...div props**: All other `div` props (except `contentEditable`) are forwarded to the contentEditable element (e.g., `aria-*`, `data-*`, `onFocus`, `onBlur`).

@@ -51,7 +51,7 @@ export const TheodoreTextInput: React.FC = () => {
 
   return (
     <Theodore
-      ref={theodoreRef}
+      theodoreRef={theodoreRef}
       editorState={editorState}
       renderEmoji={renderEmoji}
       placeholder="Write something..."

@@ -10,8 +10,8 @@ export function Footer() {
             <div className="col-span-2">
               <h3 className="text-2xl text-white mb-3">theodore-js</h3>
               <p className="text-gray-400 mb-4">
-                Theodore is a text input that replaces emoji characters with
-                custom images, ensuring consistent display across all browsers
+                Theodore is an editor that replaces emoji characters with custom
+                images, ensuring consistent display across all browsers
               </p>
               <div className="flex gap-4">
                 <a

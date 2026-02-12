@@ -13,6 +13,8 @@
     "clsx": "*",
     "lucide-react": "^0.487.0",
     "next": "^16.1.6",
+    "nextra": "^4.6.1",
+    "nextra-theme-docs": "^4.6.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "theodore-js": "1.0.0-rc.1"

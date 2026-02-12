@@ -25,7 +25,6 @@ type Props = Omit<
   editorState: EditorState;
   renderEmoji: RenderEmoji;
   placeholder?: string | React.ReactNode;
-  onSelectionChange?: onSelectionChangeFn;
   wrapperClassName?: string;
   placeholderClassName?: string;
   maxLines?: number;
@@ -38,7 +37,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     {
       className,
       renderEmoji,
-      onSelectionChange,
       editorState,
       placeholder,
       wrapperClassName,

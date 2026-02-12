@@ -17,7 +17,7 @@ export function Hero() {
           </h1>
 
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Theodore is a text input that replaces emoji characters with custom
+            Theodore is an editor that replaces emoji characters with custom
             images, ensuring consistent display across all browsers
           </p>
           <HeroActions />
