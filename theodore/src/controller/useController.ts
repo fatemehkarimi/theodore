@@ -281,7 +281,15 @@ const useController = (
   const handleInsertReplacementText = (event: InputEvent) => {
     event.preventDefault();
 
-    const target = event.target as HTMLElement | null;
+    const domSelection = window.getSelection();
+    if (!domSelection || domSelection.rangeCount === 0) return;
+
+    const range = domSelection.getRangeAt(0).cloneRange();
+    const target =
+      range.startContainer.nodeType === 3
+        ? range.startContainer.parentElement
+        : range.startContainer;
+
     if (!target || !(target instanceof HTMLSpanElement)) {
       return;
     }
@@ -303,7 +311,7 @@ const useController = (
       if (node.isTextNode()) {
         (node as TextNode).replaceText(text, startOffset, endOffset);
         setTree([...tree]);
-        setSelection({ nodeIndex, offset: endOffset });
+        setSelection({ nodeIndex, offset: startOffset + text.length });
       }
     }
   };
