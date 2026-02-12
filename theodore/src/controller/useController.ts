@@ -563,36 +563,41 @@ const useController = (
   const clearAndSetContent = (plainText: string) => {
     const tree = editorState.tree;
     const firstNode = tree[0][0];
-    const lastNode = tree[tree.length - 1][tree[tree.length - 1].length - 1];
+    history.push([
+      {
+        command: COMMAND_REMOVE_NODE,
+        nodeIndex: -1,
+        prevState: [...tree[0].slice(1), ...tree.slice(1)],
+        prevNodeIndexInTree: ALWAYS_IN_DOM_NODE_INDEX,
+        nextNodeIndexInTree: undefined,
+      },
+    ]);
 
+    let newTree = [[firstNode]];
     if (plainText == '') {
-      const newTree = [[firstNode]];
       setTree(newTree);
-      history.push([
-        {
-          command: COMMAND_REMOVE_NODE,
-          nodeIndex: -1,
-          prevState: [...tree[0].slice(1), ...tree.slice(1)],
-          prevNodeIndexInTree: ALWAYS_IN_DOM_NODE_INDEX,
-          nextNodeIndexInTree: undefined,
-        },
-      ]);
       setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
       return;
     }
-    setSelection(
-      {
-        nodeIndex: firstNode.getIndex(),
-        offset: 0,
-      },
-      lastNode
-        ? {
-            nodeIndex: lastNode.getIndex(),
-            offset: lastNode.isTextNode() ? lastNode.getChildLength() : 0,
-          }
-        : undefined,
+
+    const nodes = convertTextToNodes(plainText);
+    newTree = insertNodesInBetween(
+      newTree,
+      nodes,
+      ALWAYS_IN_DOM_NODE_INDEX,
+      undefined,
     );
-    handleInsertPlainText(plainText);
+
+    setTree(newTree);
+    const lastInsertedNode =
+      newTree[newTree.length - 1][newTree[newTree.length - 1].length - 1];
+
+    setSelection({
+      nodeIndex: lastInsertedNode.getIndex(),
+      offset: lastInsertedNode.isTextNode()
+        ? lastInsertedNode.getChildLength()
+        : 0,
+    });
   };
 
   const handleInsertPlainText = (plainText: string) => {
