@@ -1,5 +1,10 @@
 import { useLayoutEffect, type MutableRefObject } from 'react';
-import { IS_ANDROID_CHROME, IS_FIREFOX, isDevelopment } from '../environment';
+import {
+  IS_ANDROID_CHROME,
+  IS_FIREFOX,
+  IS_WINDOWS,
+  isDevelopment,
+} from '../environment';
 import {
   ARROW_DOWN,
   ARROW_LEFT,
@@ -225,8 +230,10 @@ const useController = (
       const data = (event as any)?.data as string | null | undefined;
       if (data) {
         if (isEmoji(data)) {
-          const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
-          if (emoji != null) insertEmoji(emoji);
+          if (!IS_WINDOWS) {
+            const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
+            if (emoji != null) insertEmoji(emoji);
+          }
         } else {
           handleInsertTextFromKeyboard(data);
         }
@@ -244,7 +251,17 @@ const useController = (
         const nodeIdx = selection?.startSelection.nodeIndex;
         const node = findNode(tree, nodeIdx);
 
-        if (newText != undefined && node && node.isTextNode()) {
+        // on windows, when you insert an emoji from windows emoji picker
+        // (appears by pressing win+.), it triggers two onbeforeinput event;
+        // first is with inputType insertCompositionText that we cannot cancel,
+        // the second which is with inputType insertText which we cancel to
+        // prevent inserting two emojis.
+        if (
+          newText != undefined &&
+          !isEmoji(newText) &&
+          node &&
+          node.isTextNode()
+        ) {
           // let browser fill the node in the dom with correct value
           (node as TextNode).setChild('');
         }
@@ -323,7 +340,15 @@ const useController = (
       const newText = (event as InputEvent).data;
       const selection = getSelection();
 
-      if (newText && isEditorSelectionCollapsed(selection)) {
+      if (IS_WINDOWS && newText && isEmoji(newText)) {
+        const emojiNode = new EmojiNode(
+          assignNodeIndex(),
+          newText,
+          renderEmoji,
+        );
+        insertEmojiNodeInSelection(emojiNode);
+        forceRemountEditor();
+      } else if (newText && isEditorSelectionCollapsed(selection)) {
         const node = findNode(tree, selection?.startSelection.nodeIndex);
         if (node?.isTextNode()) {
           (node as TextNode).setChild(newText);
