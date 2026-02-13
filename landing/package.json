@@ -24,7 +24,7 @@
     "typescript": "^5.8.2"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 7777",
     "build": "next build",
     "start": "next start"
   }

@@ -11,3 +11,7 @@ export const IS_CHROME: boolean =
 
 export const IS_ANDROID_CHROME: boolean = IS_ANDROID && IS_CHROME;
 export const isDevelopment = process.env.NODE_ENV == 'development';
+
+export const IS_WINDOWS: boolean =
+  typeof navigator !== 'undefined' &&
+  navigator.userAgent.toLowerCase().includes('windows');
