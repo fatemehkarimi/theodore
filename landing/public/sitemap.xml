@@ -4,6 +4,11 @@
   <url>
     <loc>https://theodore-js.dev/</loc>
     <changefreq>weekly</changefreq>
+    <priority>1</priority>
+  </url>
+    <url>
+    <loc>https://theodore-js.dev/docs</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 </urlset>

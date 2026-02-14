@@ -1,5 +1,6 @@
 import React from 'react';
 import { Github, Twitter, Heart } from 'lucide-react';
+import Link from 'next/link';
 
 export function Footer() {
   return (
@@ -35,18 +36,16 @@ export function Footer() {
               <h4 className="text-white font-medium mb-3">Resources</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <a
-                    href="https://github.com/fatemehkarimi/theodore/blob/master/README.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href="/docs"
                     className="hover:text-violet-400 transition-colors"
                   >
                     Documentation
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <a
-                    href="https://github.com/fatemehkarimi/theodore/tree/master/playground"
+                    href="https://github.com/fatemehkarimi/theodore/tree/master/examples"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-violet-400 transition-colors"

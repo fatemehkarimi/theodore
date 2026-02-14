@@ -8,7 +8,8 @@ export default async function DocsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pageMap = await getPageMap('/docs');
+  // const pageMap = await getPageMap('/docs');
+  const pageMap = await getPageMap();
   return (
     <Layout
       navbar={<Navbar logo={<NavbarLogo />} />}
