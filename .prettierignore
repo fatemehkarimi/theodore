@@ -1,2 +1,3 @@
 # Lock files
 pnpm-lock.yaml
+*.mdx

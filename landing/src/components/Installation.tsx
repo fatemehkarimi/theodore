@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Copy, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { highlightElement } from '@speed-highlight/core';
+import Link from 'next/link';
 
 export function Installation() {
   const [copiedNpm, setCopiedNpm] = useState(false);
@@ -51,7 +52,7 @@ export const TheodoreTextInput: React.FC = () => {
 
   return (
     <Theodore
-      ref={theodoreRef}
+      theodoreRef={theodoreRef}
       editorState={editorState}
       renderEmoji={renderEmoji}
       placeholder="Write something..."
@@ -184,17 +185,15 @@ export const TheodoreTextInput: React.FC = () => {
                 📚 Documentation
               </h3>
               <p className="text-violet-700 mb-4">
-                For more detailed examples, API reference, and advanced usage,
-                visit the documentation on github.
+                Explore the full API reference, usage examples, and advanced
+                guides.
               </p>
-              <a
-                href="https://github.com/fatemehkarimi/theodore/blob/master/README.md"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/docs"
                 className="inline-flex items-center justify-center rounded-md border border-violet-300 bg-transparent px-4 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
               >
-                View on GitHub
-              </a>
+                Read the docs
+              </Link>
             </div>
           </div>
         </div>
