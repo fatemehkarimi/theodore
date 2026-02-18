@@ -17,7 +17,8 @@ export default async function DocsLayout({
       docsRepositoryBase="https://github.com/yourusername/theodore/tree/main/landing"
       sidebar={{ defaultMenuCollapseLevel: 1 }}
       pageMap={pageMap}
-      darkMode
+      darkMode={false}
+      nextThemes={{ defaultTheme: 'light' }}
     >
       {children}
     </Layout>
