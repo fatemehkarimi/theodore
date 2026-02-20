@@ -1,10 +1,8 @@
-import Graphemer from 'graphemer';
+import emojiRegex from 'emoji-regex';
 import { isDevelopment } from '../../environment';
-import EmojiNode from '../../nodes/emojiNode/EmojiNode';
 import type { Node as EditorNode } from '../../nodes/Node';
-import ParagraphNode from '../../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../../nodes/textNode/TextNode';
-import type { RenderEmoji, Tree } from '../../types';
+import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
 export const ALWAYS_IN_DOM_NODE_INDEX = 1;
@@ -305,6 +303,7 @@ export const insertNodesInBetween = (
   return newTree;
 };
 
+const EMOJI_REGEX_EMOJI_DETECTOR = emojiRegex();
 export const segmentText = (text: string): string[] => {
   if (typeof (Intl as any).Segmenter === 'function') {
     return [
@@ -313,8 +312,26 @@ export const segmentText = (text: string): string[] => {
       }).segment(text),
     ].map((data: any) => data.segment);
   } else {
-    const graphemer = new Graphemer();
-    return graphemer.splitGraphemes(text);
+    const result: string[] = [];
+    let start = 0;
+
+    for (const match of text.matchAll(EMOJI_REGEX_EMOJI_DETECTOR)) {
+      const emojiStart = match.index ?? 0;
+      const emoji = match[0];
+
+      if (emojiStart > start) {
+        result.push(text.slice(start, emojiStart));
+      }
+      result.push(emoji);
+      start = emojiStart + emoji.length;
+    }
+
+    if (start < text.length) {
+      result.push(text.slice(start));
+    }
+
+    if (result.length === 0) return [text];
+    return result;
   }
 };
 
