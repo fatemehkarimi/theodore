@@ -47,6 +47,7 @@ import {
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
+  breakAndReplaceTextNode,
   reconcileTextNodeContentFromContentEditable,
   findNode,
   findNodeAfter,
@@ -636,19 +637,95 @@ const useController = (
   const handleInsertPlainText = (plainText: string) => {
     // plain text may contain emoji and paragraph
     let newTree = removeNodesInSelection();
-    const nodes = convertTextToNodes(plainText);
-    const flatNodes = nodes.flat();
+    let nodes = convertTextToNodes(plainText);
+    let flatNodes = nodes.flat();
 
-    const selection = getSelection();
+    if (flatNodes.length == 0) return;
+
+    let selection = getSelection();
     if (selection == null) return;
 
     const prevNodeIdx = selection.startSelection.nodeIndex;
-    const nextNodeIndex = findNodeAfter(newTree, prevNodeIdx);
+    const prevNode = findNode(newTree, prevNodeIdx);
+    if (
+      prevNode &&
+      prevNode.isTextNode() &&
+      !Array.isArray(nodes[0]) &&
+      nodes[0].isTextNode()
+    ) {
+      const textNode = nodes[0] as TextNode;
+      const textToInsert = textNode.getChildren();
+      const prevNodeText = prevNode.getChildren();
+      if (textToInsert != null) {
+        (prevNode as TextNode).insertText(
+          textToInsert,
+          selection.startSelection.offset,
+        );
+      }
+
+      history.push([
+        {
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: prevNodeIdx,
+          prevState: prevNodeText,
+        },
+      ]);
+
+      nodes = nodes.slice(1);
+      flatNodes = flatNodes.slice(1);
+
+      setSelection({
+        nodeIndex: prevNodeIdx,
+        offset: selection.startSelection.offset + (textToInsert?.length ?? 0),
+      });
+
+      if (nodes.length == 0) {
+        setTree([...newTree]);
+        history.commit();
+        return;
+      }
+    }
+
+    selection = getSelection();
+    if (selection == null) return;
+    let nextNode = findNodeAfter(newTree, prevNodeIdx);
+    if (
+      prevNode?.isTextNode() &&
+      selection.startSelection.offset > 0 &&
+      selection.startSelection.offset < (prevNode.getChildren()?.length ?? 0)
+    ) {
+      const textNode = prevNode as TextNode;
+      const text = textNode.getChildren();
+      const [updatedTree, beforeTextNode, afterTextNode] =
+        breakAndReplaceTextNode(
+          newTree,
+          textNode,
+          selection.startSelection.offset,
+          assignNodeIndex,
+        );
+
+      history.push([
+        {
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: afterTextNode.getIndex(),
+          prevState: null,
+        },
+        {
+          command: COMMAND_INSERT_TEXT,
+          nodeIndex: beforeTextNode.getIndex(),
+          prevState: text,
+        },
+      ]);
+
+      newTree = updatedTree;
+      nextNode = afterTextNode;
+    }
+
     newTree = insertNodesInBetween(
       newTree,
       nodes,
       prevNodeIdx,
-      nextNodeIndex?.getIndex(),
+      nextNode?.getIndex(),
     );
 
     const historyItems = [];
@@ -1314,7 +1391,7 @@ const useController = (
   };
 
   const insertEmojiNodeInSelection = (node: EditorNode) => {
-    const newTree = removeNodesInSelection(true);
+    let newTree = removeNodesInSelection(true);
     const selectedNodes = getEditorSelectedNode();
     const selectedNodeOffset = getSelection()?.startSelection?.offset ?? 0;
 
@@ -1350,25 +1427,21 @@ const useController = (
         const selectedTextNode = selectedNode as TextNode;
         const text = selectedTextNode.getChildren();
         if (text != null) {
-          const [beforeText, afterText] = [
-            text.slice(0, selectedNodeOffset),
-            text.slice(selectedNodeOffset),
-          ];
-          const afterTextNode = new TextNode(assignNodeIndex());
-          afterTextNode.setChild(afterText);
+          const [updatedTree, beforeTextNode, afterTextNode] =
+            breakAndReplaceTextNode(
+              newTree,
+              selectedTextNode,
+              selectedNodeOffset,
+              assignNodeIndex,
+            );
 
-          selectedTextNode.setChild(beforeText);
-
-          // calculating tree
-          const subTree = newTree[subtreeIdx];
-          const newSubTree = [
-            ...subTree.slice(0, nodeIdxInTree),
-            selectedTextNode,
-            node,
-            afterTextNode,
-            ...subTree.slice(nodeIdxInTree + 1),
-          ];
-          newTree[subtreeIdx] = newSubTree;
+          newTree = updatedTree;
+          newTree = insertNodesInBetween(
+            newTree,
+            [node],
+            beforeTextNode.getIndex(),
+            afterTextNode.getIndex(),
+          );
           setTree(newTree);
 
           history.push([
@@ -1379,7 +1452,7 @@ const useController = (
             },
             {
               command: COMMAND_INSERT_TEXT,
-              nodeIndex: selectedTextNode.getIndex(),
+              nodeIndex: beforeTextNode.getIndex(),
               prevState: text,
             },
           ]);
