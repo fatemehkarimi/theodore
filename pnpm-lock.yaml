@@ -78,8 +78,8 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       theodore-js:
-        specifier: 1.0.0
-        version: 1.0.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: 1.0.1
+        version: 1.0.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -3938,8 +3938,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  theodore-js@1.0.0:
-    resolution: {integrity: sha512-IG5tmCJ4tp1CFO1mPT/+yqnNM+QeHL/u+eW3ImBE2ptHBVD+GhuRTyyiV/a8+TXN7OoGP2N/yyXNGgr4zIns7w==}
+  theodore-js@1.0.1:
+    resolution: {integrity: sha512-e2M4V5ZW44Xnnf+0E802AQKH2lFgMe1WjrxSWRaEpAFCUEn+676jS7FXr7+HPmx1en+lKqZbCNxNbTi+kcwjNw==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -8769,11 +8769,11 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  theodore-js@1.0.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  theodore-js@1.0.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@types/react': 18.3.18
       clsx: 2.1.1
-      graphemer: 1.4.0
+      emoji-regex: 10.6.0
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 

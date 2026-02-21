@@ -17,7 +17,7 @@
     "nextra-theme-docs": "^4.6.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "theodore-js": "1.0.0"
+    "theodore-js": "1.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
