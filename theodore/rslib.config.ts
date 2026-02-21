@@ -17,7 +17,7 @@ export default defineConfig({
   ],
   output: {
     target: 'web',
-    sourceMap: true,
+    sourceMap: false,
   },
   plugins: [pluginReact(), pluginSass()],
 });
