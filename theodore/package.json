@@ -58,6 +58,6 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "graphemer": "^1.4.0"
+    "emoji-regex": "^10.6.0"
   }
 }

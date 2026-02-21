@@ -9,8 +9,19 @@
 - Bring your own emoji assets (e.g., Apple / Google / Twitter sets) and rendering
 - Ctrl+Z works very well after inserting text or emoji
 
-📚 **Documentation:** https://theodore-js.dev/docs  
-🧪 **Playground:** https://theodore-js.dev
+## Documentation
+
+Learn API details, setup steps, and integration guides.
+
+📚 https://theodore-js.dev/docs
+
+---
+
+## Playground
+
+Try Theodore interactively and test emoji rendering behavior in the browser.
+
+🧪 https://theodore-js.dev
 
 ---
 

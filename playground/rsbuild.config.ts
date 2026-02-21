@@ -4,6 +4,13 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
 
 export default defineConfig({
+  performance: {
+    bundleAnalyze: {
+      analyzerMode: 'static',
+      openAnalyzer: false,
+      reportFilename: `report-bundle.html`,
+    },
+  },
   plugins: [pluginReact(), pluginSass()],
   source: {
     define: {

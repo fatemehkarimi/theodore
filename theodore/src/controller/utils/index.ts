@@ -1,10 +1,8 @@
-import Graphemer from 'graphemer';
+import emojiRegex from 'emoji-regex';
 import { isDevelopment } from '../../environment';
-import EmojiNode from '../../nodes/emojiNode/EmojiNode';
 import type { Node as EditorNode } from '../../nodes/Node';
-import ParagraphNode from '../../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../../nodes/textNode/TextNode';
-import type { RenderEmoji, Tree } from '../../types';
+import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
 export const ALWAYS_IN_DOM_NODE_INDEX = 1;
@@ -305,6 +303,7 @@ export const insertNodesInBetween = (
   return newTree;
 };
 
+const EMOJI_REGEX_EMOJI_DETECTOR = emojiRegex();
 export const segmentText = (text: string): string[] => {
   if (typeof (Intl as any).Segmenter === 'function') {
     return [
@@ -313,8 +312,26 @@ export const segmentText = (text: string): string[] => {
       }).segment(text),
     ].map((data: any) => data.segment);
   } else {
-    const graphemer = new Graphemer();
-    return graphemer.splitGraphemes(text);
+    const result: string[] = [];
+    let start = 0;
+
+    for (const match of text.matchAll(EMOJI_REGEX_EMOJI_DETECTOR)) {
+      const emojiStart = match.index ?? 0;
+      const emoji = match[0];
+
+      if (emojiStart > start) {
+        result.push(text.slice(start, emojiStart));
+      }
+      result.push(emoji);
+      start = emojiStart + emoji.length;
+    }
+
+    if (start < text.length) {
+      result.push(text.slice(start));
+    }
+
+    if (result.length === 0) return [text];
+    return result;
   }
 };
 
@@ -350,6 +367,42 @@ export const findSelectedNodeToInsertText = (
   }
   return node;
 };
+
+export function breakAndReplaceTextNode(
+  tree: Tree,
+  textNode: TextNode,
+  splitPosition: number,
+  assignNodeIndex: () => number,
+): [Tree, TextNode, TextNode] {
+  const text = textNode.getChildren();
+  if (text == null) {
+    throw new Error('tries to insert emoji at a text node with null content');
+  }
+  const [beforeText, afterText] = [
+    text.slice(0, splitPosition),
+    text.slice(splitPosition),
+  ];
+  const afterTextNode = new TextNode(assignNodeIndex());
+  afterTextNode.setChild(afterText);
+
+  textNode.setChild(beforeText);
+
+  const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
+    tree,
+    textNode.getIndex(),
+  );
+  const subTree = tree[subtreeIdx];
+  const newSubTree = [
+    ...subTree.slice(0, nodeIdxInTree),
+    textNode,
+    afterTextNode,
+    ...subTree.slice(nodeIdxInTree + 1),
+  ];
+  const newTree = [...tree];
+  newTree[subtreeIdx] = newSubTree;
+
+  return [newTree, textNode, afterTextNode];
+}
 
 export const isSelectionAnchorSameAsFocus = () => {
   const selection = document.getSelection();
