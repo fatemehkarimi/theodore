@@ -2,6 +2,7 @@ import React from 'react';
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { SentryInit } from './SentryInit';
+import 'nextra-theme-docs/style.css';
 import '../index.css';
 import 'theodore-js/style.css';
 

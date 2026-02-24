@@ -2203,3 +2203,10 @@ h6 {
   border-bottom: none !important;
   border-top: none !important;
 }
+
+/* Keep Theodore inline emoji/content inline inside paragraphs even with Nextra base resets */
+.theodore_emojiNode img,
+.theodore_emojiNode svg {
+  display: inline-block !important;
+  vertical-align: middle;
+}
