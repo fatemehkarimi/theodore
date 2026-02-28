@@ -2,7 +2,6 @@ import React from 'react';
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { SentryInit } from './SentryInit';
-import 'nextra-theme-docs/style.css';
 import '../index.css';
 import 'theodore-js/style.css';
 
@@ -76,9 +75,29 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link
-          rel="stylesheet"
+          rel="preload"
+          as="style"
           href="https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var themeId = 'speed-highlight-theme';
+  if (document.getElementById(themeId)) return;
+  var link = document.createElement('link');
+  link.id = themeId;
+  link.rel = 'stylesheet';
+  link.href = 'https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css';
+  document.head.appendChild(link);
+})();`,
+          }}
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css"
+          />
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
