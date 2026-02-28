@@ -75,9 +75,29 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link
-          rel="stylesheet"
+          rel="preload"
+          as="style"
           href="https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var themeId = 'speed-highlight-theme';
+  if (document.getElementById(themeId)) return;
+  var link = document.createElement('link');
+  link.id = themeId;
+  link.rel = 'stylesheet';
+  link.href = 'https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css';
+  document.head.appendChild(link);
+})();`,
+          }}
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/@speed-highlight/core@1.2.14/dist/themes/github-dark.css"
+          />
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
