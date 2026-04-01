@@ -12,6 +12,7 @@ export type TheodoreHandle = {
 
 export type RenderEmoji = (emoji: string) => ReactElement;
 export type onSelectionChangeFn = (selection: EditorSelection) => void;
+export type onTreeChangeFn = (tree: Tree) => void;
 
 export type TextNodeDesc = {
   type: 'text';

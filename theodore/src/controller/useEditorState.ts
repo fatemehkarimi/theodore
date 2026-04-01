@@ -1,6 +1,11 @@
 import { useRef, useState } from 'react';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
-import type { EditorState, onSelectionChangeFn, Tree } from '../types';
+import type {
+  EditorState,
+  onSelectionChangeFn,
+  onTreeChangeFn,
+  Tree,
+} from '../types';
 import { useHistory } from './history/useHistory';
 import { useSelection } from './selection/useSelection';
 import {
@@ -10,6 +15,7 @@ import {
 
 const useEditorState = (
   onSelectionChange?: onSelectionChangeFn,
+  onTreeChange?: onTreeChangeFn,
 ): EditorState => {
   const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
 
@@ -27,9 +33,14 @@ const useEditorState = (
     return nodeIndexRef.current;
   };
 
+  const setTreeAndNotify = (tree: Tree) => {
+    setTree(tree);
+    onTreeChange?.(tree);
+  };
+
   return {
     tree,
-    setTree,
+    setTree: setTreeAndNotify,
     assignNodeIndex,
     historyHandle,
     selectionHandle,
