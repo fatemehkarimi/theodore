@@ -10,12 +10,7 @@ import { isEditorEmpty } from '../controller/useEditorState';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
 import { isRTL } from '../rtl';
-import type {
-  EditorState,
-  onSelectionChangeFn,
-  RenderEmoji,
-  TheodoreHandle,
-} from '../types';
+import type { EditorState, RenderEmoji, TheodoreHandle } from '../types';
 import { computeLineHeightPx } from '../utils';
 
 type Props = Omit<

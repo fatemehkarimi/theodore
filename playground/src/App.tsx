@@ -10,8 +10,10 @@ import React, {
 import {
   convertTreeToText,
   EditorSelection,
+  isEditorSelectionCollapsed,
   Theodore,
   TheodoreHandle,
+  TheodoreTree,
   useEditorState,
 } from 'theodore-js';
 import 'theodore-js/style.css';
@@ -23,6 +25,7 @@ import { useShowTransition } from './hooks/useShowtransition';
 import EmojiOutlined from './icons/EmojiOutlined';
 import Github from './icons/Github';
 import './index.css';
+import { getAutoComplete } from './autocomplete';
 
 const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -54,8 +57,10 @@ const App = () => {
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: EditorSelection) => void;
   }>(null);
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
   const hideTimerRef = useRef<number | null>(null);
+  const autoCompleteDebounce = useRef<NodeJS.Timeout | null>(null);
+
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
 
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
@@ -64,7 +69,23 @@ const App = () => {
     [],
   );
 
-  const editorState = useEditorState(handleOnSelectionChange);
+  const handleTreeChange = async (newTree: TheodoreTree) => {
+    if (autoCompleteDebounce.current != null)
+      clearTimeout(autoCompleteDebounce.current);
+
+    autoCompleteDebounce.current = setTimeout(async () => {
+      const selection = editorState.selectionHandle.getSelection();
+      if (isEditorSelectionCollapsed(selection)) {
+        const pureText = convertTreeToText(newTree);
+        await getAutoComplete(
+          pureText,
+          [],
+          selection?.startSelection.offset ?? pureText.length,
+        );
+      }
+    }, 1000);
+  };
+  const editorState = useEditorState(handleOnSelectionChange, handleTreeChange);
 
   const cancelHide = useCallback(() => {
     if (hideTimerRef.current != null) {

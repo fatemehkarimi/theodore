@@ -12,3 +12,4 @@ export {
   useEditorState,
   isEditorEmpty,
 } from './controller/useEditorState';
+export { isEditorSelectionCollapsed } from './controller/selection/useSelection';

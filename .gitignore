@@ -13,3 +13,6 @@ out
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+
+bin/

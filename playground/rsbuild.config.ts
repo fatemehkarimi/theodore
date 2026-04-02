@@ -4,6 +4,17 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
 
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        pathRewrite: {
+          '^/api': '',
+        },
+      },
+    },
+  },
   performance: {
     bundleAnalyze: {
       analyzerMode: 'static',
