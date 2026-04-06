@@ -15,7 +15,7 @@ import { computeLineHeightPx } from '../utils';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
-  'contentEditable'
+  'contentEditable' | 'onKeyDown' | 'onPaste' | 'onCut'
 > & {
   editorState: EditorState;
   renderEmoji: RenderEmoji;
