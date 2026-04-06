@@ -3,6 +3,7 @@ import Picker from '@emoji-mart/react';
 import clsx from 'clsx';
 import React, {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -51,6 +52,10 @@ const renderEmoji = (emoji: string) => {
   return <img src={path} width={22} height={22} alt={emoji} />;
 };
 
+type Message = {
+  sender: 'you' | 'friend';
+  message: string;
+};
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -61,6 +66,7 @@ const App = () => {
   const autoCompleteDebounce = useRef<NodeJS.Timeout | null>(null);
 
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
@@ -79,7 +85,7 @@ const App = () => {
         const pureText = convertTreeToText(newTree);
         await getAutoComplete(
           pureText,
-          [],
+          messages.slice(-7).map((msg) => `${msg.sender}: ${msg.message}`),
           selection?.startSelection.offset ?? pureText.length,
         );
       }
@@ -120,6 +126,23 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key == 'Enter') {
+        keyboardEvent.preventDefault();
+        keyboardEvent.stopImmediatePropagation();
+        const content = convertTreeToText(editorState.tree);
+        setMessages((msgs) => [...msgs, { sender: 'you', message: content }]);
+        theodoreRef.current?.setContent('');
+      }
+    };
+    editorRef.current?.addEventListener('keydown', handleKeyDown);
+
+    return () =>
+      editorRef.current?.removeEventListener('keydown', handleKeyDown);
+  }, [editorState.tree]);
+
   return (
     <div className={styles.mainPhone}>
       <div className={styles.backgroundImageEffect} />
@@ -146,6 +169,20 @@ const App = () => {
       <div className={styles.content}>
         <div className={styles.wrapper}>
           <Slogan />
+          <ul className={styles.messageList} aria-label="Sent messages">
+            {messages.length === 0 ? (
+              <li>
+                <p className={styles.messageListEmpty}>No messages yet.</p>
+              </li>
+            ) : (
+              messages.map((msg, index) => (
+                <li key={index} className={styles.messageItem}>
+                  <span className={styles.messageSender}>{msg.sender}:</span>
+                  <span className={styles.messageText}>{msg.message}</span>
+                </li>
+              ))
+            )}
+          </ul>
           <div className={styles.theodoreWrapper}>
             <Theodore
               theodoreRef={theodoreRef}
