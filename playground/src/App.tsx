@@ -3,6 +3,7 @@ import Picker from '@emoji-mart/react';
 import clsx from 'clsx';
 import React, {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -10,8 +11,10 @@ import React, {
 import {
   convertTreeToText,
   EditorSelection,
+  isEditorSelectionCollapsed,
   Theodore,
   TheodoreHandle,
+  TheodoreTree,
   useEditorState,
 } from 'theodore-js';
 import 'theodore-js/style.css';
@@ -23,6 +26,8 @@ import { useShowTransition } from './hooks/useShowtransition';
 import EmojiOutlined from './icons/EmojiOutlined';
 import Github from './icons/Github';
 import './index.css';
+import { getAutoComplete } from './autocomplete';
+import { getChatResponse } from './chat';
 
 const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -48,14 +53,22 @@ const renderEmoji = (emoji: string) => {
   return <img src={path} width={22} height={22} alt={emoji} />;
 };
 
+type Message = {
+  sender: 'you' | 'friend';
+  message: string;
+};
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLUListElement>(null);
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: EditorSelection) => void;
   }>(null);
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
   const hideTimerRef = useRef<number | null>(null);
+  const autoCompleteDebounce = useRef<NodeJS.Timeout | null>(null);
+
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
@@ -64,7 +77,23 @@ const App = () => {
     [],
   );
 
-  const editorState = useEditorState(handleOnSelectionChange);
+  const handleTreeChange = async (newTree: TheodoreTree) => {
+    if (autoCompleteDebounce.current != null)
+      clearTimeout(autoCompleteDebounce.current);
+
+    autoCompleteDebounce.current = setTimeout(async () => {
+      const selection = editorState.selectionHandle.getSelection();
+      if (isEditorSelectionCollapsed(selection)) {
+        const pureText = convertTreeToText(newTree);
+        await getAutoComplete(
+          pureText,
+          messages.slice(-7).map((msg) => `${msg.sender}: ${msg.message}`),
+          selection?.startSelection.offset ?? pureText.length,
+        );
+      }
+    }, 1000);
+  };
+  const editorState = useEditorState(handleOnSelectionChange, handleTreeChange);
 
   const cancelHide = useCallback(() => {
     if (hideTimerRef.current != null) {
@@ -99,6 +128,60 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key == 'Enter') {
+        keyboardEvent.preventDefault();
+        keyboardEvent.stopImmediatePropagation();
+        const content = convertTreeToText(editorState.tree);
+        if (content.trim() === '') return;
+
+        const nextMessages = [
+          ...messages,
+          { sender: 'you' as const, message: content },
+        ];
+        setMessages([...nextMessages, { sender: 'friend', message: '...' }]);
+        theodoreRef.current?.setContent('');
+
+        void (async () => {
+          let response: string | null = null;
+          try {
+            response = await getChatResponse(
+              nextMessages.map((msg) => `${msg.sender}: ${msg.message}`),
+            );
+          } catch (error) {
+            console.error('chat request failed', error);
+          }
+
+          setMessages((prevMessages) => {
+            const updatedMessages = [...prevMessages];
+            const loadingIndex = updatedMessages.findIndex(
+              (msg) => msg.sender === 'friend' && msg.message === '...',
+            );
+            if (loadingIndex >= 0) {
+              updatedMessages[loadingIndex] = {
+                sender: 'friend',
+                message: response ?? 'Sorry, something went wrong.',
+              };
+            }
+            return updatedMessages;
+          });
+        })();
+      }
+    };
+    editorRef.current?.addEventListener('keydown', handleKeyDown);
+
+    return () =>
+      editorRef.current?.removeEventListener('keydown', handleKeyDown);
+  }, [editorState.tree, messages]);
+
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (list == null) return;
+    list.scrollTop = list.scrollHeight;
+  }, [messages]);
+
   return (
     <div className={styles.mainPhone}>
       <div className={styles.backgroundImageEffect} />
@@ -125,6 +208,24 @@ const App = () => {
       <div className={styles.content}>
         <div className={styles.wrapper}>
           <Slogan />
+          <ul
+            ref={messageListRef}
+            className={styles.messageList}
+            aria-label="Sent messages"
+          >
+            {messages.length === 0 ? (
+              <li>
+                <p className={styles.messageListEmpty}>No messages yet.</p>
+              </li>
+            ) : (
+              messages.map((msg, index) => (
+                <li key={index} className={styles.messageItem}>
+                  <span className={styles.messageSender}>{msg.sender}:</span>
+                  <span className={styles.messageText}>{msg.message}</span>
+                </li>
+              ))
+            )}
+          </ul>
           <div className={styles.theodoreWrapper}>
             <Theodore
               theodoreRef={theodoreRef}

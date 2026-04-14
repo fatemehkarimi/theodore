@@ -1,13 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=ADLaM+Display:wght@400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-
 @mixin font {
-  font-family:
-    'ADLaM Display',
-    -apple-system,
-    'Roboto',
-    'Helvetica',
-    sans-serif;
+  font-family: sans-serif;
 }
 
 @mixin scrollbarStyle {
@@ -113,15 +105,51 @@
   background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='10' ry='10' stroke='%23333' stroke-width='2' stroke-dasharray='12' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
 }
 
+.messageList {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: rgba(93, 91, 80, 0.06);
+  @include scrollbarStyle;
+  @include font;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.messageListEmpty {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-style: italic;
+}
+
+.messageItem {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.messageSender {
+  font-weight: 600;
+  margin-right: 6px;
+  color: rgba(93, 91, 80, 1);
+}
+
+.messageText {
+  word-break: break-word;
+  color: #222;
+}
+
 .theodore {
   width: 100%;
   outline: none;
   font-size: 24px;
-  font-family:
-    'Roboto',
-    -apple-system,
-    'Helvetica',
-    sans-serif;
+  font-family: sans-serif;
 }
 
 .theodorePlaceholder {
