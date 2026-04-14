@@ -27,6 +27,7 @@ import EmojiOutlined from './icons/EmojiOutlined';
 import Github from './icons/Github';
 import './index.css';
 import { getAutoComplete } from './autocomplete';
+import { getChatResponse } from './chat';
 
 const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -59,6 +60,7 @@ type Message = {
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLUListElement>(null);
   const selectionPreviewRef = useRef<{
     onSelectionUpdate: (newSelection: EditorSelection) => void;
   }>(null);
@@ -133,15 +135,52 @@ const App = () => {
         keyboardEvent.preventDefault();
         keyboardEvent.stopImmediatePropagation();
         const content = convertTreeToText(editorState.tree);
-        setMessages((msgs) => [...msgs, { sender: 'you', message: content }]);
+        if (content.trim() === '') return;
+
+        const nextMessages = [
+          ...messages,
+          { sender: 'you' as const, message: content },
+        ];
+        setMessages([...nextMessages, { sender: 'friend', message: '...' }]);
         theodoreRef.current?.setContent('');
+
+        void (async () => {
+          let response: string | null = null;
+          try {
+            response = await getChatResponse(
+              nextMessages.map((msg) => `${msg.sender}: ${msg.message}`),
+            );
+          } catch (error) {
+            console.error('chat request failed', error);
+          }
+
+          setMessages((prevMessages) => {
+            const updatedMessages = [...prevMessages];
+            const loadingIndex = updatedMessages.findIndex(
+              (msg) => msg.sender === 'friend' && msg.message === '...',
+            );
+            if (loadingIndex >= 0) {
+              updatedMessages[loadingIndex] = {
+                sender: 'friend',
+                message: response ?? 'Sorry, something went wrong.',
+              };
+            }
+            return updatedMessages;
+          });
+        })();
       }
     };
     editorRef.current?.addEventListener('keydown', handleKeyDown);
 
     return () =>
       editorRef.current?.removeEventListener('keydown', handleKeyDown);
-  }, [editorState.tree]);
+  }, [editorState.tree, messages]);
+
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (list == null) return;
+    list.scrollTop = list.scrollHeight;
+  }, [messages]);
 
   return (
     <div className={styles.mainPhone}>
@@ -169,7 +208,11 @@ const App = () => {
       <div className={styles.content}>
         <div className={styles.wrapper}>
           <Slogan />
-          <ul className={styles.messageList} aria-label="Sent messages">
+          <ul
+            ref={messageListRef}
+            className={styles.messageList}
+            aria-label="Sent messages"
+          >
             {messages.length === 0 ? (
               <li>
                 <p className={styles.messageListEmpty}>No messages yet.</p>
