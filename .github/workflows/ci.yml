@@ -25,15 +25,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "pnpm"
+          node-version: '20'
+          cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build theodore
-        run: pnpm --filter theodore build
+        run: pnpm --filter theodore-js build && pnpm --filter @theodore/playground build && pnpm --filter @theodore/landing build
 
       - name: Run lint
         run: pnpm lint
