@@ -4,15 +4,24 @@ import type { SelectionHandle } from './controller/selection/useSelection';
 import { HistoryHandle } from './controller/history/types';
 import { EditorSelection } from './controller/selection/types';
 
+/* eslint-disable no-unused-vars */
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
-export type TheodoreHandle = {
-  insertEmoji: (emoji: string) => void;
-  setContent: (content: string) => void;
-};
+export interface TheodoreHandle {
+  insertEmoji(emoji: string): void;
+  setContent(content: string): void;
+}
 
-export type RenderEmoji = (emoji: string) => ReactElement;
-export type onSelectionChangeFn = (selection: EditorSelection) => void;
-export type onTreeChangeFn = (tree: Tree) => void;
+export interface RenderEmoji {
+  (emoji: string): ReactElement;
+}
+
+export interface onSelectionChangeFn {
+  (selection: EditorSelection): void;
+}
+
+export interface onTreeChangeFn {
+  (tree: Tree): void;
+}
 
 export type TextNodeDesc = {
   type: 'text';
@@ -24,8 +33,9 @@ export type Tree = EditorNode[][];
 
 export type EditorState = {
   tree: Tree;
-  setTree: (tree: Tree) => void;
-  assignNodeIndex: () => number;
+  setTree(tree: Tree): void;
+  assignNodeIndex(): number;
   historyHandle: HistoryHandle;
   selectionHandle: SelectionHandle;
 };
+/* eslint-enable no-unused-vars */

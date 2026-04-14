@@ -1,3 +1,6 @@
 # Lock files
 pnpm-lock.yaml
 *.mdx
+
+landing/public/
+playground/public/

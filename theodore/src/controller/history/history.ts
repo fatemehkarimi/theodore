@@ -5,8 +5,11 @@ import type { HistoryStack, HistoryCommand } from './types';
 export class History {
   private stack: HistoryStack = [];
   private transactionId: number = 0;
+  private readonly getSelection: () => EditorSelection;
 
-  constructor(private getSelection: () => EditorSelection) {}
+  constructor(getSelection: () => EditorSelection) {
+    this.getSelection = getSelection;
+  }
 
   assignTransactionId() {
     return this.transactionId;

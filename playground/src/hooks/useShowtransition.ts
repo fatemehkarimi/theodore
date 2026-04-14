@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 const CLOSE_DURATION = 350;
 
-export const useShowTransition = (
+const useShowTransition = (
   tClassNames: {
     shown?: string;
     notShown?: string;
@@ -52,3 +52,5 @@ export const useShowTransition = (
     transitionClassNames,
   };
 };
+
+export { useShowTransition };

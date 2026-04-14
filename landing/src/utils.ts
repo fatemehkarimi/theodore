@@ -1,4 +1,4 @@
-export const isMobile = (): boolean => {
+const isMobile = (): boolean => {
   if (typeof window === 'undefined') {
     return false;
   }
@@ -10,9 +10,11 @@ export const isMobile = (): boolean => {
   return userAgentMatch;
 };
 
-export const nativeToUnified = (emoji: string) => {
+const nativeToUnified = (emoji: string) => {
   const codePoints = Array.from(emoji, (char) =>
     char.codePointAt(0)?.toString(16),
   ).filter((code) => code !== undefined);
   return codePoints.join('-');
 };
+
+export { isMobile, nativeToUnified };

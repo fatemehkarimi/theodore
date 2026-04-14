@@ -1,22 +1,23 @@
-import type { onSelectionChangeFn } from "../../types";
+import type { onSelectionChangeFn } from '../../types';
 import type { EditorNodeSelection } from './types';
-
 
 export class Selection {
   private startSelection: EditorNodeSelection;
   private endSelection: EditorNodeSelection;
+  private readonly onSelectionChange?: onSelectionChangeFn;
 
   constructor(
     initialSelection: EditorNodeSelection,
-    private onSelectionChange?: onSelectionChangeFn
+    onSelectionChange?: onSelectionChangeFn,
   ) {
     this.startSelection = initialSelection;
     this.endSelection = initialSelection;
+    this.onSelectionChange = onSelectionChange;
   }
 
   public setSelection(
     newStartSelection: EditorNodeSelection,
-    newEndSelection?: EditorNodeSelection
+    newEndSelection?: EditorNodeSelection,
   ) {
     this.startSelection = newStartSelection;
 
@@ -26,19 +27,19 @@ export class Selection {
     this.onSelectionChange?.(
       this.startSelection != undefined && this.endSelection != undefined
         ? {
-          startSelection: { ...this.startSelection },
-          endSelection: { ...this.endSelection },
-        }
-        : null
+            startSelection: { ...this.startSelection },
+            endSelection: { ...this.endSelection },
+          }
+        : null,
     );
   }
 
   public getSelection() {
     return this.startSelection != null && this.endSelection != null
       ? {
-        startSelection: { ...this.startSelection },
-        endSelection: { ...this.endSelection },
-      }
+          startSelection: { ...this.startSelection },
+          endSelection: { ...this.endSelection },
+        }
       : null;
   }
 

@@ -5,7 +5,9 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint .",
-    "typecheck": "pnpm -r --if-present run typecheck"
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "prettier:check": "prettier . --check",
+    "prettier:format": "prettier . --write"
   },
   "keywords": [
     "editor"

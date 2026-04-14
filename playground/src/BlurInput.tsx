@@ -1,8 +1,9 @@
 import styles from './BlurInput.module.scss';
 
-export const BlurInput: React.FC<
-  React.PropsWithChildren<{ label: string }>
-> = ({ label, children }) => {
+const BlurInput: React.FC<React.PropsWithChildren<{ label: string }>> = ({
+  label,
+  children,
+}) => {
   return (
     <fieldset className={styles.fieldset}>
       <legend>{label}</legend>
@@ -10,3 +11,5 @@ export const BlurInput: React.FC<
     </fieldset>
   );
 };
+
+export { BlurInput };

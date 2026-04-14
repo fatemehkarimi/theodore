@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const useDelayedValue = <T>(
+/* eslint-disable no-unused-vars */
+interface ShouldNotDelayPredicate<T> {
+  (value: T): boolean;
+}
+/* eslint-enable no-unused-vars */
+
+const useDelayedValue = <T>(
   state: T,
   time: number,
   initialValue: T,
-  shouldNotDelayPredicate?: (state: T) => boolean,
+  shouldNotDelayPredicate?: ShouldNotDelayPredicate<T>,
 ) => {
   const [delayedState, setDelayedState] = useState<T>(initialValue);
   const id = useRef<NodeJS.Timeout>();
@@ -30,3 +36,5 @@ export const useDelayedValue = <T>(
 
   return delayedState;
 };
+
+export { useDelayedValue };

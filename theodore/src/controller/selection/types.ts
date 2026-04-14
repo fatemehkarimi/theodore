@@ -1,4 +1,3 @@
-
 export type SelectionDesc = {
   readonly nodeIndex: number;
   readonly offset: number;

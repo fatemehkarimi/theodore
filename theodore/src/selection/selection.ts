@@ -8,7 +8,7 @@ import {
   isEmptyParagraph,
 } from '../utils';
 
-export const setCaretToEnd = (inputEl: HTMLElement) => {
+const setCaretToEnd = (inputEl: HTMLElement) => {
   if (!inputEl) return;
 
   const range = document.createRange();
@@ -20,7 +20,7 @@ export const setCaretToEnd = (inputEl: HTMLElement) => {
   sel.addRange(range);
 };
 
-export const setCaretToBegining = (inputEl: HTMLElement) => {
+const setCaretToBegining = (inputEl: HTMLElement) => {
   if (!inputEl) return;
 
   const range = document.createRange();
@@ -166,6 +166,7 @@ export function moveCursorForwardOrBackward(
   direction: 'forward' | 'backward',
   granularity: 'character',
 ) {
+  void granularity;
   const selection = document.getSelection();
   if (!selection || !selection.rangeCount) return;
 
@@ -279,7 +280,7 @@ export function moveCursorForwardOrBackward(
 }
 
 // converts dom selection to editor selection.
-export const convertDomSelectionToEditorSelection = (
+const convertDomSelectionToEditorSelection = (
   container: Node,
   initialOffset: number,
 ): EditorSelection => {
@@ -387,4 +388,10 @@ export const convertDomSelectionToEditorSelection = (
     }
   }
   return null;
+};
+
+export {
+  setCaretToEnd,
+  setCaretToBegining,
+  convertDomSelectionToEditorSelection,
 };

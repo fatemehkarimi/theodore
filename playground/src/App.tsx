@@ -57,13 +57,34 @@ type Message = {
   sender: 'you' | 'friend';
   message: string;
 };
+
+type PickerEmoji = {
+  id: string;
+  keywords: string[];
+  shortcodes: string;
+  name: string;
+  native: string;
+  unified: string;
+};
+
+/* eslint-disable no-unused-vars */
+type SelectionPreviewHandle = {
+  onSelectionUpdate(newSelection: EditorSelection): void;
+};
+
+type AnimatedPickerProps = {
+  isVisible: boolean;
+  onEnter?: () => void;
+  onLeave?: () => void;
+  onSelectEmoji?(emoji: PickerEmoji): void;
+};
+/* eslint-enable no-unused-vars */
+
 const App = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLUListElement>(null);
-  const selectionPreviewRef = useRef<{
-    onSelectionUpdate: (newSelection: EditorSelection) => void;
-  }>(null);
+  const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
   const hideTimerRef = useRef<number | null>(null);
   const autoCompleteDebounce = useRef<NodeJS.Timeout | null>(null);
 
@@ -115,14 +136,7 @@ const App = () => {
     }, 300);
   }, [cancelHide]);
 
-  const handleSelectEmoji = (emoji: {
-    id: string;
-    keywords: string[];
-    shortcodes: string;
-    name: string;
-    native: string;
-    unified: string;
-  }) => {
+  const handleSelectEmoji = (emoji: PickerEmoji) => {
     if (theodoreRef.current != null) {
       theodoreRef.current.insertEmoji(emoji.native);
     }
@@ -277,19 +291,12 @@ const Slogan: React.FC = () => {
   );
 };
 
-const AnimatedPicker: React.FC<{
-  isVisible: boolean;
-  onEnter?: () => void;
-  onLeave?: () => void;
-  onSelectEmoji?: (emoji: {
-    id: string;
-    keywords: string[];
-    shortcodes: string;
-    name: string;
-    native: string;
-    unified: string;
-  }) => void;
-}> = ({ isVisible, onEnter, onLeave, onSelectEmoji }) => {
+const AnimatedPicker: React.FC<AnimatedPickerProps> = ({
+  isVisible,
+  onEnter,
+  onLeave,
+  onSelectEmoji,
+}) => {
   const { shouldRender, transitionClassNames } = useShowTransition(
     {
       open: styles.DesktopAnimationActive,
@@ -325,9 +332,7 @@ const AnimatedPicker: React.FC<{
   );
 };
 
-const SelectionPreview = React.forwardRef<{
-  onSelectionUpdate: (newSelection: EditorSelection) => void;
-}>((_, ref) => {
+const SelectionPreview = React.forwardRef<SelectionPreviewHandle>((_, ref) => {
   const [selection, setSelection] = useState<EditorSelection | null>(null);
   useImperativeHandle(ref, () => {
     return {

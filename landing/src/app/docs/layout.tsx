@@ -24,7 +24,7 @@ export default async function DocsLayout({
   );
 }
 
-export const NavbarLogo: React.FC = () => {
+const NavbarLogo: React.FC = () => {
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex h-16 items-center gap-4">
@@ -38,3 +38,5 @@ export const NavbarLogo: React.FC = () => {
     </div>
   );
 };
+
+export { NavbarLogo };

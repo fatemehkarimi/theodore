@@ -1,6 +1,6 @@
 // checks if a node is an empty paragraph node
 // it is empty if it has only one child, which is a <br />
-export const isEmptyParagraph = (node: Node) => {
+const isEmptyParagraph = (node: Node) => {
   if (node.nodeType != Node.ELEMENT_NODE) return false;
   if (node.nodeName == 'BR') return true;
   const childNodes = Array.from(node.childNodes);
@@ -10,7 +10,7 @@ export const isEmptyParagraph = (node: Node) => {
   return firstChild.nodeName == 'BR';
 };
 
-export const getFirstNode = (node: Node) => {
+const getFirstNode = (node: Node) => {
   const firstNode = node.childNodes[0];
   if (
     firstNode?.nodeType == Node.ELEMENT_NODE &&
@@ -22,26 +22,26 @@ export const getFirstNode = (node: Node) => {
 
 // checks if the first child of a node is a text node,
 // if so, returns it, otherwise returns the node
-export const getNodeOrFirstTextNode = (node: Node) => {
+const getNodeOrFirstTextNode = (node: Node) => {
   const firstNode = getFirstNode(node);
   if (firstNode?.nodeType == Node.TEXT_NODE) return firstNode;
   else return node;
 };
 
-export const isPTag = (node: Node) => {
+const isPTag = (node: Node) => {
   return (
     node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === 'P'
   );
 };
 
-export const getReferencableNode = (node: Node) => {
+const getReferencableNode = (node: Node) => {
   if (node.nodeType == Node.ELEMENT_NODE) return node;
   if (node.nodeType == Node.TEXT_NODE && node.parentNode != null)
     return node.parentNode;
   return node;
 };
 
-export const getCountCharsInNode = (node: Node): number => {
+const getCountCharsInNode = (node: Node): number => {
   if (node.nodeType == Node.TEXT_NODE)
     return (node as Text).textContent?.length ?? 0;
 
@@ -55,7 +55,7 @@ export const getCountCharsInNode = (node: Node): number => {
   return sum;
 };
 
-export const hasTextContent = (node: Node) => {
+const hasTextContent = (node: Node) => {
   if (node.nodeType == Node.TEXT_NODE) return true;
   if (node.childNodes.length == 0) return false;
 
@@ -63,7 +63,7 @@ export const hasTextContent = (node: Node) => {
   return false;
 };
 
-export const getNodeTextContentLength = (node: Node): number => {
+const getNodeTextContentLength = (node: Node): number => {
   if (node.nodeType == Node.TEXT_NODE)
     return (node as Text).textContent?.length ?? 0;
   if (node.nodeType == Node.ELEMENT_NODE)
@@ -73,7 +73,7 @@ export const getNodeTextContentLength = (node: Node): number => {
   return 0;
 };
 
-export const convertRangeBoundyPointToParagraphBoundaryPoint = (
+const convertRangeBoundyPointToParagraphBoundaryPoint = (
   container: Node,
   initialOffset: number,
 ): { node: Node; offset: number } => {
@@ -115,7 +115,7 @@ export const convertRangeBoundyPointToParagraphBoundaryPoint = (
   return { node, offset };
 };
 
-export const isTextNode = (node: Node) => node.nodeType == Node.TEXT_NODE;
+const isTextNode = (node: Node) => node.nodeType == Node.TEXT_NODE;
 
 export function computeLineHeightPx(
   computedStyle: CSSStyleDeclaration,
@@ -139,7 +139,7 @@ export function computeLineHeightPx(
   return hasFontSize ? numeric * fontSizePx : numeric;
 }
 
-export const copyTextToClipboard = (text: string) => {
+const copyTextToClipboard = (text: string) => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   if (
@@ -214,3 +214,17 @@ export function getTextFromDomSelection() {
 
   return parts.join('');
 }
+
+export {
+  isEmptyParagraph,
+  getFirstNode,
+  getNodeOrFirstTextNode,
+  isPTag,
+  getReferencableNode,
+  getCountCharsInNode,
+  hasTextContent,
+  getNodeTextContentLength,
+  convertRangeBoundyPointToParagraphBoundaryPoint,
+  isTextNode,
+  copyTextToClipboard,
+};

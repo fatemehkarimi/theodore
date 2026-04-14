@@ -1,18 +1,34 @@
-export const HOME = 'Home';
-export const END = 'End';
-export const ARROW_UP = 'ArrowUp';
-export const ARROW_RIGHT = 'ArrowRight';
-export const ARROW_DOWN = 'ArrowDown';
-export const ARROW_LEFT = 'ArrowLeft';
-export const ENTER = 'Enter';
-export const DELETE = 'Delete';
-export const BACKSPACE = 'Backspace';
-export const TAB = 'Tab';
-export const SPACE = ' ';
+const HOME = 'Home';
+const END = 'End';
+const ARROW_UP = 'ArrowUp';
+const ARROW_RIGHT = 'ArrowRight';
+const ARROW_DOWN = 'ArrowDown';
+const ARROW_LEFT = 'ArrowLeft';
+const ENTER = 'Enter';
+const DELETE = 'Delete';
+const BACKSPACE = 'Backspace';
+const TAB = 'Tab';
+const SPACE = ' ';
 
-export const NavigationKeys = [ARROW_UP, ARROW_RIGHT, ARROW_DOWN, ARROW_LEFT];
+const NavigationKeys = [ARROW_UP, ARROW_RIGHT, ARROW_DOWN, ARROW_LEFT];
 
-export const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
+const isOnlyNavigationKey = (event: React.KeyboardEvent) => {
   if (event.ctrlKey || event.shiftKey || event.altKey) return false;
   return NavigationKeys.includes(event.key);
+};
+
+export {
+  HOME,
+  END,
+  ARROW_UP,
+  ARROW_RIGHT,
+  ARROW_DOWN,
+  ARROW_LEFT,
+  ENTER,
+  DELETE,
+  BACKSPACE,
+  TAB,
+  SPACE,
+  NavigationKeys,
+  isOnlyNavigationKey,
 };

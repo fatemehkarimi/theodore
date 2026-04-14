@@ -3,49 +3,49 @@ import {
   Theodore,
   TheodoreHandle,
   useEditorState,
-} from "theodore-js";
-import "./styles.css";
-import "theodore-js/style.css";
-import { useRef, useState } from "react";
+} from 'theodore-js';
+import './styles.css';
+import 'theodore-js/style.css';
+import { useRef, useState } from 'react';
 
 const userAgent =
-  typeof navigator === "undefined" ? "" : navigator.userAgent.toLowerCase();
+  typeof navigator === 'undefined' ? '' : navigator.userAgent.toLowerCase();
 const isSafariBrowser =
   /safari/.test(userAgent) && !/chrome|chromium|android/.test(userAgent);
 const isAppleDevice = /iphone|ipad|macintosh|mac os x/.test(userAgent);
 const emojiAssetDirectory =
-  isSafariBrowser || isAppleDevice ? "android" : "ios";
+  isSafariBrowser || isAppleDevice ? 'android' : 'ios';
 const isMobile = (() => {
-  if (typeof navigator === "undefined") {
+  if (typeof navigator === 'undefined') {
     return false;
   }
   const ua = navigator.userAgent.toLowerCase();
   return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(
-    ua
+    ua,
   );
 })();
 
 const emojis = [
-  "😀",
-  "😁",
-  "😂",
-  "🤣",
-  "😊",
-  "😍",
-  "😘",
-  "😎",
-  "🤗",
-  "🤔",
-  "😴",
-  "😇",
-  "🤩",
-  "🥳",
-  "😢",
-  "😭",
-  "😡",
-  "👍",
-  "👏",
-  "❤️",
+  '😀',
+  '😁',
+  '😂',
+  '🤣',
+  '😊',
+  '😍',
+  '😘',
+  '😎',
+  '🤗',
+  '🤔',
+  '😴',
+  '😇',
+  '🤩',
+  '🥳',
+  '😢',
+  '😭',
+  '😡',
+  '👍',
+  '👏',
+  '❤️',
 ];
 
 const renderEmoji = (emoji: string) => {
@@ -53,7 +53,7 @@ const renderEmoji = (emoji: string) => {
   const path =
     emojis.indexOf(emoji) != -1
       ? `/${emojiAssetDirectory}/${unfied}.webp`
-      : "/no-emoji.png";
+      : '/no-emoji.png';
   return <img src={path} alt={emoji} width={19} height={19} />;
 };
 
@@ -68,7 +68,7 @@ export default function App() {
   const handleSend = () => {
     const content = convertTreeToText(editorState.tree);
     setMessages((currentMessages) => [...currentMessages, content.trim()]);
-    theodoreRef.current?.setContent("");
+    theodoreRef.current?.setContent('');
   };
 
   const handleAddEmoji = (emoji: string) => {
@@ -151,9 +151,11 @@ export default function App() {
   );
 }
 
-export const nativeToUnified = (emoji: string) => {
+const nativeToUnified = (emoji: string) => {
   const codePoints = Array.from(emoji, (char) =>
-    char.codePointAt(0)?.toString(16)
+    char.codePointAt(0)?.toString(16),
   ).filter((code) => code !== undefined);
-  return codePoints.join("-");
+  return codePoints.join('-');
 };
+
+export { nativeToUnified };

@@ -37,4 +37,3 @@ jobs:
 
       - name: Publish to npm
         run: cd theodore && pnpm publish --access public --no-git-checks
-

@@ -3,11 +3,16 @@ import type { ReactNode } from 'react';
 type NodeType = 'text' | 'emoji' | 'paragraph';
 type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
 export class Node {
+  protected nodeIndex: number;
   protected type: NodeType = 'text';
   protected style: NodeStyle[] = [];
 
-  constructor(protected nodeIndex: number) {}
+  constructor(nodeIndex: number) {
+    this.nodeIndex = nodeIndex;
+  }
+
   static fromDescriptor(desc: Object): Node {
+    void desc;
     throw new Error('not implemented');
   }
 
@@ -24,6 +29,7 @@ export class Node {
   }
 
   public render(children?: ReactNode | undefined): ReactNode {
+    void children;
     throw new Error('not implemented');
   }
 
