@@ -28,6 +28,7 @@
   "scripts": {
     "dev": "next dev --port 7777",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
