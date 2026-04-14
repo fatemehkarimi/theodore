@@ -16,7 +16,10 @@ export function Installation() {
   const [copiedCode, setCopiedCode] = useState(false);
   const codeRef = useRef<HTMLElement | null>(null);
 
-  const copyToClipboard = (text: string, setter: (val: boolean) => void) => {
+  const copyToClipboard = (
+    text: string,
+    setter: React.Dispatch<React.SetStateAction<boolean>>,
+  ) => {
     navigator.clipboard.writeText(text);
     setter(true);
     setTimeout(() => setter(false), 2000);

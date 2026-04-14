@@ -1,4 +1,9 @@
-import { useLayoutEffect, type MutableRefObject } from 'react';
+import {
+  useLayoutEffect,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 import {
   IS_ANDROID_CHROME,
   IS_FIREFOX,
@@ -70,7 +75,7 @@ import {
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   renderEmoji: RenderEmoji,
-  updateEditorKey: (fn: (key: number) => number) => void,
+  updateEditorKey: Dispatch<SetStateAction<number>>,
   editorState: EditorState,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =

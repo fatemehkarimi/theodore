@@ -1,18 +1,18 @@
 import { useRef } from 'react';
-import type {
-  onSelectionChangeFn,
-} from '../../types';
+import type { onSelectionChangeFn } from '../../types';
 import type { EditorSelection, EditorNodeSelection } from './types';
 import { Selection } from './selection';
 
+/* eslint-disable no-unused-vars */
 type SelectionHandle = {
   clone(): Selection;
   getSelection(): EditorSelection;
   setSelection(
-    newStartSelection: EditorNodeSelection,
-    newEndSelection?: EditorNodeSelection,
+    startSelection: EditorNodeSelection,
+    endSelection?: EditorNodeSelection,
   ): void;
 };
+/* eslint-enable no-unused-vars */
 const useSelection = (
   initialSelection: EditorNodeSelection,
   onSelectionChange?: onSelectionChangeFn,

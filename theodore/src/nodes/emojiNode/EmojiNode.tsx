@@ -2,12 +2,13 @@ import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
 
 class EmojiNode extends Node {
-  constructor(
-    nodeIndex: number,
-    private emoji: string,
-    private renderEmoji: RenderEmoji,
-  ) {
+  private readonly emoji: string;
+  private readonly renderEmoji: RenderEmoji;
+
+  constructor(nodeIndex: number, emoji: string, renderEmoji: RenderEmoji) {
     super(nodeIndex);
+    this.emoji = emoji;
+    this.renderEmoji = renderEmoji;
     this.type = 'emoji';
   }
 

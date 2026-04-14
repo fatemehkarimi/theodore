@@ -6,7 +6,7 @@ import 'nextra-theme-docs/style.css';
 import '../index.css';
 import 'theodore-js/style.css';
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   title: 'theodore-js | Render Emoji in React Inputs',
   description:
     'Render emoji as images in React text inputs with theodore-js. Replace emoji characters with custom images for consistent cross-browser display. Built for classy web apps.',
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   publisher: 'fatemeh karimi',
 };
 
-export const viewport: Viewport = {
+const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
 };
@@ -200,3 +200,5 @@ ym(104688237, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLa
     </html>
   );
 }
+
+export { metadata, viewport };

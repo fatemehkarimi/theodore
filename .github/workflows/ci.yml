@@ -1,17 +1,18 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Publish to npm
+name: CI
 
 on:
-  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  publish:
-    environment: NPM_TOKEN
+  merge-prerequisities:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,13 +28,18 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Build package
-        run: pnpm -C theodore build
+      - name: Build theodore
+        run: pnpm --filter theodore-js build && pnpm --filter @theodore/playground build && pnpm --filter @theodore/landing build
 
-      - name: Publish to npm
-        run: cd theodore && pnpm publish --access public --no-git-checks
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run typecheck
+        run: pnpm typecheck
+
+      - name: Run prettier
+        run: pnpm prettier:check

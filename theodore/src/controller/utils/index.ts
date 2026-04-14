@@ -5,8 +5,8 @@ import { TextNode } from '../../nodes/textNode/TextNode';
 import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
-export const ALWAYS_IN_DOM_NODE_INDEX = 1;
-export const ALWAYS_IN_DOM_NODE_SELECTION = {
+const ALWAYS_IN_DOM_NODE_INDEX = 1;
+const ALWAYS_IN_DOM_NODE_SELECTION = {
   nodeIndex: ALWAYS_IN_DOM_NODE_INDEX,
   offset: 0,
 };
@@ -69,10 +69,7 @@ export function getNextNode(
   return currentNode;
 }
 
-export const getNodeIndexInTree = (
-  tree: Tree,
-  nodeIndex: number | undefined,
-) => {
+const getNodeIndexInTree = (tree: Tree, nodeIndex: number | undefined) => {
   const subtreeIdx = tree.findIndex((subtree) =>
     subtree.find((t) => t.getIndex() == nodeIndex),
   );
@@ -85,19 +82,16 @@ export const getNodeIndexInTree = (
   return [subtreeIdx, nodeIdx];
 };
 
-export const getParagraphIndexInTree = (
-  tree: Tree,
-  nodeIndex: number | undefined,
-) => {
+const getParagraphIndexInTree = (tree: Tree, nodeIndex: number | undefined) => {
   const [subTreeIdx] = getNodeIndexInTree(tree, nodeIndex);
   return subTreeIdx;
 };
 
-export const findNode = (tree: Tree, nodeIndex: number | undefined) => {
+const findNode = (tree: Tree, nodeIndex: number | undefined) => {
   return tree.flat().find((node) => node.getIndex() == nodeIndex);
 };
 
-export const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
+const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
   if (nodeIndex == undefined) return null;
   const [pIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
   if (pIdx == -1 || nodeIdx == -1) return null;
@@ -109,7 +103,7 @@ export const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
   return null;
 };
 
-export const findNodeBefore = (tree: Tree, nodeIndex: number | undefined) => {
+const findNodeBefore = (tree: Tree, nodeIndex: number | undefined) => {
   if (nodeIndex == undefined) return null;
   const [pIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
   if (pIdx == -1 || nodeIdx == -1) return null;
@@ -122,13 +116,13 @@ export const findNodeBefore = (tree: Tree, nodeIndex: number | undefined) => {
   return null;
 };
 
-export const getDomNodeByNodeIndex = (nodeIndex: number) => {
+const getDomNodeByNodeIndex = (nodeIndex: number) => {
   return document.querySelectorAll(
     `[data-node-index="${nodeIndex}"]`,
   )?.[0] as Element | null;
 };
 
-export const reconcileTextNodeContentFromContentEditable = (
+const reconcileTextNodeContentFromContentEditable = (
   container: HTMLDivElement,
   currentTree: Tree,
 ): [Tree | null, boolean] => {
@@ -198,7 +192,7 @@ export const reconcileTextNodeContentFromContentEditable = (
   return [renderedTree, doesBrowserRemovedAnyNode];
 };
 
-export const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {
+const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {
   const [subTreeIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
   const newTree = [...tree];
   newTree[subTreeIdx] = [
@@ -208,7 +202,7 @@ export const removeNodeFromTree = (tree: Tree, nodeIndex: number) => {
   return newTree;
 };
 
-export const getSelectionAfterNodeRemove = (
+const getSelectionAfterNodeRemove = (
   tree: Tree,
   nodeIndex: number,
 ): SelectionDesc => {
@@ -243,18 +237,18 @@ export const getSelectionAfterNodeRemove = (
   } else return ALWAYS_IN_DOM_NODE_SELECTION;
 };
 
-export const isEmoji = (text: string): boolean => {
+const isEmoji = (text: string): boolean => {
   if (!text || text.length === 0) return false;
   const emojiRegex = /\p{Extended_Pictographic}/u;
   return emojiRegex.test(text);
 };
 
-export const getFirstEmoji = (s: string): string | null =>
+const getFirstEmoji = (s: string): string | null =>
   s.match(
     /\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*|[\u{1F1E6}-\u{1F1FF}]{2}/u,
   )?.[0] ?? null;
 
-export const insertNodesInBetween = (
+const insertNodesInBetween = (
   tree: Tree,
   nodesToInsert: (EditorNode | EditorNode[])[],
   prevNode: number | undefined,
@@ -304,7 +298,7 @@ export const insertNodesInBetween = (
 };
 
 const EMOJI_REGEX_EMOJI_DETECTOR = emojiRegex();
-export const segmentText = (text: string): string[] => {
+const segmentText = (text: string): string[] => {
   if (typeof (Intl as any).Segmenter === 'function') {
     return [
       ...new (Intl as any).Segmenter(undefined, {
@@ -335,10 +329,7 @@ export const segmentText = (text: string): string[] => {
   }
 };
 
-export const isElementInView = (
-  container: HTMLElement | null,
-  element: Element,
-) => {
+const isElementInView = (container: HTMLElement | null, element: Element) => {
   const elRect = element.getBoundingClientRect();
   let isInView = false;
   if (container != null) {
@@ -356,7 +347,7 @@ export const isElementInView = (
   return isInView;
 };
 
-export const findSelectedNodeToInsertText = (
+const findSelectedNodeToInsertText = (
   tree: Tree,
   nodeIndex: number | undefined,
 ) => {
@@ -404,10 +395,31 @@ export function breakAndReplaceTextNode(
   return [newTree, textNode, afterTextNode];
 }
 
-export const isSelectionAnchorSameAsFocus = () => {
+const isSelectionAnchorSameAsFocus = () => {
   const selection = document.getSelection();
   if (selection == null || selection.rangeCount == 0) return false;
   const range = selection.getRangeAt(0);
 
   return range.startContainer == range.endContainer;
+};
+
+export {
+  ALWAYS_IN_DOM_NODE_INDEX,
+  ALWAYS_IN_DOM_NODE_SELECTION,
+  getNodeIndexInTree,
+  getParagraphIndexInTree,
+  findNode,
+  findNodeAfter,
+  findNodeBefore,
+  getDomNodeByNodeIndex,
+  reconcileTextNodeContentFromContentEditable,
+  removeNodeFromTree,
+  getSelectionAfterNodeRemove,
+  isEmoji,
+  getFirstEmoji,
+  insertNodesInBetween,
+  segmentText,
+  isElementInView,
+  findSelectedNodeToInsertText,
+  isSelectionAnchorSameAsFocus,
 };

@@ -1,28 +1,42 @@
-import { fixupConfigRules } from '@eslint/compat';
-import js from '@eslint/js';
 import reactHooks from 'eslint-plugin-react-hooks';
-import reactJsx from 'eslint-plugin-react/configs/jsx-runtime.js';
-import react from 'eslint-plugin-react/configs/recommended.js';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+const sourceFiles = ['**/*.{js,mjs,cjs,jsx,ts,tsx}'];
 
 export default [
-  { languageOptions: { globals: globals.browser } },
-  js.configs.recommended,
-  ...fixupConfigRules([
-    {
-      ...react,
-      settings: {
-        react: { version: '>=18.0.0' },
-      },
-    },
-    reactJsx,
-  ]),
   {
+    files: sourceFiles,
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: globals.browser,
+    },
+  },
+  // js.configs.recommended,
+  // ...fixupConfigRules([
+  //   {
+  //     ...react,
+  //     settings: {
+  //       react: { version: '>=18.0.0' },
+  //     },
+  //   },
+  //   reactJsx,
+  // ]),
+  {
+    files: sourceFiles,
     plugins: {
       'react-hooks': reactHooks,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // ...reactHooks.configs.recommended.rules,
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-unused-vars': 'error',
       'no-restricted-syntax': [
         'error',
@@ -34,5 +48,14 @@ export default [
       ],
     },
   },
-  { ignores: ['dist/**', 'node_modules/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/out/**',
+      '**/build/**',
+      '**/*.tsbuildinfo',
+    ],
+  },
 ];

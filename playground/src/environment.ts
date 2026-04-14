@@ -1,4 +1,4 @@
-export const isLocalhost = (): boolean => {
+const isLocalhost = (): boolean => {
   if (typeof window !== 'undefined' && typeof window.location !== 'undefined') {
     const hostname = window.location.hostname;
     return (
@@ -11,8 +11,10 @@ export const isLocalhost = (): boolean => {
   return false;
 };
 
-export const isAndroid = (): boolean => {
+const isAndroid = (): boolean => {
   if (typeof navigator === 'undefined') return false;
   const ua = (navigator.userAgent || '').toLowerCase();
   return ua.includes('android');
 };
+
+export { isLocalhost, isAndroid };
