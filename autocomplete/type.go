@@ -36,3 +36,11 @@ type ResponseGenerate struct {
 	EvalCount          int       `json:"eval_count"`
 	EvalDuration       int64     `json:"eval_duration"`
 }
+
+type RequestChat struct {
+	Messages []Message `json:"messages,omitempty"`
+}
+
+type ResponseChat struct {
+	Response string `json:"response"`
+}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+var LLM_MODEL = "qwen2.5:0.5b"
 var allowedOrigins = map[string]struct{}{
 	"https://theodore-js.dev":     {},
 	"https://www.theodore-js.dev": {},
@@ -40,35 +41,12 @@ func autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prompt := GeneratePrompt(requestAutoComplete)
-	url := "http://localhost:11434/api/generate"
-
-	payload := RequestGenerate{
-		Model:  "gemma3:270m",
-		Prompt: prompt,
-		Stream: false,
-	}
-
-	jsonData, err := json.Marshal(payload)
+	prompt := GenerateAutocompletePrompt(requestAutoComplete)
+	response, err := requestGenerate(prompt)
 	if err != nil {
-		fmt.Println("Error marshalling JSON:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("Error making POST request:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		http.Error(w, resp.Status, resp.StatusCode)
-		return
-	}
-
-	var response ResponseGenerate
-	err = json.NewDecoder(resp.Body).Decode(&response)
 
 	finalResponse := ResponseAutocomplete{Predict: response.Response}
 	w.Header().Set("Content-Type", "application/json")
@@ -81,9 +59,73 @@ func autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func requestGenerate(prompt string) (*ResponseGenerate, error) {
+	url := "http://localhost:11434/api/generate"
+
+	payload := RequestGenerate{
+		Model:  LLM_MODEL,
+		Prompt: prompt,
+		Stream: false,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(resp.Status)
+	}
+
+	var response ResponseGenerate
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+func chatHandler(w http.ResponseWriter, r *http.Request) {
+	var requestChat RequestChat
+
+	err := json.NewDecoder(r.Body).Decode(&requestChat)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	prompt := GenerateChatPrompt(requestChat)
+	response, err := requestGenerate(prompt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	finalResponse := ResponseChat{Response: response.Response}
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(finalResponse)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func main() {
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/autocomplete", autocompleteHandler)
+	mux.HandleFunc("/chat", chatHandler)
 
 	handler := CORSMiddleware(mux)
 	fmt.Println("Server is up and running at port 8080")
