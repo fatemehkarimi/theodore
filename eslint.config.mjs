@@ -1,3 +1,4 @@
+import playwright from 'eslint-plugin-playwright';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -57,5 +58,20 @@ export default [
       '**/build/**',
       '**/*.tsbuildinfo',
     ],
+  },
+  {
+    files: ['theodore/e2e/**/*.ts'],
+    ...playwright.configs['flat/recommended'],
+    languageOptions: {
+      ...playwright.configs['flat/recommended'].languageOptions,
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
   },
 ];
