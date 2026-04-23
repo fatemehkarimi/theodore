@@ -13,7 +13,10 @@ import styles from '../App.module.scss';
 import { AnimatedPicker, type PickerEmoji } from '../components/AnimatedPicker';
 import { PlaygroundPageChrome } from '../components/PlaygroundPageChrome';
 import { isMobileDevice, renderAppleEmoji } from '../utils';
-import { SelectionPreview, type SelectionPreviewHandle } from '../components/SelectionPreview';
+import {
+  SelectionPreview,
+  type SelectionPreviewHandle,
+} from '../components/SelectionPreview';
 import { Slogan } from '../components/Slogan';
 import { BlurInput } from '../BlurInput';
 import EmojiOutlined from '../icons/EmojiOutlined';
