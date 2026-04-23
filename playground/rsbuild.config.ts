@@ -5,6 +5,7 @@ import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
 
 export default defineConfig({
   server: {
+    historyApiFallback: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
