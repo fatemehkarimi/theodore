@@ -24,7 +24,10 @@
   "scripts": {
     "build": "rslib build",
     "dev": "rslib build --watch",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "CI=1 playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "repository": {
     "type": "git",
@@ -44,6 +47,7 @@
     "node": ">=16.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@rsbuild/plugin-react": "^1.1.1",
     "@rsbuild/plugin-sass": "^1.2.2",
     "@rslib/core": "^0.5.3",

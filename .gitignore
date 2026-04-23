@@ -18,3 +18,7 @@ out
 bin/
 
 *.tsbuildinfo
+
+# Playwright
+playwright-report/
+test-results/
