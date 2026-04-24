@@ -4,6 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const sourceFiles = ['**/*.{js,mjs,cjs,jsx,ts,tsx}'];
+const playwrightE2eRecommended = playwright.configs['flat/recommended'];
 
 export default [
   {
@@ -61,9 +62,9 @@ export default [
   },
   {
     files: ['theodore/e2e/**/*.ts'],
-    ...playwright.configs['flat/recommended'],
+    ...playwrightE2eRecommended,
     languageOptions: {
-      ...playwright.configs['flat/recommended'].languageOptions,
+      ...playwrightE2eRecommended.languageOptions,
       parser: tseslint.parser,
       parserOptions: {
         ecmaFeatures: {
@@ -72,6 +73,19 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+    },
+    rules: {
+      ...playwrightE2eRecommended.rules,
+      'playwright/expect-expect': [
+        'error',
+        {
+          assertFunctionNames: [
+            'expect',
+            'expectNoPageErrors',
+            'expectExactText',
+          ],
+        },
+      ],
     },
   },
 ];

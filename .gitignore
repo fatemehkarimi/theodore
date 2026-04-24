@@ -10,7 +10,6 @@ dist/
 out
 
 # IDE
-.vscode/*
 !.vscode/extensions.json
 .idea
 
