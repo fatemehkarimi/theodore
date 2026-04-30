@@ -41,17 +41,9 @@ const EditorPage = () => {
     }
   }, []);
 
-  const showPicker = useCallback(() => {
+  const togglePicker = useCallback(() => {
     cancelHide();
-    setIsPickerVisible(true);
-  }, [cancelHide]);
-
-  const scheduleHide = useCallback(() => {
-    cancelHide();
-    hideTimerRef.current = window.setTimeout(() => {
-      setIsPickerVisible(false);
-      hideTimerRef.current = null;
-    }, 300);
+    setIsPickerVisible((open) => !open);
   }, [cancelHide]);
 
   const handleSelectEmoji = (emoji: PickerEmoji) => {
@@ -82,13 +74,11 @@ const EditorPage = () => {
               className={styles.emojiIcon}
               size={30}
               color={`rgba(93, 91, 80, 1)`}
-              onMouseEnter={showPicker}
-              onMouseLeave={scheduleHide}
+              onClick={togglePicker}
+              data-testid="emoji-picker"
             />
             <AnimatedPicker
               isVisible={isPickerVisible}
-              onEnter={showPicker}
-              onLeave={scheduleHide}
               onSelectEmoji={handleSelectEmoji}
             />
           </div>

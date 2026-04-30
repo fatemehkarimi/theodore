@@ -1,0 +1,51 @@
+---
+name: theodore-e2e
+description: Writes and maintains Playwright end-to-end tests for the Theodore editor (theodore-js playground). Covers test layout, preview text assertions aligned with convertTreeToText, page error tracking, cross-platform shortcuts, and stability patterns. Apply when adding or editing e2e tests under theodore/e2e, Playwright config, or Theodore QA automation.
+---
+
+# Theodore Playwright E2E
+
+## Scope
+
+- **Package**: `theodore-js` workspace package at `theodore/`.
+- **Tests**: `theodore/e2e/**/*.spec.ts`; shared helpers in `theodore/e2e/utils.ts` and constants in `theodore/e2e/constant.ts`.
+- **Config**: `theodore/playwright.config.ts` — `baseURL` `http://localhost:3000`, `webServer` starts the playground (`rsbuild dev` on port 3000).
+
+## Commands
+
+Run from **`theodore/`** (the package dir):
+
+```bash
+pnpm test:e2e           # local: headed Chromium unless CI env
+pnpm test:e2e:ci       # CI-style: CI=1, headless, retries
+pnpm test:e2e:install  # chromium + deps once
+```
+
+## Helpers (`theodore/e2e/utils.ts`)
+
+**`installPageErrorTracking`**: call once at the start (before `page.goto`) and keep the returned array for the whole test.
+
+**`expectNoPageErrors`**: **every test must call this exactly once**, as the **final statement** of the test body (after all interactions and content assertions). Do **not** call it multiple times mid-flow.
+
+```typescript
+const pageErrors = installPageErrorTracking(page);
+await page.goto('/');
+// ... exercise the app, assert preview / UI ...
+expectNoPageErrors(pageErrors);
+```
+
+- **`undoShortcut()`**: `Meta+Z` on macOS, `Control+Z` elsewhere.
+- **`expectExactText(locator, text)`**: Asserts preview DOM text equals the **logical** string. Implementation uses `previewDocText`: `convertTreeToText` ends paragraphs with `\n`, so empty doc is `"\n"` and logical text gets a trailing `\n` when missing. Do not fight this — pass plain logical text unless you need explicit newlines.
+
+## Playground selectors
+
+Prefer **`data-testid`** stable hooks (e.g. `editor`, `plain-text-preview`) over fragile CSS/text when available. Placeholder visibility uses shared `PLACEHOLDER` from `./constant.ts` where applicable.
+
+## Stability
+
+- Prefer **`pressSequentially`** with modest `delay` for typing-heavy flows if flakes appear.
+- After **Arrow keys** / **selection** flows that rely on React state, use a short **`await delay(ms)`** from `node:timers/promises` if the suite already does so nearby — one pattern is tens of milliseconds to let layout/selection sync.
+
+## Lint (e2e only)
+
+Repo ESLint overrides `theodore/e2e/**/*.ts` so `playwright/expect-expect` counts **`expect`**, **`expectNoPageErrors`**, and **`expectExactText`** as assertions. A **single** trailing `expectNoPageErrors(pageErrors)` is enough when combined with primary assertions (`expectExactText`, visibility checks). Use those helpers rather than weakening the rule.
