@@ -459,3 +459,85 @@ test('type hello, press ENTER, press ENTER, type goodbye, press ARROW_LEFT 3 tim
 
   expectNoPageErrors(pageErrors);
 });
+
+test('should successfuly paste text "from clipboard🌷🌷🌷" into editor, then undo', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+  const pasted = 'from clipboard🌷🌷🌷';
+
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  const editor = page.getByTestId('editor');
+  const preview = page.getByTestId('plain-text-preview');
+
+  await editor.click();
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, pasted);
+
+  await page.keyboard.press('ControlOrMeta+V');
+  await delay(200);
+
+  await expectExactText(preview, pasted);
+  await delay(100);
+  await page.keyboard.press(undoShortcut());
+  await delay(100);
+  await expectExactText(preview, '');
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('type hello, then ENTER 3 times, type goodbye, press ARROW_LEFT 3 times, press SHIFT+ARROW_UP 3 times, press SHIFT+ARROW_LEFT 3 times, paste "i love you\n\n\n😂😂😂" from clipboard, then undo', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+  const pasted = 'i love you\n\n\n😂😂😂';
+
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  const editor = page.getByTestId('editor');
+  const preview = page.getByTestId('plain-text-preview');
+
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await editor.pressSequentially('goodbye', { delay: 100 });
+  await expectExactText(preview, 'hello\n\n\ngoodbye');
+
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('ArrowLeft', { delay: 30 });
+  }
+  await delay(30);
+
+  for (let i = 0; i < 2; i++) {
+    await page.keyboard.press('Shift+ArrowUp', { delay: 30 });
+  }
+  await delay(30);
+
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('Shift+ArrowLeft', { delay: 30 });
+  }
+  await delay(30);
+
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, pasted);
+  await delay(50);
+
+  await page.keyboard.press('ControlOrMeta+V');
+  await delay(100);
+
+  await expectExactText(preview, 'heli love you\n\n\n😂😂😂bye');
+
+  await delay(200);
+  await page.keyboard.press(undoShortcut());
+  await delay(50);
+  await expectExactText(preview, 'hello\n\n\ngoodbye');
+
+  expectNoPageErrors(pageErrors);
+});

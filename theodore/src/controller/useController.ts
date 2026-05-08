@@ -170,49 +170,59 @@ const useController = (
       return newTree;
     }
 
-    const newTree = tree
-      .map((subTree) => {
-        const pNode = subTree[0];
-        if (
-          pNode.getIndex() == prevState.nodeIndex &&
-          prevState.command == COMMAND_REPLACE_PARAGRAPH
-        ) {
-          if (prevState.prevState != null) {
-            const prevNodes = prevState.prevState as EditorNode[];
-            return prevNodes;
-          }
-        } else if (
-          pNode.getIndex() == prevState.nodeIndex &&
-          prevState.command == COMMAND_INSERT_PARAGRAPH
-        )
-          return [];
+    const newTree: Tree = [];
+    for (const subTree of tree) {
+      const pNode = subTree[0];
+      if (
+        pNode.getIndex() == prevState.nodeIndex &&
+        prevState.command == COMMAND_REPLACE_PARAGRAPH
+      ) {
+        if (prevState.prevState != null) {
+          const prevNodes = prevState.prevState as EditorNode[];
+          newTree.push(prevNodes);
+          continue;
+        }
+      }
+      if (
+        pNode.getIndex() == prevState.nodeIndex &&
+        prevState.command == COMMAND_INSERT_PARAGRAPH
+      ) {
+        const tail = subTree.slice(1);
+        if (newTree.length > 0) {
+          const prev = newTree[newTree.length - 1];
+          newTree[newTree.length - 1] = [...prev, ...tail];
+        } else if (tail.length > 0) {
+          newTree.push(tail);
+        }
+        continue;
+      }
 
-        return subTree
-          .map((node) => {
-            if (node.getIndex() == prevState.nodeIndex) {
-              if (prevState.command == COMMAND_INSERT_TEXT) {
-                if (prevState.prevState != null && node.isTextNode()) {
-                  const textNode = node as TextNode;
-                  textNode.setChild(prevState.prevState as string);
-                  return node;
-                } else return null;
-              } else if (prevState.command == COMMAND_REPLACE_TEXT) {
-                if (prevState.prevState != null) {
-                  const newNode = TextNode.fromDescriptor(
-                    prevState.prevState as TextNodeDesc,
-                  );
-                  // we keep the original node because it may be in the
-                  // history of other commands
-                  const newText = newNode.getChildren();
-                  if (newText != null) (node as TextNode).setChild(newText);
-                  return node;
-                } else return null;
+      const mapped = subTree
+        .map((node) => {
+          if (node.getIndex() == prevState.nodeIndex) {
+            if (prevState.command == COMMAND_INSERT_TEXT) {
+              if (prevState.prevState != null && node.isTextNode()) {
+                const textNode = node as TextNode;
+                textNode.setChild(prevState.prevState as string);
+                return node;
               } else return null;
-            } else return node;
-          })
-          .filter((node) => node != null);
-      })
-      .filter((subTree) => subTree.length > 0);
+            } else if (prevState.command == COMMAND_REPLACE_TEXT) {
+              if (prevState.prevState != null) {
+                const newNode = TextNode.fromDescriptor(
+                  prevState.prevState as TextNodeDesc,
+                );
+                // we keep the original node because it may be in the
+                // history of other commands
+                const newText = newNode.getChildren();
+                if (newText != null) (node as TextNode).setChild(newText);
+                return node;
+              } else return null;
+            } else return null;
+          } else return node;
+        })
+        .filter((node) => node != null);
+      if (mapped.length > 0) newTree.push(mapped);
+    }
     return newTree;
   };
 
