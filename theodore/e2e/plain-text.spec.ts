@@ -541,3 +541,81 @@ test('type hello, then ENTER 3 times, type goodbye, press ARROW_LEFT 3 times, pr
 
   expectNoPageErrors(pageErrors);
 });
+
+test('should type hello, then press ENTER 3 times, then type goodbye, then press ctrl+a, then paste "i love you\n\n\n🌱", then undo', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+  const pasted = 'i love you\n\n\n🌱';
+
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  const editor = page.getByTestId('editor');
+  const preview = page.getByTestId('plain-text-preview');
+
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await editor.pressSequentially('goodbye', { delay: 100 });
+  await expectExactText(preview, 'hello\n\n\ngoodbye');
+
+  await page.keyboard.press('ControlOrMeta+A');
+  await delay(30);
+
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, pasted);
+  await delay(50);
+
+  await page.keyboard.press('ControlOrMeta+V');
+  await delay(100);
+
+  await expectExactText(preview, pasted);
+
+  await delay(50);
+
+  await page.keyboard.press(undoShortcut());
+  await delay(50);
+  await expectExactText(preview, 'hello\n\n\ngoodbye');
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('should type hello, then press ctrl+a, then paste "🌱\n❤️\n😂", then undo', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+  const pasted = '🌱\n❤️\n😂';
+
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  const editor = page.getByTestId('editor');
+  const preview = page.getByTestId('plain-text-preview');
+
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+  await expectExactText(preview, 'hello');
+
+  await page.keyboard.press('ControlOrMeta+A');
+  await delay(30);
+
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, pasted);
+  await delay(50);
+
+  await page.keyboard.press('ControlOrMeta+V');
+  await delay(100);
+
+  await expectExactText(preview, pasted);
+
+  await page.keyboard.press(undoShortcut());
+  await delay(50);
+  await expectExactText(preview, 'hello');
+
+  expectNoPageErrors(pageErrors);
+});
