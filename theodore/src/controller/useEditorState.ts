@@ -48,15 +48,9 @@ const useEditorState = (
 };
 
 const convertTreeToText = (tree: Tree) => {
-  let result = '';
-  for (let pI = 0; pI < tree.length; ++pI) {
-    const subTree = tree[pI];
-    for (let nI = 0; nI < tree[pI].length; ++nI) {
-      result += subTree[nI].getChildren() ?? '';
-    }
-    result += '\n';
-  }
-  return result;
+  return tree
+    .map((subTree) => subTree.map((node) => node.getChildren() ?? '').join(''))
+    .join('\n');
 };
 
 const isEditorEmpty = (tree: Tree) => {

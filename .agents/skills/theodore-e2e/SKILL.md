@@ -35,7 +35,7 @@ expectNoPageErrors(pageErrors);
 ```
 
 - **`undoShortcut()`**: `Meta+Z` on macOS, `Control+Z` elsewhere.
-- **`expectExactText(locator, text)`**: Asserts preview DOM text equals the **logical** string. Implementation uses `previewDocText`: `convertTreeToText` ends paragraphs with `\n`, so empty doc is `"\n"` and logical text gets a trailing `\n` when missing. Do not fight this — pass plain logical text unless you need explicit newlines.
+- **`expectExactText(locator, text)`**: Asserts preview DOM text equals the exact **logical** string returned by `convertTreeToText`. Empty editor text is `""`; paragraph breaks appear only between paragraphs, so three `Enter` presses in an empty editor serialize to `"\n\n\n"`.
 
 ## Playground selectors
 
@@ -45,6 +45,7 @@ Prefer **`data-testid`** stable hooks (e.g. `editor`, `plain-text-preview`) over
 
 - Prefer **`pressSequentially`** with modest `delay` for typing-heavy flows if flakes appear.
 - After **Arrow keys** / **selection** flows that rely on React state, use a short **`await delay(ms)`** from `node:timers/promises` if the suite already does so nearby — one pattern is tens of milliseconds to let layout/selection sync.
+- For undo flows, assert the plain-text preview after **each** `undoShortcut()` press so every undo step has an explicit expected editor state.
 
 ## Lint (e2e only)
 
