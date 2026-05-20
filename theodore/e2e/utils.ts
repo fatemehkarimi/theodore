@@ -2,17 +2,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/**
- * `convertTreeToText` appends a newline after each paragraph, so the preview’s
- * `textContent` always ends with `\n` (and an “empty” doc is `"\n"`). Pass the
- * logical plain text; a trailing document newline is added when missing.
- */
-const previewDocText = (text: string) =>
-  text.endsWith('\n') ? text : `${text}\n`;
-
 const expectExactText = (locator: Locator, text: string) => {
-  const expected = previewDocText(text);
-  return expect(locator).toHaveText(new RegExp(`^${escapeRegExp(expected)}$`), {
+  return expect(locator).toHaveText(new RegExp(`^${escapeRegExp(text)}$`), {
     useInnerText: false,
   });
 };

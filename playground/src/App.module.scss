@@ -160,12 +160,48 @@
 .controller {
   width: 100%;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 8px 8px 8px;
   position: relative;
 }
 
 .emojiIcon {
   cursor: pointer;
+}
+
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid rgba(93, 91, 80, 0.25);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.6);
+  color: rgba(93, 91, 80, 1);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
+  @include font;
+
+  &:hover {
+    background-color: rgba(93, 91, 80, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(93, 91, 80, 0.45);
+    outline-offset: 2px;
+  }
+}
+
+.copyButtonIcon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  fill: currentColor;
 }
 
 .picker {

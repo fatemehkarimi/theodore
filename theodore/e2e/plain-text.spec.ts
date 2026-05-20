@@ -173,7 +173,7 @@ test('type hello, then press ENTER, then type goodbye, then press ARROW_LEFT 7 t
 
   await editor.pressSequentially('goodbye', { delay: 100 });
 
-  await expectExactText(preview, 'hello\ngoodbye\n');
+  await expectExactText(preview, 'hello\ngoodbye');
 
   for (let i = 0; i < 7; i++) {
     await page.keyboard.press('ArrowLeft');
@@ -228,7 +228,7 @@ test('type hello, then ENTER, then goodbye, then press ARROW_LEFT 7 times, press
 
   await editor.pressSequentially('goodbye', { delay: 100 });
 
-  await expectExactText(preview, 'hello\ngoodbye\n');
+  await expectExactText(preview, 'hello\ngoodbye');
   expectNoPageErrors(pageErrors);
 
   for (let i = 0; i < 7; i++) {
@@ -244,7 +244,7 @@ test('type hello, then ENTER, then goodbye, then press ARROW_LEFT 7 times, press
 
   await page.keyboard.press(undoShortcut());
 
-  await expectExactText(preview, 'hello\ngoodbye\n');
+  await expectExactText(preview, 'hello\ngoodbye');
   expectNoPageErrors(pageErrors);
 });
 
@@ -265,7 +265,7 @@ test('type hello, then press ARROW_LEFT 3 times, then press ENTER, then wait for
   }
 
   await page.keyboard.press('Enter');
-  await expectExactText(preview, 'he\nllo\n');
+  await expectExactText(preview, 'he\nllo');
 
   await delay(500);
 
@@ -326,7 +326,7 @@ test('type hello, then press HOME, then press ENTER, then wait for 500ms, then u
 
   await page.keyboard.press('Home');
   await page.keyboard.press('Enter');
-  await expectExactText(preview, '\nhello\n');
+  await expectExactText(preview, '\nhello');
 
   await delay(500);
 
@@ -349,10 +349,6 @@ test('three times press ENTER, then three times undo', async ({ page }) => {
     await page.keyboard.press('Enter', { delay: 50 });
   }
 
-  await expectExactText(preview, '\n\n\n\n');
-  expectNoPageErrors(pageErrors);
-
-  await page.keyboard.press(undoShortcut());
   await expectExactText(preview, '\n\n\n');
   expectNoPageErrors(pageErrors);
 
@@ -362,6 +358,10 @@ test('three times press ENTER, then three times undo', async ({ page }) => {
 
   await page.keyboard.press(undoShortcut());
   await expectExactText(preview, '\n');
+  expectNoPageErrors(pageErrors);
+
+  await page.keyboard.press(undoShortcut());
+  await expectExactText(preview, '');
   expectNoPageErrors(pageErrors);
 });
 
@@ -616,6 +616,19 @@ test('should type hello, then press ctrl+a, then paste "🌱\n❤️\n😂", the
   await page.keyboard.press(undoShortcut());
   await delay(50);
   await expectExactText(preview, 'hello');
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('copying text from empty editor should be ""', async ({ page }) => {
+  const pageErrors = installPageErrorTracking(page);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+
+  await page.getByTestId('copy-editor-text').click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('');
 
   expectNoPageErrors(pageErrors);
 });

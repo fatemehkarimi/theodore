@@ -387,3 +387,44 @@ test('insert emoji, emoji, emoji, then type a, press ARROW_LEFT 2 times, type b,
 
   expectNoPageErrors(pageErrors);
 });
+
+test('press ENTER 3 time, then press ARROW_UP, then insert a single emoji 😀, then undo 4 times', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+  await page.goto('/');
+
+  const editor = page.getByTestId('editor');
+  const preview = page.getByTestId('plain-text-preview');
+  const picker = page.locator('em-emoji-picker');
+
+  await editor.click();
+
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('Enter', { delay: 50 });
+  }
+
+  await expectExactText(preview, '\n\n\n');
+
+  await page.keyboard.press('ArrowUp', { delay: 30 });
+  await delay(30);
+
+  await page.getByTestId('emoji-picker').click();
+  await expect(picker).toBeVisible();
+  await picker.getByRole('button', { name: '😀' }).first().click();
+  await delay(50);
+
+  await expectExactText(preview, '\n\n😀\n');
+  await expect(editor.locator('img[alt="😀"]')).toHaveCount(1);
+
+  const expectedAfterEachUndo = ['\n\n\n', '\n\n', '\n', ''];
+
+  for (const expected of expectedAfterEachUndo) {
+    await page.keyboard.press(undoShortcut());
+    await delay(50);
+    await expectExactText(preview, expected);
+  }
+
+  await expect(editor.locator('img[alt="😀"]')).toHaveCount(0);
+  expectNoPageErrors(pageErrors);
+});
