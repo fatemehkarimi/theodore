@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Changelog'
+  short_description: 'Draft GitHub releases from tag commits'
+  default_prompt: 'Use $changelog to create a GitHub release for the latest pushed tag.'
