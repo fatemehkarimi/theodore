@@ -31,6 +31,9 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@^11.5.1
+
       - name: Install dependencies
         run: pnpm install
 
@@ -38,4 +41,5 @@ jobs:
         run: pnpm -C theodore build
 
       - name: Publish to npm
-        run: npm publish ./theodore --access public
+        working-directory: theodore
+        run: npm publish --access public
