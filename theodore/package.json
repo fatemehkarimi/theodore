@@ -31,8 +31,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fatemehkarimi/theodore",
-    "directory": "packages/theodore"
+    "url": "git+https://github.com/fatemehkarimi/theodore.git",
+    "directory": "theodore"
   },
   "homepage": "https://theodore-js.dev",
   "keywords": [
