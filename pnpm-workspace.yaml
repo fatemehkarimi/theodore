@@ -2,3 +2,10 @@ packages:
   - theodore
   - playground
   - landing
+allowBuilds:
+  '@sentry/cli': true
+  core-js: true
+  sharp: true
+
+minimumReleaseAgeExclude:
+  - theodore-js
