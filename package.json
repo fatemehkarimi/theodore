@@ -5,9 +5,11 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint .",
+    "prepare": "git config core.hooksPath .githooks",
     "typecheck": "pnpm -r --if-present run typecheck",
     "prettier:check": "prettier . --check",
-    "prettier:format": "prettier . --write"
+    "prettier:format": "node scripts/prettier-format.mjs",
+    "prettier:format:staged": "node scripts/prettier-format-staged.mjs"
   },
   "keywords": [
     "editor"
