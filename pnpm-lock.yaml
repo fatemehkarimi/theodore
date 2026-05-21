@@ -81,8 +81,8 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       theodore-js:
-        specifier: 1.0.1
-        version: 1.0.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: 1.0.2
+        version: 1.0.2(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -4001,8 +4001,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  theodore-js@1.0.1:
-    resolution: {integrity: sha512-e2M4V5ZW44Xnnf+0E802AQKH2lFgMe1WjrxSWRaEpAFCUEn+676jS7FXr7+HPmx1en+lKqZbCNxNbTi+kcwjNw==}
+  theodore-js@1.0.2:
+    resolution: {integrity: sha512-nH/G8kR7xsPGOOLak9wKyAV5ncb+Q0cKv/iz+rNAZC/GsjDS6M+lHKRrbz1M4NHHWoF7o8QOggLZ6iY3lIWBDA==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -8873,7 +8873,7 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  theodore-js@1.0.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  theodore-js@1.0.2(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@types/react': 18.3.18
       clsx: 2.1.1
