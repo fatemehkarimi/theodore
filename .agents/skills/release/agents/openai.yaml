@@ -1,4 +1,4 @@
 interface:
-  display_name: "Release"
-  short_description: "Run Theodore package release workflow"
-  default_prompt: "Use $release to publish a new Theodore version and update repo consumers."
+  display_name: 'Release'
+  short_description: 'Run Theodore package release workflow'
+  default_prompt: 'Use $release to publish a new Theodore version and update repo consumers.'
