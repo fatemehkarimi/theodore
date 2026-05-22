@@ -1,6 +1,6 @@
 ---
 name: theodore-e2e
-description: Writes and maintains Playwright end-to-end tests for the Theodore editor (theodore-js playground). Covers test layout, preview text assertions aligned with convertTreeToText, page error tracking, cross-platform shortcuts, and stability patterns. Apply when adding or editing e2e tests under theodore/e2e, Playwright config, or Theodore QA automation.
+description: Writes and maintains Playwright end-to-end tests for the Theodore editor (theodore-js playground).
 ---
 
 # Theodore Playwright E2E
