@@ -5,6 +5,10 @@ import { TextNode } from '../../nodes/textNode/TextNode';
 import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
+/* eslint-disable no-unused-vars */
+type TextNodeUpdater = (textNode: TextNode) => void;
+/* eslint-enable no-unused-vars */
+
 const ALWAYS_IN_DOM_NODE_INDEX = 1;
 const ALWAYS_IN_DOM_NODE_SELECTION = {
   nodeIndex: ALWAYS_IN_DOM_NODE_INDEX,
@@ -91,6 +95,32 @@ const findNode = (tree: Tree, nodeIndex: number | undefined) => {
   return tree.flat().find((node) => node.getIndex() == nodeIndex);
 };
 
+const cloneTree = (tree: Tree): Tree => {
+  return tree.map((subtree) => subtree.map((node) => node.clone()));
+};
+
+const updateTextNodeInTree = (
+  tree: Tree,
+  nodeIndex: number | undefined,
+  updateTextNode: TextNodeUpdater,
+): [Tree, TextNode | null] => {
+  const [subtreeIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
+  if (subtreeIdx == -1 || nodeIdx == -1) return [tree, null];
+
+  const node = tree[subtreeIdx][nodeIdx];
+  if (!node.isTextNode()) return [tree, null];
+
+  const textNode = (node as TextNode).clone();
+  updateTextNode(textNode);
+
+  const newTree = [...tree];
+  const newSubTree = [...tree[subtreeIdx]];
+  newSubTree[nodeIdx] = textNode;
+  newTree[subtreeIdx] = newSubTree;
+
+  return [newTree, textNode];
+};
+
 const findNodeAfter = (tree: Tree, nodeIndex: number | undefined) => {
   if (nodeIndex == undefined) return null;
   const [pIdx, nodeIdx] = getNodeIndexInTree(tree, nodeIndex);
@@ -126,7 +156,7 @@ const reconcileTextNodeContentFromContentEditable = (
   container: HTMLDivElement,
   currentTree: Tree,
 ): [Tree | null, boolean] => {
-  const renderedTree: Tree = [...currentTree];
+  let renderedTree = cloneTree(currentTree);
   const metTextNodes = new Set<number>();
 
   for (const child of Array.from(container.children)) {
@@ -153,10 +183,14 @@ const reconcileTextNodeContentFromContentEditable = (
           }
           if (isText) {
             const textContent = firstChild.textContent ?? '';
-            const node = findNode(currentTree, Number(nodeIndex));
+            const node = findNode(renderedTree, Number(nodeIndex));
             metTextNodes.add(Number(nodeIndex));
             if (node != null && node.isTextNode()) {
-              (node as TextNode).setChild(textContent);
+              [renderedTree] = updateTextNodeInTree(
+                renderedTree,
+                Number(nodeIndex),
+                (textNode) => textNode.setChild(textContent),
+              );
             }
           } else if (isImage) {
           }
@@ -183,7 +217,11 @@ const reconcileTextNodeContentFromContentEditable = (
       // if you haven't see the node in dom iteration, then the node is removed
       // by the browser
       if (node.isTextNode() && !metTextNodes.has(node.getIndex())) {
-        (node as TextNode).setChild('');
+        [renderedTree] = updateTextNodeInTree(
+          renderedTree,
+          node.getIndex(),
+          (textNode) => textNode.setChild(''),
+        );
         doesBrowserRemovedAnyNode = true;
       }
     }
@@ -376,7 +414,8 @@ export function breakAndReplaceTextNode(
   const afterTextNode = new TextNode(assignNodeIndex());
   afterTextNode.setChild(afterText);
 
-  textNode.setChild(beforeText);
+  const beforeTextNode = textNode.clone();
+  beforeTextNode.setChild(beforeText);
 
   const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
     tree,
@@ -385,14 +424,14 @@ export function breakAndReplaceTextNode(
   const subTree = tree[subtreeIdx];
   const newSubTree = [
     ...subTree.slice(0, nodeIdxInTree),
-    textNode,
+    beforeTextNode,
     afterTextNode,
     ...subTree.slice(nodeIdxInTree + 1),
   ];
   const newTree = [...tree];
   newTree[subtreeIdx] = newSubTree;
 
-  return [newTree, textNode, afterTextNode];
+  return [newTree, beforeTextNode, afterTextNode];
 }
 
 const isSelectionAnchorSameAsFocus = () => {
@@ -409,6 +448,8 @@ export {
   getNodeIndexInTree,
   getParagraphIndexInTree,
   findNode,
+  cloneTree,
+  updateTextNodeInTree,
   findNodeAfter,
   findNodeBefore,
   getDomNodeByNodeIndex,

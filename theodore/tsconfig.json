@@ -11,5 +11,5 @@
     "moduleResolution": "bundler",
     "useDefineForClassFields": true
   },
-  "include": ["src", "e2e", "playwright.config.ts"]
+  "include": ["src", "tests", "e2e", "playwright.config.ts", "rstest.config.ts"]
 }

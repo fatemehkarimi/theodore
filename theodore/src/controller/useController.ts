@@ -53,6 +53,7 @@ import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
   breakAndReplaceTextNode,
+  cloneTree,
   reconcileTextNodeContentFromContentEditable,
   findNode,
   findNodeAfter,
@@ -70,6 +71,7 @@ import {
   isSelectionAnchorSameAsFocus,
   removeNodeFromTree,
   segmentText,
+  updateTextNodeInTree,
 } from './utils';
 
 const useController = (
@@ -145,9 +147,11 @@ const useController = (
   const getTreeAfterUndo = (tree: Tree, prevState: HistoryCommand) => {
     if (tree.length <= 1 && tree[0]?.[0]?.getIndex() == 0) return tree;
 
+    const clonedTree = cloneTree(tree);
+
     if (prevState.command == COMMAND_REMOVE_NODE) {
       const newTree = insertNodesInBetween(
-        tree,
+        clonedTree,
         prevState.prevState as (EditorNode | EditorNode[])[],
         prevState.prevNodeIndexInTree,
         prevState.nextNodeIndexInTree,
@@ -156,22 +160,22 @@ const useController = (
     }
 
     if (prevState.command == COMMAND_INSERT_PARAGRAPH_AFTER) {
-      if (prevState.prevState == null) return tree;
+      if (prevState.prevState == null) return clonedTree;
       if (prevState.prevNodeIndexInTree == undefined)
-        return [prevState.prevState as EditorNode[], ...tree];
+        return [prevState.prevState as EditorNode[], ...clonedTree];
       const basePIdx = getParagraphIndexInTree(
-        tree,
+        clonedTree,
         prevState.prevNodeIndexInTree,
       );
 
-      const newTree = tree.slice(0, basePIdx + 1);
+      const newTree = clonedTree.slice(0, basePIdx + 1);
       newTree.push(prevState.prevState as EditorNode[]);
-      newTree.push(...tree.slice(basePIdx + 1));
+      newTree.push(...clonedTree.slice(basePIdx + 1));
       return newTree;
     }
 
     const newTree: Tree = [];
-    for (const subTree of tree) {
+    for (const subTree of clonedTree) {
       const pNode = subTree[0];
       if (
         pNode.getIndex() == prevState.nodeIndex &&
@@ -278,8 +282,7 @@ const useController = (
           node &&
           node.isTextNode()
         ) {
-          // let browser fill the node in the dom with correct value
-          (node as TextNode).setChild('');
+          // The browser fills the DOM here; onInput reconciles it into a cloned tree.
         }
       }
     } else if (event.inputType == 'insertReplacementText') {
@@ -339,11 +342,13 @@ const useController = (
     if (ranges.length > 0 && text != undefined) {
       const range = ranges[0];
       const { startOffset, endOffset } = range;
-      const [pIdx, idx] = getNodeIndexInTree(tree, nodeIndex);
-      const node = tree[pIdx][idx];
-      if (node.isTextNode()) {
-        (node as TextNode).replaceText(text, startOffset, endOffset);
-        setTree([...tree]);
+      const [newTree, node] = updateTextNodeInTree(
+        tree,
+        nodeIndex,
+        (textNode) => textNode.replaceText(text, startOffset, endOffset),
+      );
+      if (node != null) {
+        setTree(newTree);
         setSelection({ nodeIndex, offset: startOffset + text.length });
       }
     }
@@ -365,10 +370,13 @@ const useController = (
         insertEmojiNodeInSelection(emojiNode);
         forceRemountEditor();
       } else if (newText && isEditorSelectionCollapsed(selection)) {
-        const node = findNode(tree, selection?.startSelection.nodeIndex);
-        if (node?.isTextNode()) {
-          (node as TextNode).setChild(newText);
-          setTree([...tree]);
+        const [newTree, node] = updateTextNodeInTree(
+          tree,
+          selection?.startSelection.nodeIndex,
+          (textNode) => textNode.setChild(newText),
+        );
+        if (node != null) {
+          setTree(newTree);
           setSelection({
             nodeIndex: node.getIndex(),
             offset: node.getChildLength(),
@@ -509,7 +517,9 @@ const useController = (
 
     const selectedNodes = getEditorSelectedNode();
     if (selectedNodes == null) return;
-    const { startNode } = selectedNodes;
+    const selectedStartNode = selectedNodes.startNode;
+    if (selectedStartNode == null) return;
+    const startNode = findNode(newTree, selectedStartNode.getIndex());
     if (startNode == null) return;
     const isBackward = key == BACKSPACE;
 
@@ -554,6 +564,7 @@ const useController = (
       } else {
         const nodeBefore = findNodeBefore(newTree, startTextNode.getIndex());
         const nodeAfter = findNodeAfter(newTree, startTextNode.getIndex());
+        const treeBeforeRemove = newTree;
         newTree = removeNodeFromTree(newTree, startTextNode.getIndex());
         setTree(makeTreeNonEmpty(newTree));
         history.pushAndCommit([
@@ -567,13 +578,17 @@ const useController = (
         ]);
 
         setSelection(
-          getSelectionAfterNodeRemove(tree, startTextNode.getIndex()),
+          getSelectionAfterNodeRemove(
+            treeBeforeRemove,
+            startTextNode.getIndex(),
+          ),
         );
       }
     } else if (startNode.getType() == 'emoji') {
       const nodeBefore = findNodeBefore(newTree, startNode.getIndex());
       const nodeAfter = findNodeAfter(newTree, startNode.getIndex());
       if (isBackward) {
+        const treeBeforeRemove = newTree;
         newTree = removeNodeFromTree(newTree, startNode.getIndex());
         setTree(makeTreeNonEmpty(newTree));
         history.pushAndCommit([
@@ -586,7 +601,9 @@ const useController = (
           },
         ]);
 
-        setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
+        setSelection(
+          getSelectionAfterNodeRemove(treeBeforeRemove, startNode.getIndex()),
+        );
       } else {
         removeCharOrNode(newTree, false, startNode);
         history.commit();
@@ -844,8 +861,8 @@ const useController = (
             prevState: textNode.toDescriptor(),
           },
         ]);
-        setTree(makeTreeNonEmpty(newTree));
         textNode.setChild(remainingText);
+        setTree(makeTreeNonEmpty(newTree));
 
         if (isBackward)
           setSelection({
@@ -938,19 +955,30 @@ const useController = (
     const selection = getSelection();
     const selectedNodes = getEditorSelectedNode();
     const isSelectionCollapsed = isEditorSelectionCollapsed(selection);
-    const newTree: EditorNode[][] = isSelectionCollapsed ? [...tree] : [];
+    const sourceTree = cloneTree(tree);
+    const newTree: EditorNode[][] = isSelectionCollapsed ? sourceTree : [];
 
     if (isSelectionCollapsed) return newTree;
     if (selection == null || selectedNodes == null) return newTree;
 
-    const { startNode, endNode } = selectedNodes;
+    const startNode =
+      selectedNodes.startNode != null
+        ? (findNode(sourceTree, selectedNodes.startNode.getIndex()) ?? null)
+        : null;
+    const endNode =
+      selectedNodes.endNode != null
+        ? (findNode(sourceTree, selectedNodes.endNode.getIndex()) ?? null)
+        : null;
     const { startSelection, endSelection } = selection;
 
     const [startPIdx, startIdx] = getNodeIndexInTree(
-      tree,
+      sourceTree,
       startNode?.getIndex(),
     );
-    const [endPIdx, endIdx] = getNodeIndexInTree(tree, endNode?.getIndex());
+    const [endPIdx, endIdx] = getNodeIndexInTree(
+      sourceTree,
+      endNode?.getIndex(),
+    );
 
     if (startPIdx == endPIdx) {
       if (startIdx == endIdx) {
@@ -963,28 +991,30 @@ const useController = (
 
           const textNodeDescriptor = textNode.toDescriptor();
           if (shouldRemoveEmptyTextNodes && remainingText.length == 0) {
-            newTree.push(...removeNodeFromTree(tree, textNode.getIndex()));
+            newTree.push(
+              ...removeNodeFromTree(sourceTree, textNode.getIndex()),
+            );
             history.push([
               {
                 command: COMMAND_REMOVE_NODE,
                 nodeIndex: textNode.getIndex(),
                 prevState: [textNode],
                 prevNodeIndexInTree: findNodeBefore(
-                  tree,
+                  sourceTree,
                   textNode.getIndex(),
                 )?.getIndex(),
                 nextNodeIndexInTree: findNodeAfter(
-                  tree,
+                  sourceTree,
                   textNode.getIndex(),
                 )?.getIndex(),
               },
             ]);
             setSelection(
-              getSelectionAfterNodeRemove(tree, textNode.getIndex()),
+              getSelectionAfterNodeRemove(sourceTree, textNode.getIndex()),
             );
           } else {
             textNode.setChild(remainingText);
-            newTree.push(...tree);
+            newTree.push(...sourceTree);
 
             history.push([
               {
@@ -1008,9 +1038,9 @@ const useController = (
         return makeTreeNonEmpty(newTree);
       }
 
-      newTree.push(...tree.slice(0, startPIdx));
-      const newStartP = [...tree[startPIdx].slice(0, startIdx)];
-      const deletedNodes = [];
+      newTree.push(...sourceTree.slice(0, startPIdx));
+      const newStartP = [...sourceTree[startPIdx].slice(0, startIdx)];
+      const deletedNodes: EditorNode[] = [];
 
       if (startNode) {
         if (!startNode.isTextNode()) newStartP.push(startNode);
@@ -1041,7 +1071,7 @@ const useController = (
       }
 
       for (let i = startIdx + 1; i < endIdx; i++) {
-        deletedNodes.push(tree[startPIdx][i]);
+        deletedNodes.push(sourceTree[startPIdx][i]);
       }
 
       if (endNode?.getType() == 'emoji') deletedNodes.push(endNode);
@@ -1076,19 +1106,19 @@ const useController = (
             nodeIndex: -1,
             prevState: deletedNodes,
             prevNodeIndexInTree: findNodeBefore(
-              tree,
+              sourceTree,
               deletedNodes[0].getIndex(),
             )?.getIndex(),
             nextNodeIndexInTree: findNodeAfter(
-              tree,
+              sourceTree,
               deletedNodes[deletedNodes.length - 1].getIndex(),
             )?.getIndex(),
           },
         ]);
 
-      newStartP.push(...tree[startPIdx].slice(endIdx + 1));
+      newStartP.push(...sourceTree[startPIdx].slice(endIdx + 1));
       newTree.push(newStartP);
-      newTree.push(...tree.slice(endPIdx + 1));
+      newTree.push(...sourceTree.slice(endPIdx + 1));
       if (startNode) {
         const isStartNodeRemoved =
           deletedNodes.find((n) => n.getIndex() == startNode?.getIndex()) !=
@@ -1100,14 +1130,16 @@ const useController = (
             offset: startSelection.offset,
           });
         else {
-          setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
+          setSelection(
+            getSelectionAfterNodeRemove(sourceTree, startNode.getIndex()),
+          );
         }
       } else setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
       return makeTreeNonEmpty(newTree);
     }
 
-    newTree.push(...tree.slice(0, startPIdx));
-    const newStartP = [...tree[startPIdx].slice(0, startIdx)];
+    newTree.push(...sourceTree.slice(0, startPIdx));
+    const newStartP = [...sourceTree[startPIdx].slice(0, startIdx)];
     const deletedNodes: (EditorNode | EditorNode[])[] = [];
 
     if (startNode?.isTextNode()) {
@@ -1136,11 +1168,12 @@ const useController = (
       }
     } else if (startNode != null) newStartP.push(startNode);
 
-    const startPToBeRemovedNodes = tree[startPIdx].slice(startIdx + 1);
+    const startPToBeRemovedNodes = sourceTree[startPIdx].slice(startIdx + 1);
     if (startPToBeRemovedNodes.length > 0)
       deletedNodes.push(...startPToBeRemovedNodes);
-    for (let i = startPIdx + 1; i < endPIdx; ++i) deletedNodes.push(...tree[i]);
-    const endPToBeRemovedNodes = tree[endPIdx].slice(0, endIdx);
+    for (let i = startPIdx + 1; i < endPIdx; ++i)
+      deletedNodes.push(...sourceTree[i]);
+    const endPToBeRemovedNodes = sourceTree[endPIdx].slice(0, endIdx);
     if (endPToBeRemovedNodes.length > 0)
       deletedNodes.push(...endPToBeRemovedNodes);
 
@@ -1169,7 +1202,7 @@ const useController = (
       }
     }
 
-    newEndP.push(...tree[endPIdx].slice(endIdx + 1));
+    newEndP.push(...sourceTree[endPIdx].slice(endIdx + 1));
 
     if (endNode && !endNode?.isTextNode()) deletedNodes.push(endNode);
 
@@ -1187,11 +1220,11 @@ const useController = (
         prevState: deletedNodes,
         nodeIndex: -1,
         prevNodeIndexInTree: findNodeBefore(
-          tree,
+          sourceTree,
           firstDeletedNode.getIndex(),
         )?.getIndex(),
         nextNodeIndexInTree: findNodeAfter(
-          tree,
+          sourceTree,
           lastDeletedNode.getIndex(),
         )?.getIndex(),
       },
@@ -1200,7 +1233,7 @@ const useController = (
     newStartP.push(...newEndP);
     newTree.push(newStartP);
 
-    newTree.push(...tree.slice(endPIdx + 1));
+    newTree.push(...sourceTree.slice(endPIdx + 1));
 
     if (startNode) {
       const isStartNodeRemoved =
@@ -1214,7 +1247,9 @@ const useController = (
           offset: startSelection.offset,
         });
       else
-        setSelection(getSelectionAfterNodeRemove(tree, startNode.getIndex()));
+        setSelection(
+          getSelectionAfterNodeRemove(sourceTree, startNode.getIndex()),
+        );
     } else setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
     return makeTreeNonEmpty(newTree);
   };
@@ -1270,8 +1305,7 @@ const useController = (
 
     if (selection == null) return; //todo: fix, selection cannot be null
 
-    const selectedNodes = getEditorSelectedNode();
-    const selectedNode = selectedNodes?.startNode; // todo: check;
+    const selectedNode = findNode(newTree, selection.nodeIndex); // todo: check;
     if (selectedNode == null) return;
     const [pIdx, nodeIdx] = getNodeIndexInTree(
       newTree,
@@ -1407,12 +1441,11 @@ const useController = (
 
   const insertEmojiNodeInSelection = (node: EditorNode) => {
     let newTree = removeNodesInSelection(true);
-    const selectedNodes = getEditorSelectedNode();
-    const selectedNodeOffset = getSelection()?.startSelection?.offset ?? 0;
+    const selection = getSelection()?.startSelection;
+    const selectedNodeOffset = selection?.offset ?? 0;
+    const selectedNode = findNode(newTree, selection?.nodeIndex);
 
-    if (selectedNodes?.startNode != null) {
-      const selectedNode = selectedNodes?.startNode;
-
+    if (selectedNode != null) {
       const [subtreeIdx, nodeIdxInTree] = getNodeIndexInTree(
         newTree,
         selectedNode.getIndex(),
