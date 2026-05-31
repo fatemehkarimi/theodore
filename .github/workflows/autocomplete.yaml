@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Build autocomplete
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'autocomplete/**'
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          cd autocomplete
+          docker build -t ghcr.io/fatemehkarimi/theodore-api:${{ github.run_number }} .
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/fatemehkarimi/theodore-api:${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
