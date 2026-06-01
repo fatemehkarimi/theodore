@@ -49,6 +49,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -72,8 +73,8 @@ jobs:
       - name: Build theodore-js (playground dev resolves dist)
         run: pnpm --filter theodore-js build
 
-      - name: Install Playwright Chromium
-        run: pnpm --filter theodore-js run test:e2e:install
+      - name: Verify Chrome
+        run: google-chrome --version
 
       - name: Run Playwright e2e
         run: pnpm --filter theodore-js run test:e2e:ci
