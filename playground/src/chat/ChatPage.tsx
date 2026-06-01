@@ -51,6 +51,11 @@ const ChatPage = () => {
     if (autoCompleteDebounce.current != null)
       clearTimeout(autoCompleteDebounce.current);
 
+    const newText = convertTreeToText(newTree);
+    const currentText = convertTreeToText(editorState.tree);
+
+    if (currentText == newText) return;
+
     autoCompleteDebounce.current = setTimeout(async () => {
       const selection = editorState.selectionHandle.getSelection();
       if (isEditorSelectionCollapsed(selection)) {

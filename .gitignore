@@ -21,3 +21,5 @@ bin/
 # Playwright
 playwright-report/
 test-results/
+
+.env
