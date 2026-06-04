@@ -24,6 +24,7 @@ import {
   TAB,
 } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
+import { GhostTextNode } from '../nodes/ghostTextNode/GhostTextNode';
 import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
@@ -54,7 +55,6 @@ import {
   ALWAYS_IN_DOM_NODE_SELECTION,
   breakAndReplaceTextNode,
   cloneTree,
-  reconcileTextNodeContentFromContentEditable,
   findNode,
   findNodeAfter,
   findNodeBefore,
@@ -69,6 +69,7 @@ import {
   isElementInView,
   isEmoji,
   isSelectionAnchorSameAsFocus,
+  reconcileTextNodeContentFromContentEditable,
   removeNodeFromTree,
   segmentText,
   updateTextNodeInTree,
@@ -1298,6 +1299,11 @@ const useController = (
     }
   };
 
+  const handleInsertSuggestion = (suggestion: string) => {
+    const ghostNode = new GhostTextNode(assignNodeIndex(), suggestion);
+    insertEmojiNodeInSelection(ghostNode);
+  };
+
   const insertNewParagraph = () => {
     const newTree = removeNodesInSelection(true);
     const paragraphNode = new ParagraphNode(assignNodeIndex());
@@ -1625,6 +1631,7 @@ const useController = (
     handlePaste,
     handleCut,
     handleOnInput,
+    handleInsertSuggestion,
     clearAndSetContent,
   };
 };

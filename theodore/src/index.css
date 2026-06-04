@@ -59,3 +59,14 @@
   white-space: pre-wrap;
   user-select: initial;
 }
+
+.theodore_ghostText {
+  color: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+.theodore_ghostText * {
+  pointer-events: none;
+  user-select: none;
+}

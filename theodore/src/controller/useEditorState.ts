@@ -49,7 +49,7 @@ const useEditorState = (
 
 const convertTreeToText = (tree: Tree) => {
   return tree
-    .map((subTree) => subTree.map((node) => node.getChildren() ?? '').join(''))
+    .map((subTree) => subTree.map((node) => node.getContent()).join(''))
     .join('\n');
 };
 

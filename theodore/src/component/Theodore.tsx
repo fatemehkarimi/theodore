@@ -26,6 +26,7 @@ type Props = Omit<
   defaultDirection?: 'ltr' | 'rtl';
   theodoreRef?: React.Ref<TheodoreHandle>;
   shouldSuppressFocus?: boolean;
+  suggestion?: string;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (
@@ -41,6 +42,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       style,
       theodoreRef,
       shouldSuppressFocus,
+      suggestion,
       ...props
     },
     ref,
@@ -59,6 +61,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       handleSelectionChange,
       handlePaste,
       handleCut,
+      handleInsertSuggestion,
       clearAndSetContent,
     } = useController(inputRef, renderEmoji, setRemountKey, editorState);
 
@@ -73,6 +76,8 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         setContent: (content: string) => {
           clearAndSetContent(content);
         },
+        acceptSuggestion: () => {},
+        rejectSuggestion: () => {},
       };
     }, [insertEmoji, insertNewParagraph]);
 
@@ -126,6 +131,12 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         input.removeEventListener('focus', suppressFocus);
       };
     }, [shouldSuppressFocus]);
+
+    useEffect(() => {
+      if (suggestion) {
+        handleInsertSuggestion(suggestion);
+      }
+    }, [suggestion]);
 
     const setRefs = React.useCallback(
       (node: HTMLDivElement | null) => {

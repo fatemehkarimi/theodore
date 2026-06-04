@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
-type NodeType = 'text' | 'emoji' | 'paragraph';
-type NodeStyle = 'bold' | 'italic' | 'underline' | 'strikethrough';
+export type NodeType = 'text' | 'emoji' | 'paragraph' | 'ghostText';
+export type NodeStyle = 'ghost';
 export class Node {
   protected nodeIndex: number;
   protected type: NodeType = 'text';
@@ -42,7 +42,7 @@ export class Node {
   }
 
   public isTextNode(): boolean {
-    return ['text', 'mention'].includes(this.getType());
+    return ['text'].includes(this.getType());
   }
 
   public getChildren(): string | null {
@@ -51,5 +51,13 @@ export class Node {
 
   public clone(): Node {
     throw new Error('not implemented');
+  }
+
+  public isGhost(): boolean {
+    return ['ghostText'].includes(this.getType());
+  }
+
+  public getContent(): string {
+    return this.getChildren() ?? '';
   }
 }

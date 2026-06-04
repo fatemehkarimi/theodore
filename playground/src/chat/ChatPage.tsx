@@ -39,6 +39,7 @@ const ChatPage = () => {
 
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
@@ -54,17 +55,22 @@ const ChatPage = () => {
     const newText = convertTreeToText(newTree);
     const currentText = convertTreeToText(editorState.tree);
 
-    if (currentText == newText) return;
+    if (currentText == newText || newText == '') return;
 
     autoCompleteDebounce.current = setTimeout(async () => {
       const selection = editorState.selectionHandle.getSelection();
       if (isEditorSelectionCollapsed(selection)) {
-        const pureText = convertTreeToText(newTree);
-        await getAutoComplete(
-          pureText,
+        if (currentText == newText) return;
+
+        const suggestion = await getAutoComplete(
+          newText,
           messages.slice(-7).map((msg) => `${msg.sender}: ${msg.message}`),
-          selection?.startSelection.offset ?? pureText.length,
+          selection?.startSelection.offset ?? newText.length,
         );
+
+        if (suggestion != null) {
+          setSuggestion(suggestion);
+        }
       }
     }, 1000);
   };
@@ -100,6 +106,9 @@ const ChatPage = () => {
     const handleKeyDown = (event: Event) => {
       const keyboardEvent = event as KeyboardEvent;
       if (keyboardEvent.key == 'Enter') {
+        if (autoCompleteDebounce.current != null)
+          clearTimeout(autoCompleteDebounce.current);
+
         keyboardEvent.preventDefault();
         keyboardEvent.stopImmediatePropagation();
         const content = convertTreeToText(editorState.tree);
@@ -182,6 +191,7 @@ const ChatPage = () => {
           maxLines={isMobileDevice() ? 5 : 7}
           ref={editorRef}
           shouldSuppressFocus={isMobileDevice() && isPickerVisible}
+          suggestion={suggestion}
         />
         <div className={styles.controller}>
           <EmojiOutlined

@@ -35,11 +35,13 @@ export default [
     files: sourceFiles,
     plugins: {
       'react-hooks': reactHooks,
+      '@typescript-eslint': tseslint.plugin,
     },
     rules: {
       // ...reactHooks.configs.recommended.rules,
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      'no-unused-vars': 'error',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'error',
       'no-restricted-syntax': [
         'error',
         {

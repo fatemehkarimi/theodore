@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-/* eslint-disable no-unused-vars */
 interface ShouldNotDelayPredicate<T> {
   (value: T): boolean;
 }
-/* eslint-enable no-unused-vars */
 
 const useDelayedValue = <T>(
   state: T,
