@@ -5,14 +5,17 @@ import (
 	arvanagent "autocomplete/arvanAgent"
 	"autocomplete/config"
 	localagent "autocomplete/localAgent"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 type server struct {
-	agent agent.Agent
+	agent  agent.Agent
+	config config.Config
 }
 
 func createCORSMiddleware(cfg config.Config) func(http.Handler) http.Handler {
@@ -51,7 +54,10 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prompt := GenerateAutocompletePrompt(requestAutoComplete)
-	response, err := s.agent.Generate(prompt)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.config.AutocompleteTimeout)*time.Second)
+	defer cancel()
+
+	response, err := s.agent.Generate(ctx, prompt)
 	if err != nil {
 		writeAutocompleteResponse(w, ResponseAutocomplete{Predict: randomLoremIpsum()})
 		log.Printf("autocomplete agent error: %v", err)
@@ -83,7 +89,7 @@ func (s server) chatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prompt := GenerateChatPrompt(requestChat)
-	response, err := s.agent.Generate(prompt)
+	response, err := s.agent.Generate(r.Context(), prompt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -115,7 +121,10 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	server := server{agent: agent}
+	server := server{
+		agent:  agent,
+		config: cfg,
+	}
 
 	mux.HandleFunc("/autocomplete", server.autocompleteHandler)
 	mux.HandleFunc("/chat", server.chatHandler)

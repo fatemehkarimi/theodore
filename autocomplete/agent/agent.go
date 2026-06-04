@@ -1,9 +1,12 @@
 package agent
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Agent interface {
-	Generate(prompt string) (*GenerateResponse, error)
+	Generate(ctx context.Context, prompt string) (*GenerateResponse, error)
 }
 
 type GenerateRequest struct {
