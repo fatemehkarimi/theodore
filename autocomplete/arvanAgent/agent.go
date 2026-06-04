@@ -4,6 +4,7 @@ import (
 	"autocomplete/agent"
 	"autocomplete/config"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +21,7 @@ func New(cfg config.Config) ArvanAgent {
 	return ArvanAgent{config: cfg}
 }
 
-func (aa ArvanAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
+func (aa ArvanAgent) Generate(ctx context.Context, prompt string) (*agent.GenerateResponse, error) {
 	url := aa.config.ArvanAgent.Endpoint
 	apiKey := os.Getenv("ARVAN_MACHINE_USER")
 	if apiKey == "" {
@@ -44,7 +45,7 @@ func (aa ArvanAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}

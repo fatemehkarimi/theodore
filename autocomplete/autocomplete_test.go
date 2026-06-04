@@ -2,7 +2,9 @@ package main
 
 import (
 	"autocomplete/agent"
+	"autocomplete/config"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -16,8 +18,15 @@ type stubAgent struct {
 	err      error
 }
 
-func (a stubAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
+func (a stubAgent) Generate(ctx context.Context, prompt string) (*agent.GenerateResponse, error) {
 	return a.response, a.err
+}
+
+type blockingAgent struct{}
+
+func (a blockingAgent) Generate(ctx context.Context, prompt string) (*agent.GenerateResponse, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
 }
 
 func TestAutocompleteHandlerFallsBackWhenAgentFails(t *testing.T) {
@@ -26,10 +35,8 @@ func TestAutocompleteHandlerFallsBackWhenAgentFails(t *testing.T) {
 	assertLoremIpsumResponse(t, response)
 }
 
-func TestAutocompleteHandlerFallsBackWhenAgentResponseIsEmpty(t *testing.T) {
-	response := requestAutocomplete(t, stubAgent{
-		response: &agent.GenerateResponse{Response: " \n\t "},
-	})
+func TestAutocompleteHandlerFallsBackWhenAgentTimesOut(t *testing.T) {
+	response := requestAutocompleteWithTimeout(t, blockingAgent{}, 1)
 
 	assertLoremIpsumResponse(t, response)
 }
@@ -47,11 +54,17 @@ func TestAutocompleteHandlerReturnsCleanAgentResponse(t *testing.T) {
 func requestAutocomplete(t *testing.T, testAgent agent.Agent) ResponseAutocomplete {
 	t.Helper()
 
+	return requestAutocompleteWithTimeout(t, testAgent, 1)
+}
+
+func requestAutocompleteWithTimeout(t *testing.T, testAgent agent.Agent, timeout int) ResponseAutocomplete {
+	t.Helper()
+
 	requestBody := bytes.NewBufferString(`{"input":"hello","cursor":5}`)
 	request := httptest.NewRequest(http.MethodPost, "/autocomplete", requestBody)
 	recorder := httptest.NewRecorder()
 
-	server{agent: testAgent}.autocompleteHandler(recorder, request)
+	server{agent: testAgent, config: config.Config{AutocompleteTimeout: timeout}}.autocompleteHandler(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)

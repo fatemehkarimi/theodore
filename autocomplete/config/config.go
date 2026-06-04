@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	AllowedOrigin []string
-	AgentMode     string
-	LocalAgent    struct {
+	AllowedOrigin       []string
+	AgentMode           string
+	AutocompleteTimeout int
+	LocalAgent          struct {
 		Endpoint string
 		Model    string
 	}
@@ -34,6 +35,7 @@ func ReadConfig() Config {
 
 	c.AllowedOrigin = viper.GetStringSlice("app.origin")
 	c.AgentMode = viper.GetString("app.agent.mode")
+	c.AutocompleteTimeout = viper.GetInt("app.autocomplete.timeout")
 
 	c.LocalAgent.Model = viper.GetString("app.agent.local.model")
 	c.LocalAgent.Endpoint = viper.GetString("app.agent.local.endpoint")

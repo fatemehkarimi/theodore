@@ -2,6 +2,7 @@ package localagent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,7 +19,7 @@ func New(cfg config.Config) LocalAgent {
 	return LocalAgent{config: cfg}
 }
 
-func (la LocalAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
+func (la LocalAgent) Generate(ctx context.Context, prompt string) (*agent.GenerateResponse, error) {
 	url := la.config.LocalAgent.Endpoint
 
 	payload := agent.GenerateRequest{
@@ -32,7 +33,13 @@ func (la LocalAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
 		return nil, err
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
