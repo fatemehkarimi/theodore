@@ -52,7 +52,7 @@ func (aa ArvanAgent) Generate(prompt string) (*agent.GenerateResponse, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("apikey %s", apiKey))
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.Client{Timeout: 5 * time.Minute}
+	client := http.Client{Timeout: time.Duration(aa.config.ArvanAgent.RemoteAgentTimeout) * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

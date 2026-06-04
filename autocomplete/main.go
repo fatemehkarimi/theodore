@@ -7,6 +7,7 @@ import (
 	localagent "autocomplete/localAgent"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -53,6 +54,7 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	response, err := s.agent.Generate(prompt)
 	if err != nil {
 		writeAutocompleteResponse(w, ResponseAutocomplete{Predict: randomLoremIpsum()})
+		log.Printf("autocomplete agent error: %v", err)
 		return
 	}
 

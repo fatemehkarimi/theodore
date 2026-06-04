@@ -14,9 +14,10 @@ type Config struct {
 		Model    string
 	}
 	ArvanAgent struct {
-		Endpoint   string
-		MaxTokens  int
-		Temprature float64
+		Endpoint           string
+		MaxTokens          int
+		Temprature         float64
+		RemoteAgentTimeout int
 	}
 }
 
@@ -40,6 +41,7 @@ func ReadConfig() Config {
 	c.ArvanAgent.Endpoint = viper.GetString("app.agent.arvan.endpoint")
 	c.ArvanAgent.MaxTokens = viper.GetInt("app.agent.arvan.max_tokens")
 	c.ArvanAgent.Temprature = viper.GetFloat64("app.agent.arvan.temprature")
+	c.ArvanAgent.RemoteAgentTimeout = viper.GetInt("app.agent.arvan.remote_agent_timeout")
 
 	return c
 }
