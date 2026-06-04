@@ -10,6 +10,8 @@ Continue the user's message naturally.
 - Do NOT explain
 - Only output the completion
 - Match the tone and style of the conversation.
+- Do NOT include reasoning, analysis, self-checks, markdown thoughts, or <think> tags.
+- If you need to reason, do it silently and output only the final completion.
 
 Conversation:
 %s
@@ -59,6 +61,8 @@ Last User Message:
 - No explanations
 - No extra text
 - No role labels (like "Assistant:")
+- Do NOT include reasoning, analysis, self-checks, markdown thoughts, or <think> tags
+- If you need to reason, do it silently and output only the final reply
 
 Reply now.`
 

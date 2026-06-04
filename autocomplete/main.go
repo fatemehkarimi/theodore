@@ -56,7 +56,7 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	finalResponse := ResponseAutocomplete{Predict: response.Response}
+	finalResponse := ResponseAutocomplete{Predict: cleanAgentResponse(response.Response)}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -84,7 +84,7 @@ func (s server) chatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	finalResponse := ResponseChat{Response: response.Response}
+	finalResponse := ResponseChat{Response: cleanAgentResponse(response.Response)}
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
