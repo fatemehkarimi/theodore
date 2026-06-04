@@ -52,15 +52,18 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	prompt := GenerateAutocompletePrompt(requestAutoComplete)
 	response, err := s.agent.Generate(prompt)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeAutocompleteResponse(w, ResponseAutocomplete{Predict: randomLoremIpsum()})
 		return
 	}
 
-	finalResponse := ResponseAutocomplete{Predict: cleanAgentResponse(response.Response)}
+	writeAutocompleteResponse(w, ResponseAutocomplete{Predict: cleanAgentResponse(response.Response)})
+}
+
+func writeAutocompleteResponse(w http.ResponseWriter, response ResponseAutocomplete) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	err = json.NewEncoder(w).Encode(finalResponse)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
