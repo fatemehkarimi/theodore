@@ -54,18 +54,9 @@
       }
     },
     {
-      "label": "theodore: parallel dev (playground, theodore, autocomplete server)",
-      "dependsOn": ["theodore: dev", "playground: dev", "autocomplete: server"],
+      "label": "theodore: parallel dev (playground, theodore)",
+      "dependsOn": ["theodore: dev", "playground: dev"],
       "dependsOrder": "parallel",
-      "problemMatcher": []
-    },
-    {
-      "label": "Theodore: full dev (build autocomplete, then theodore, playground, autocomplete server)",
-      "dependsOn": [
-        "autocomplete: build",
-        "theodore: parallel dev (playground, theodore, autocomplete server)"
-      ],
-      "dependsOrder": "sequence",
       "problemMatcher": []
     }
   ]

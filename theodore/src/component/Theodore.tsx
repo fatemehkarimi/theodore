@@ -53,6 +53,8 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     const [maxHeight, setMaxHeight] = React.useState<number | null>(null);
     const [remountKey, setRemountKey] = React.useState(0);
     const {
+      acceptSuggestion,
+      rejectSuggestion,
       insertEmoji,
       insertNewParagraph,
       handleKeyDown,
@@ -76,10 +78,14 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         setContent: (content: string) => {
           clearAndSetContent(content);
         },
-        acceptSuggestion: () => {},
-        rejectSuggestion: () => {},
+        acceptSuggestion: () => {
+          acceptSuggestion();
+        },
+        rejectSuggestion: () => {
+          rejectSuggestion();
+        },
       };
-    }, [insertEmoji, insertNewParagraph]);
+    }, [acceptSuggestion, rejectSuggestion, insertEmoji, insertNewParagraph]);
 
     useEffect(() => {
       document.addEventListener('selectionchange', handleSelectionChange);

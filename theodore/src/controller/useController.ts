@@ -368,7 +368,7 @@ const useController = (
           newText,
           renderEmoji,
         );
-        insertEmojiNodeInSelection(emojiNode);
+        insertNodeInSelection(emojiNode);
         forceRemountEditor();
       } else if (newText && isEditorSelectionCollapsed(selection)) {
         const [newTree, node] = updateTextNodeInTree(
@@ -1301,7 +1301,7 @@ const useController = (
 
   const handleInsertSuggestion = (suggestion: string) => {
     const ghostNode = new GhostTextNode(assignNodeIndex(), suggestion);
-    insertEmojiNodeInSelection(ghostNode);
+    insertNodeInSelection(ghostNode);
   };
 
   const insertNewParagraph = () => {
@@ -1445,7 +1445,7 @@ const useController = (
     });
   };
 
-  const insertEmojiNodeInSelection = (node: EditorNode) => {
+  const insertNodeInSelection = (node: EditorNode) => {
     let newTree = removeNodesInSelection(true);
     const selection = getSelection()?.startSelection;
     const selectedNodeOffset = selection?.offset ?? 0;
@@ -1539,7 +1539,7 @@ const useController = (
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-    insertEmojiNodeInSelection(emojiNode);
+    insertNodeInSelection(emojiNode);
   };
 
   const getEditorSelectedNode = () => {
@@ -1564,6 +1564,71 @@ const useController = (
     }
     return [...tree];
   };
+
+  const forceRemountEditor = () => {
+    updateEditorKey((key) => key + 1);
+  };
+
+  const acceptSuggestion = () => {
+    const newTree = [];
+    for (let pIdx = 0; pIdx < tree.length; ++pIdx) {
+      const newParagraph: EditorNode[] = [];
+
+      for (let idx = 0; idx < tree[pIdx].length; ++idx) {
+        const node = tree[pIdx][idx];
+        if (node.isGhost()) {
+          if (node.getType() == 'ghostText') {
+            const ghostNode = node as GhostTextNode;
+            const prevNode = tree[pIdx][idx - 1];
+            if (prevNode.isTextNode()) {
+              const prevText = prevNode.getChildren();
+              (prevNode as TextNode).insertText(
+                (ghostNode as GhostTextNode).getChildren(),
+                prevNode.getChildLength(),
+              );
+
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: prevNode.getIndex(),
+                  prevState: prevText,
+                },
+              ]);
+
+              setSelection({
+                nodeIndex: prevNode.getIndex(),
+                offset: prevNode.getChildLength(),
+              });
+            } else {
+              const textNode = new TextNode(ghostNode.getIndex());
+              textNode.setChild(ghostNode.getChildren());
+              newParagraph.push(textNode);
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: textNode.getIndex(),
+                  prevState: null,
+                },
+              ]);
+
+              setSelection({
+                nodeIndex: textNode.getIndex(),
+                offset: textNode.getChildLength(),
+              });
+            }
+          }
+        } else {
+          if (idx + 1 < tree[pIdx].length && node.isGhost()) {
+            newParagraph.push(node.clone());
+          } else newParagraph.push(node);
+        }
+      }
+      newTree.push(newParagraph);
+    }
+    setTree(newTree);
+  };
+
+  const rejectSuggestion = () => {};
 
   useLayoutEffect(() => {
     let selection = getSelection();
@@ -1618,11 +1683,9 @@ const useController = (
     }
   }, [tree]);
 
-  const forceRemountEditor = () => {
-    updateEditorKey((key) => key + 1);
-  };
-
   return {
+    acceptSuggestion,
+    rejectSuggestion,
     insertEmoji,
     insertNewParagraph,
     handleKeyDown,

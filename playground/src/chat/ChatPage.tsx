@@ -145,6 +145,10 @@ const ChatPage = () => {
             return updatedMessages;
           });
         })();
+      } else if (keyboardEvent.key == 'Tab') {
+        keyboardEvent.stopImmediatePropagation();
+        keyboardEvent.preventDefault();
+        theodoreRef.current?.acceptSuggestion();
       }
     };
     editorRef.current?.addEventListener('keydown', handleKeyDown);
