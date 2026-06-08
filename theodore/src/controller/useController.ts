@@ -37,7 +37,7 @@ import {
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
 import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 import {
-  COMMAND_INSERT_EMOJI,
+  COMMAND_INSERT_UNEDITABLE_NODE,
   COMMAND_INSERT_PARAGRAPH,
   COMMAND_INSERT_PARAGRAPH_AFTER,
   COMMAND_INSERT_TEXT,
@@ -368,7 +368,7 @@ const useController = (
           newText,
           renderEmoji,
         );
-        insertNodeInSelection(emojiNode);
+        insertUneditableNodeInSelection(emojiNode);
         forceRemountEditor();
       } else if (newText && isEditorSelectionCollapsed(selection)) {
         const [newTree, node] = updateTextNodeInTree(
@@ -771,7 +771,7 @@ const useController = (
         });
       } else if (n.getType() == 'emoji') {
         historyItems.push({
-          command: COMMAND_INSERT_EMOJI,
+          command: COMMAND_INSERT_UNEDITABLE_NODE,
           nodeIndex: n.getIndex(),
           prevState: null,
         });
@@ -1301,7 +1301,7 @@ const useController = (
 
   const handleInsertSuggestion = (suggestion: string) => {
     const ghostNode = new GhostTextNode(assignNodeIndex(), suggestion);
-    insertNodeInSelection(ghostNode);
+    insertUneditableNodeInSelection(ghostNode);
   };
 
   const insertNewParagraph = () => {
@@ -1445,7 +1445,7 @@ const useController = (
     });
   };
 
-  const insertNodeInSelection = (node: EditorNode) => {
+  const insertUneditableNodeInSelection = (node: EditorNode) => {
     let newTree = removeNodesInSelection(true);
     const selection = getSelection()?.startSelection;
     const selectedNodeOffset = selection?.offset ?? 0;
@@ -1522,13 +1522,16 @@ const useController = (
       setTree(newTree);
     }
 
-    history.pushAndCommit([
-      {
-        command: COMMAND_INSERT_EMOJI,
-        nodeIndex: node.getIndex(),
-        prevState: null,
-      },
-    ]);
+    if (node.isGhost()) history.commit();
+    else
+      history.pushAndCommit([
+        {
+          command: COMMAND_INSERT_UNEDITABLE_NODE,
+          nodeIndex: node.getIndex(),
+          prevState: null,
+        },
+      ]);
+
     setSelection({
       nodeIndex: node.getIndex(),
       offset: 0,
@@ -1539,7 +1542,7 @@ const useController = (
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-    insertNodeInSelection(emojiNode);
+    insertUneditableNodeInSelection(emojiNode);
   };
 
   const getEditorSelectedNode = () => {
@@ -1580,6 +1583,11 @@ const useController = (
           if (node.getType() == 'ghostText') {
             const ghostNode = node as GhostTextNode;
             const prevNode = tree[pIdx][idx - 1];
+
+            const selection = {
+              nodeIndex: prevNode.getIndex(),
+              offset: prevNode.getChildLength(),
+            };
             if (prevNode.isTextNode()) {
               const prevText = prevNode.getChildren();
               (prevNode as TextNode).insertText(
@@ -1592,6 +1600,10 @@ const useController = (
                   command: COMMAND_INSERT_TEXT,
                   nodeIndex: prevNode.getIndex(),
                   prevState: prevText,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
                 },
               ]);
 
@@ -1608,6 +1620,10 @@ const useController = (
                   command: COMMAND_INSERT_TEXT,
                   nodeIndex: textNode.getIndex(),
                   prevState: null,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
                 },
               ]);
 
