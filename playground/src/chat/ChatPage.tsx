@@ -29,6 +29,41 @@ type Message = {
   message: string;
 };
 
+const areEditorSelectionsEqual = (
+  firstSelection: EditorSelection,
+  secondSelection: EditorSelection,
+) => {
+  if (firstSelection == null || secondSelection == null) {
+    return firstSelection == secondSelection;
+  }
+
+  return (
+    firstSelection.startSelection.nodeIndex ==
+      secondSelection.startSelection.nodeIndex &&
+    firstSelection.startSelection.offset ==
+      secondSelection.startSelection.offset &&
+    firstSelection.endSelection.nodeIndex ==
+      secondSelection.endSelection.nodeIndex &&
+    firstSelection.endSelection.offset == secondSelection.endSelection.offset
+  );
+};
+
+const doesSelectionTargetGhostNode = (
+  tree: TheodoreTree | null,
+  selection: EditorSelection,
+) => {
+  if (tree == null || selection == null) return false;
+
+  return tree.flat().some((node) => {
+    if (!node.isGhost()) return false;
+
+    return (
+      node.getIndex() == selection.startSelection.nodeIndex ||
+      node.getIndex() == selection.endSelection.nodeIndex
+    );
+  });
+};
+
 const ChatPage = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -36,40 +71,126 @@ const ChatPage = () => {
   const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
   const hideTimerRef = useRef<number | null>(null);
   const autoCompleteDebounce = useRef<NodeJS.Timeout | null>(null);
+  const autoCompleteAbortController = useRef<AbortController | null>(null);
+  const autoCompleteRequestVersion = useRef(0);
+  const latestTextRef = useRef('');
+  const latestSelectionRef = useRef<EditorSelection>(null);
+  const latestTreeRef = useRef<TheodoreTree | null>(null);
+  const shouldIgnoreNextSelectionChange = useRef(false);
+  const pendingSuggestionInsertion = useRef(false);
+  const shouldSkipNextAutoComplete = useRef(false);
 
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
+  const clearAutoCompleteDebounce = () => {
+    if (autoCompleteDebounce.current != null) {
+      clearTimeout(autoCompleteDebounce.current);
+      autoCompleteDebounce.current = null;
+    }
+  };
+
+  const abortAutoCompleteRequest = () => {
+    autoCompleteAbortController.current?.abort();
+    autoCompleteAbortController.current = null;
+  };
+
+  const cancelPendingAutoComplete = () => {
+    clearAutoCompleteDebounce();
+    abortAutoCompleteRequest();
+    autoCompleteRequestVersion.current += 1;
+  };
+
+  const ignoreImmediateEditorSelectionChange = () => {
+    shouldIgnoreNextSelectionChange.current = true;
+    window.setTimeout(() => {
+      shouldIgnoreNextSelectionChange.current = false;
+    }, 0);
+  };
+
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
+      if (!areEditorSelectionsEqual(latestSelectionRef.current, newSelection)) {
+        latestSelectionRef.current = newSelection;
+
+        if (
+          pendingSuggestionInsertion.current &&
+          doesSelectionTargetGhostNode(latestTreeRef.current, newSelection)
+        ) {
+          pendingSuggestionInsertion.current = false;
+        } else if (shouldIgnoreNextSelectionChange.current) {
+          shouldIgnoreNextSelectionChange.current = false;
+        } else {
+          pendingSuggestionInsertion.current = false;
+          cancelPendingAutoComplete();
+          setSuggestion(undefined);
+          theodoreRef.current?.rejectSuggestion();
+        }
+      }
+
       selectionPreviewRef.current?.onSelectionUpdate(newSelection);
     },
     [],
   );
 
   const handleTreeChange = async (newTree: TheodoreTree) => {
-    if (autoCompleteDebounce.current != null)
-      clearTimeout(autoCompleteDebounce.current);
+    latestTreeRef.current = newTree;
+    cancelPendingAutoComplete();
 
     const newText = convertTreeToText(newTree);
-    const currentText = convertTreeToText(editorState.tree);
+    const currentText = latestTextRef.current;
+    latestTextRef.current = newText;
+
+    if (currentText != newText) {
+      ignoreImmediateEditorSelectionChange();
+      setSuggestion(undefined);
+    }
+
+    if (shouldSkipNextAutoComplete.current) {
+      shouldSkipNextAutoComplete.current = false;
+      return;
+    }
 
     if (currentText == newText || newText == '') return;
 
     autoCompleteDebounce.current = setTimeout(async () => {
       const selection = editorState.selectionHandle.getSelection();
-      if (isEditorSelectionCollapsed(selection)) {
-        if (currentText == newText) return;
+      if (selection != null && isEditorSelectionCollapsed(selection)) {
+        if (currentText == newText || newText.length < currentText.length)
+          return;
 
-        const suggestion = await getAutoComplete(
-          newText,
-          messages.slice(-7).map((msg) => `${msg.sender}: ${msg.message}`),
-          selection?.startSelection.offset ?? newText.length,
-        );
+        const requestSelection = selection;
+        const requestVersion = ++autoCompleteRequestVersion.current;
+        const abortController = new AbortController();
+        autoCompleteAbortController.current = abortController;
+        latestSelectionRef.current = requestSelection;
 
-        if (suggestion != null) {
-          setSuggestion(suggestion);
+        try {
+          const suggestion = await getAutoComplete(
+            newText,
+            messages.slice(-7).map((msg) => `${msg.sender}: ${msg.message}`),
+            requestSelection.startSelection.offset,
+            abortController.signal,
+          );
+
+          if (
+            !abortController.signal.aborted &&
+            autoCompleteRequestVersion.current == requestVersion &&
+            latestTextRef.current == newText &&
+            areEditorSelectionsEqual(
+              editorState.selectionHandle.getSelection(),
+              requestSelection,
+            ) &&
+            suggestion != null
+          ) {
+            pendingSuggestionInsertion.current = true;
+            setSuggestion(suggestion);
+          }
+        } finally {
+          if (autoCompleteAbortController.current == abortController) {
+            autoCompleteAbortController.current = null;
+          }
         }
       }
     }, 1000);
@@ -105,9 +226,10 @@ const ChatPage = () => {
   useEffect(() => {
     const handleKeyDown = (event: Event) => {
       const keyboardEvent = event as KeyboardEvent;
-      if (keyboardEvent.key == 'Enter') {
-        if (autoCompleteDebounce.current != null)
-          clearTimeout(autoCompleteDebounce.current);
+      if (keyboardEvent.key == 'Enter' && !keyboardEvent.shiftKey) {
+        cancelPendingAutoComplete();
+        setSuggestion(undefined);
+        theodoreRef.current?.rejectSuggestion();
 
         keyboardEvent.preventDefault();
         keyboardEvent.stopImmediatePropagation();
@@ -148,7 +270,12 @@ const ChatPage = () => {
       } else if (keyboardEvent.key == 'Tab') {
         keyboardEvent.stopImmediatePropagation();
         keyboardEvent.preventDefault();
+        cancelPendingAutoComplete();
+        shouldSkipNextAutoComplete.current = editorState.tree.some((subTree) =>
+          subTree.some((node) => node.isGhost()),
+        );
         theodoreRef.current?.acceptSuggestion();
+        setSuggestion(undefined);
       }
     };
     editorRef.current?.addEventListener('keydown', handleKeyDown);
