@@ -6,10 +6,30 @@ const generateStaticParams = generateStaticParamsFor('mdxPath');
 export async function generateMetadata(props: any) {
   const params = await props.params;
   const { metadata } = await importPage(params.mdxPath);
-  return metadata;
+  const canonical = getCanonicalPath(params.mdxPath);
+
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      canonical,
+    },
+    openGraph: {
+      ...metadata.openGraph,
+      url: canonical,
+    },
+  };
 }
 
 const Wrapper = getMDXComponents({}).wrapper;
+
+function getCanonicalPath(mdxPath: string[] = []) {
+  if (mdxPath.length === 0) {
+    return '/docs';
+  }
+
+  return `/docs/${mdxPath.join('/')}`;
+}
 
 export default async function Page(props: any) {
   const params = await props.params;

@@ -38,5 +38,3 @@ const NavbarLogo: React.FC = () => {
     </div>
   );
 };
-
-export { NavbarLogo };
