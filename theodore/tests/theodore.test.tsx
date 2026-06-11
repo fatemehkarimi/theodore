@@ -210,6 +210,69 @@ describe('autocomplete', () => {
     });
   });
 
+  it('should remove the suggestion node when rejecting suggestions', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = ({ suggestion }: { suggestion?: string }) => {
+      const theodoreRef = useRef<TheodoreHandle>(null);
+      const editorState = useEditorState(undefined, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <>
+          <Theodore
+            editorState={editorState}
+            renderEmoji={renderEmoji}
+            suggestion={suggestion}
+            theodoreRef={theodoreRef}
+            data-testid="editor"
+          />
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.rejectSuggestion()}
+          >
+            reject
+          </button>
+        </>
+      );
+    };
+
+    const { rerender } = render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('abc');
+    rerender(<Host suggestion="def" />);
+
+    await waitFor(() => {
+      const suggestedTree = treeChanges[treeChanges.length - 1];
+      if (suggestedTree == null) throw new Error('Missing tree update');
+
+      expect(suggestedTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+        'ghostText',
+      ]);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'reject' }));
+
+    await waitFor(() => {
+      const rejectedTree = treeChanges[treeChanges.length - 1];
+      if (rejectedTree == null) throw new Error('Missing tree update');
+
+      expect(rejectedTree).toHaveLength(1);
+      expect(rejectedTree[0]).toHaveLength(2);
+      expect(rejectedTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+      ]);
+      expect(rejectedTree[0][1].getChildren()).toBe('abc');
+    });
+  });
+
   it('should create a new text node for suggestion when prev node is an emoji and accepting suggestion', async () => {
     const user = userEvent.setup();
     const treeChanges: Tree[] = [];

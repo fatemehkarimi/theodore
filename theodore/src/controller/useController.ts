@@ -1644,7 +1644,36 @@ const useController = (
     setTree(newTree);
   };
 
-  const rejectSuggestion = () => {};
+  const rejectSuggestion = () => {
+    let removedSelectedGhostIndex: number | undefined;
+    const selection = getSelection();
+    const newTree = tree.map((paragraph) =>
+      paragraph.filter((node) => {
+        if (!node.isGhost()) return true;
+
+        if (
+          selection?.startSelection.nodeIndex == node.getIndex() ||
+          selection?.endSelection.nodeIndex == node.getIndex()
+        ) {
+          removedSelectedGhostIndex = node.getIndex();
+        }
+
+        return false;
+      }),
+    );
+
+    if (removedSelectedGhostIndex == undefined) {
+      if (
+        newTree.some((paragraph, idx) => paragraph.length != tree[idx].length)
+      )
+        setTree(newTree);
+
+      return;
+    }
+
+    setTree(newTree);
+    setSelection(getSelectionAfterNodeRemove(tree, removedSelectedGhostIndex));
+  };
 
   useLayoutEffect(() => {
     let selection = getSelection();
