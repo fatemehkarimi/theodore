@@ -4,12 +4,13 @@ import type { SelectionHandle } from './controller/selection/useSelection';
 import { HistoryHandle } from './controller/history/types';
 import { EditorSelection } from './controller/selection/types';
 
-/* eslint-disable no-unused-vars */
 export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
-export interface TheodoreHandle {
-  insertEmoji(emoji: string): void;
-  setContent(content: string): void;
-}
+export type TheodoreHandle = {
+  insertEmoji: (emoji: string) => void;
+  setContent: (content: string) => void;
+  acceptSuggestion: () => void;
+  rejectSuggestion: () => void;
+};
 
 export interface RenderEmoji {
   (emoji: string): ReactElement;
@@ -38,4 +39,3 @@ export type EditorState = {
   historyHandle: HistoryHandle;
   selectionHandle: SelectionHandle;
 };
-/* eslint-enable no-unused-vars */

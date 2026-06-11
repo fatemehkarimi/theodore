@@ -24,6 +24,7 @@ import {
   TAB,
 } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
+import { GhostTextNode } from '../nodes/ghostTextNode/GhostTextNode';
 import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
@@ -36,7 +37,7 @@ import {
 import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
 import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 import {
-  COMMAND_INSERT_EMOJI,
+  COMMAND_INSERT_UNEDITABLE_NODE,
   COMMAND_INSERT_PARAGRAPH,
   COMMAND_INSERT_PARAGRAPH_AFTER,
   COMMAND_INSERT_TEXT,
@@ -54,7 +55,6 @@ import {
   ALWAYS_IN_DOM_NODE_SELECTION,
   breakAndReplaceTextNode,
   cloneTree,
-  reconcileTextNodeContentFromContentEditable,
   findNode,
   findNodeAfter,
   findNodeBefore,
@@ -69,6 +69,7 @@ import {
   isElementInView,
   isEmoji,
   isSelectionAnchorSameAsFocus,
+  reconcileTextNodeContentFromContentEditable,
   removeNodeFromTree,
   segmentText,
   updateTextNodeInTree,
@@ -367,7 +368,7 @@ const useController = (
           newText,
           renderEmoji,
         );
-        insertEmojiNodeInSelection(emojiNode);
+        insertUneditableNodeInSelection(emojiNode);
         forceRemountEditor();
       } else if (newText && isEditorSelectionCollapsed(selection)) {
         const [newTree, node] = updateTextNodeInTree(
@@ -770,7 +771,7 @@ const useController = (
         });
       } else if (n.getType() == 'emoji') {
         historyItems.push({
-          command: COMMAND_INSERT_EMOJI,
+          command: COMMAND_INSERT_UNEDITABLE_NODE,
           nodeIndex: n.getIndex(),
           prevState: null,
         });
@@ -1298,6 +1299,11 @@ const useController = (
     }
   };
 
+  const handleInsertSuggestion = (suggestion: string) => {
+    const ghostNode = new GhostTextNode(assignNodeIndex(), suggestion);
+    insertUneditableNodeInSelection(ghostNode);
+  };
+
   const insertNewParagraph = () => {
     const newTree = removeNodesInSelection(true);
     const paragraphNode = new ParagraphNode(assignNodeIndex());
@@ -1439,7 +1445,7 @@ const useController = (
     });
   };
 
-  const insertEmojiNodeInSelection = (node: EditorNode) => {
+  const insertUneditableNodeInSelection = (node: EditorNode) => {
     let newTree = removeNodesInSelection(true);
     const selection = getSelection()?.startSelection;
     const selectedNodeOffset = selection?.offset ?? 0;
@@ -1516,13 +1522,16 @@ const useController = (
       setTree(newTree);
     }
 
-    history.pushAndCommit([
-      {
-        command: COMMAND_INSERT_EMOJI,
-        nodeIndex: node.getIndex(),
-        prevState: null,
-      },
-    ]);
+    if (node.isGhost()) history.commit();
+    else
+      history.pushAndCommit([
+        {
+          command: COMMAND_INSERT_UNEDITABLE_NODE,
+          nodeIndex: node.getIndex(),
+          prevState: null,
+        },
+      ]);
+
     setSelection({
       nodeIndex: node.getIndex(),
       offset: 0,
@@ -1533,7 +1542,7 @@ const useController = (
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-    insertEmojiNodeInSelection(emojiNode);
+    insertUneditableNodeInSelection(emojiNode);
   };
 
   const getEditorSelectedNode = () => {
@@ -1557,6 +1566,113 @@ const useController = (
       return [[new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)]];
     }
     return [...tree];
+  };
+
+  const forceRemountEditor = () => {
+    updateEditorKey((key) => key + 1);
+  };
+
+  const acceptSuggestion = () => {
+    const newTree = [];
+    for (let pIdx = 0; pIdx < tree.length; ++pIdx) {
+      const newParagraph: EditorNode[] = [];
+
+      for (let idx = 0; idx < tree[pIdx].length; ++idx) {
+        const node = tree[pIdx][idx];
+        if (node.isGhost()) {
+          if (node.getType() == 'ghostText') {
+            const ghostNode = node as GhostTextNode;
+            const prevNode = tree[pIdx][idx - 1];
+
+            const selection = {
+              nodeIndex: prevNode.getIndex(),
+              offset: prevNode.getChildLength(),
+            };
+            if (prevNode.isTextNode()) {
+              const prevText = prevNode.getChildren();
+              (prevNode as TextNode).insertText(
+                (ghostNode as GhostTextNode).getChildren(),
+                prevNode.getChildLength(),
+              );
+
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: prevNode.getIndex(),
+                  prevState: prevText,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
+                },
+              ]);
+
+              setSelection({
+                nodeIndex: prevNode.getIndex(),
+                offset: prevNode.getChildLength(),
+              });
+            } else {
+              const textNode = new TextNode(ghostNode.getIndex());
+              textNode.setChild(ghostNode.getChildren());
+              newParagraph.push(textNode);
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: textNode.getIndex(),
+                  prevState: null,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
+                },
+              ]);
+
+              setSelection({
+                nodeIndex: textNode.getIndex(),
+                offset: textNode.getChildLength(),
+              });
+            }
+          }
+        } else {
+          if (idx + 1 < tree[pIdx].length && node.isGhost()) {
+            newParagraph.push(node.clone());
+          } else newParagraph.push(node);
+        }
+      }
+      newTree.push(newParagraph);
+    }
+    setTree(newTree);
+  };
+
+  const rejectSuggestion = () => {
+    let removedSelectedGhostIndex: number | undefined;
+    const selection = getSelection();
+    const newTree = tree.map((paragraph) =>
+      paragraph.filter((node) => {
+        if (!node.isGhost()) return true;
+
+        if (
+          selection?.startSelection.nodeIndex == node.getIndex() ||
+          selection?.endSelection.nodeIndex == node.getIndex()
+        ) {
+          removedSelectedGhostIndex = node.getIndex();
+        }
+
+        return false;
+      }),
+    );
+
+    if (removedSelectedGhostIndex == undefined) {
+      if (
+        newTree.some((paragraph, idx) => paragraph.length != tree[idx].length)
+      )
+        setTree(newTree);
+
+      return;
+    }
+
+    setTree(newTree);
+    setSelection(getSelectionAfterNodeRemove(tree, removedSelectedGhostIndex));
   };
 
   useLayoutEffect(() => {
@@ -1612,11 +1728,9 @@ const useController = (
     }
   }, [tree]);
 
-  const forceRemountEditor = () => {
-    updateEditorKey((key) => key + 1);
-  };
-
   return {
+    acceptSuggestion,
+    rejectSuggestion,
     insertEmoji,
     insertNewParagraph,
     handleKeyDown,
@@ -1625,6 +1739,7 @@ const useController = (
     handlePaste,
     handleCut,
     handleOnInput,
+    handleInsertSuggestion,
     clearAndSetContent,
   };
 };
