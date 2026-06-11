@@ -64,6 +64,12 @@ const doesSelectionTargetGhostNode = (
   });
 };
 
+const doesTreeContainSuggestion = (tree: TheodoreTree | null) =>
+  tree?.some((subTree) => subTree.some((node) => node.isGhost())) ?? false;
+
+const removeSuggestionNodesFromTree = (tree: TheodoreTree): TheodoreTree =>
+  tree.map((subTree) => subTree.filter((node) => !node.isGhost()));
+
 const ChatPage = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -143,6 +149,14 @@ const ChatPage = () => {
   );
 
   const handleTreeChange = async (newTree: TheodoreTree) => {
+    const hasPendingOrActiveSuggestion =
+      autoCompleteDebounce.current != null ||
+      autoCompleteAbortController.current != null ||
+      pendingSuggestionInsertion.current ||
+      suggestion != undefined ||
+      doesTreeContainSuggestion(latestTreeRef.current) ||
+      doesTreeContainSuggestion(newTree);
+
     latestTreeRef.current = newTree;
     cancelPendingAutoComplete();
 
@@ -153,6 +167,11 @@ const ChatPage = () => {
     if (currentText != newText) {
       ignoreImmediateEditorSelectionChange();
       setSuggestion(undefined);
+
+      if (hasPendingOrActiveSuggestion && doesTreeContainSuggestion(newTree)) {
+        pendingSuggestionInsertion.current = false;
+        editorState.setTree(removeSuggestionNodesFromTree(newTree));
+      }
     }
 
     if (shouldSkipNextAutoComplete.current) {
@@ -283,6 +302,13 @@ const ChatPage = () => {
           subTree.some((node) => node.isGhost()),
         );
         theodoreRef.current?.acceptSuggestion();
+        setSuggestion(undefined);
+      } else if (keyboardEvent.key == 'Escape') {
+        keyboardEvent.stopImmediatePropagation();
+        keyboardEvent.preventDefault();
+        cancelPendingAutoComplete();
+        pendingSuggestionInsertion.current = false;
+        theodoreRef.current?.rejectSuggestion();
         setSuggestion(undefined);
       }
     };
