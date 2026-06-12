@@ -170,6 +170,38 @@
   cursor: pointer;
 }
 
+.mobileSendButton {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
+  border: none;
+  border-radius: 50%;
+  background: #229ed9;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 2px 6px rgba(34, 158, 217, 0.28);
+
+  &:active {
+    background: #1d8fc5;
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(34, 158, 217, 0.45);
+    outline-offset: 2px;
+  }
+}
+
+.mobileSendIcon {
+  width: 22px;
+  height: 22px;
+  transform: translateX(1px);
+}
+
 .copyButton {
   display: inline-flex;
   align-items: center;
