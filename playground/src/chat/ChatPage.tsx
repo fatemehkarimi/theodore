@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type SVGProps, useCallback, useEffect, useRef, useState } from 'react';
 import {
   convertTreeToText,
   EditorSelection,
@@ -28,6 +28,24 @@ type Message = {
   sender: 'you' | 'friend';
   message: string;
 };
+
+const SendIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    focusable="false"
+    {...props}
+  >
+    <path
+      d="M21.7 3.3 2.9 10.9c-.9.4-.9 1.7.1 2l4.8 1.5 1.8 5.6c.3.9 1.5 1.1 2 .3l2.7-3.5 4.8 3.5c.8.6 2 .1 2.1-.9l2-14.9c.2-.9-.8-1.6-1.5-1.2ZM9.2 13.8l9.2-6.6-7 8.6-.4 2.4-1.8-4.4Z"
+      fill="currentColor"
+    />
+  </svg>
+);
 
 const areEditorSelectionsEqual = (
   firstSelection: EditorSelection,
@@ -102,6 +120,10 @@ const ChatPage = () => {
     autoCompleteAbortController.current = null;
   };
 
+  const isAutoCompletePending = () =>
+    autoCompleteDebounce.current != null ||
+    autoCompleteAbortController.current != null;
+
   const cancelPendingAutoComplete = () => {
     clearAutoCompleteDebounce();
     abortAutoCompleteRequest();
@@ -126,6 +148,7 @@ const ChatPage = () => {
         if (node && node.isGhost()) return;
       }
       if (!areEditorSelectionsEqual(latestSelectionRef.current, newSelection)) {
+        const hasInsertedSuggestion = doesTreeContainSuggestion(tree);
         latestSelectionRef.current = newSelection;
 
         if (
@@ -135,11 +158,20 @@ const ChatPage = () => {
           pendingSuggestionInsertion.current = false;
         } else if (shouldIgnoreNextSelectionChange.current) {
           shouldIgnoreNextSelectionChange.current = false;
-        } else {
+        } else if (hasInsertedSuggestion) {
+          pendingSuggestionInsertion.current = false;
+          if (isAutoCompletePending()) {
+            cancelPendingAutoComplete();
+          }
+        } else if (pendingSuggestionInsertion.current) {
           pendingSuggestionInsertion.current = false;
           cancelPendingAutoComplete();
           setSuggestion(undefined);
-          theodoreRef.current?.rejectSuggestion();
+        } else if (isAutoCompletePending()) {
+          cancelPendingAutoComplete();
+          setSuggestion(undefined);
+        } else {
+          pendingSuggestionInsertion.current = false;
         }
       }
 
@@ -182,6 +214,7 @@ const ChatPage = () => {
     if (currentText == newText || newText == '') return;
 
     autoCompleteDebounce.current = setTimeout(async () => {
+      autoCompleteDebounce.current = null;
       const selection = editorState.selectionHandle.getSelection();
       if (selection != null && isEditorSelectionCollapsed(selection)) {
         if (currentText == newText || newText.length < currentText.length)
@@ -250,62 +283,88 @@ const ChatPage = () => {
     }
   };
 
+  const handleSendMessage = useCallback(() => {
+    cancelPendingAutoComplete();
+    setSuggestion(undefined);
+    theodoreRef.current?.rejectSuggestion();
+
+    const content = convertTreeToText(editorState.tree);
+    if (content.trim() === '') return;
+
+    const nextMessages = [
+      ...messages,
+      { sender: 'you' as const, message: content },
+    ];
+    setMessages([...nextMessages, { sender: 'friend', message: '...' }]);
+    theodoreRef.current?.setContent('');
+
+    void (async () => {
+      let response: string | null = null;
+      try {
+        response = await getChatResponse(
+          nextMessages.map((msg) => `${msg.sender}: ${msg.message}`),
+        );
+      } catch (error) {
+        console.error('chat request failed', error);
+      }
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages];
+        const loadingIndex = updatedMessages.findIndex(
+          (msg) => msg.sender === 'friend' && msg.message === '...',
+        );
+        if (loadingIndex >= 0) {
+          updatedMessages[loadingIndex] = {
+            sender: 'friend',
+            message: response ?? 'Sorry, something went wrong.',
+          };
+        }
+        return updatedMessages;
+      });
+    })();
+  }, [editorState.tree, messages]);
+
+  const handleAcceptSuggestion = useCallback(() => {
+    cancelPendingAutoComplete();
+    shouldSkipNextAutoComplete.current = editorState.tree.some((subTree) =>
+      subTree.some((node) => node.isGhost()),
+    );
+    theodoreRef.current?.acceptSuggestion();
+    setSuggestion(undefined);
+  }, [editorState.tree]);
+
   useEffect(() => {
     const handleKeyDown = (event: Event) => {
       const keyboardEvent = event as KeyboardEvent;
-      if (keyboardEvent.key == 'Enter' && !keyboardEvent.shiftKey) {
-        cancelPendingAutoComplete();
-        setSuggestion(undefined);
-        theodoreRef.current?.rejectSuggestion();
-
+      const isMobile = isMobileDevice();
+      const hasSuggestion = suggestion != null && suggestion !== '';
+      if (
+        !isMobile &&
+        keyboardEvent.key == 'Enter' &&
+        !keyboardEvent.shiftKey
+      ) {
         keyboardEvent.preventDefault();
         keyboardEvent.stopImmediatePropagation();
-        const content = convertTreeToText(editorState.tree);
-        if (content.trim() === '') return;
-
-        const nextMessages = [
-          ...messages,
-          { sender: 'you' as const, message: content },
-        ];
-        setMessages([...nextMessages, { sender: 'friend', message: '...' }]);
-        theodoreRef.current?.setContent('');
-
-        void (async () => {
-          let response: string | null = null;
-          try {
-            response = await getChatResponse(
-              nextMessages.map((msg) => `${msg.sender}: ${msg.message}`),
-            );
-          } catch (error) {
-            console.error('chat request failed', error);
-          }
-
-          setMessages((prevMessages) => {
-            const updatedMessages = [...prevMessages];
-            const loadingIndex = updatedMessages.findIndex(
-              (msg) => msg.sender === 'friend' && msg.message === '...',
-            );
-            if (loadingIndex >= 0) {
-              updatedMessages[loadingIndex] = {
-                sender: 'friend',
-                message: response ?? 'Sorry, something went wrong.',
-              };
-            }
-            return updatedMessages;
-          });
-        })();
+        handleSendMessage();
+      } else if (isMobile && keyboardEvent.key == 'Enter' && hasSuggestion) {
+        keyboardEvent.stopImmediatePropagation();
+        keyboardEvent.preventDefault();
+        handleAcceptSuggestion();
       } else if (keyboardEvent.key == 'Tab') {
         keyboardEvent.stopImmediatePropagation();
         keyboardEvent.preventDefault();
-        cancelPendingAutoComplete();
-        shouldSkipNextAutoComplete.current = editorState.tree.some((subTree) =>
-          subTree.some((node) => node.isGhost()),
-        );
-        theodoreRef.current?.acceptSuggestion();
-        setSuggestion(undefined);
+        handleAcceptSuggestion();
       } else if (keyboardEvent.key == 'Escape') {
         keyboardEvent.stopImmediatePropagation();
         keyboardEvent.preventDefault();
+        cancelPendingAutoComplete();
+        pendingSuggestionInsertion.current = false;
+        theodoreRef.current?.rejectSuggestion();
+        setSuggestion(undefined);
+      } else if (
+        keyboardEvent.key == 'Backspace' ||
+        keyboardEvent.key == 'Delete'
+      ) {
         cancelPendingAutoComplete();
         pendingSuggestionInsertion.current = false;
         theodoreRef.current?.rejectSuggestion();
@@ -316,7 +375,7 @@ const ChatPage = () => {
 
     return () =>
       editorRef.current?.removeEventListener('keydown', handleKeyDown);
-  }, [editorState.tree, messages]);
+  }, [handleAcceptSuggestion, handleSendMessage, suggestion]);
 
   useEffect(() => {
     const list = messageListRef.current;
@@ -372,6 +431,16 @@ const ChatPage = () => {
             onLeave={scheduleHide}
             onSelectEmoji={handleSelectEmoji}
           />
+          {isMobileDevice() ? (
+            <button
+              type="button"
+              className={styles.mobileSendButton}
+              aria-label="Send message"
+              onClick={handleSendMessage}
+            >
+              <SendIcon className={styles.mobileSendIcon} />
+            </button>
+          ) : null}
         </div>
       </div>
       <div className={styles.theodoreStateInfo}>
