@@ -8,6 +8,40 @@ import {
   isEmptyParagraph,
 } from '../utils';
 
+const isSuggestionHint = (node: Node | undefined): node is HTMLElement => {
+  return node instanceof HTMLElement && node.dataset.suggestionHint === 'true';
+};
+
+const getNodeIndex = (node: Node | undefined) => {
+  return node instanceof HTMLElement ? node.dataset.nodeIndex : undefined;
+};
+
+const getLastSelectableChildBeforeOffset = (
+  node: Node,
+  offset: number,
+): Node | undefined => {
+  const childNodes = Array.from(node.childNodes);
+  for (let idx = Math.min(offset - 1, childNodes.length - 1); idx >= 0; --idx) {
+    const childNode = childNodes[idx];
+    if (isSuggestionHint(childNode) && idx == childNodes.length - 1) continue;
+    return childNode;
+  }
+  return undefined;
+};
+
+const getNextSelectableChildAfterOffset = (
+  node: Node,
+  offset: number,
+): Node | undefined => {
+  const childNodes = Array.from(node.childNodes);
+  for (let idx = offset; idx < childNodes.length; ++idx) {
+    const childNode = childNodes[idx];
+    if (isSuggestionHint(childNode)) continue;
+    return childNode;
+  }
+  return undefined;
+};
+
 const setCaretToEnd = (inputEl: HTMLElement) => {
   if (!inputEl) return;
 
@@ -305,10 +339,14 @@ const convertDomSelectionToEditorSelection = (
       };
     }
 
-    const lastNode = editorChildren[offset - 1];
-    const lastNodeNodeIndex = (lastNode as HTMLElement)?.dataset?.nodeIndex;
-    const childrenOfPNode = Array.from(lastNode.childNodes);
-    const lastChild = childrenOfPNode[childrenOfPNode.length - 1]; // span or br
+    const lastNode = getLastSelectableChildBeforeOffset(container, offset);
+    if (lastNode == undefined) return null;
+    const lastNodeNodeIndex = getNodeIndex(lastNode);
+    const lastChild = getLastSelectableChildBeforeOffset(
+      lastNode,
+      lastNode.childNodes.length,
+    ); // span or br
+    if (lastChild == undefined) return null;
     if (lastChild.nodeName == 'BR') {
       if (lastNodeNodeIndex != undefined)
         return {
@@ -318,7 +356,7 @@ const convertDomSelectionToEditorSelection = (
       else return null;
     }
 
-    const lastChildNodeIndex = (lastChild as HTMLElement)?.dataset?.nodeIndex;
+    const lastChildNodeIndex = getNodeIndex(lastChild);
     if (lastChildNodeIndex == null) return null;
     const lastChildContent = lastChild.childNodes[0];
 
@@ -355,14 +393,27 @@ const convertDomSelectionToEditorSelection = (
       else return null;
     }
 
-    let currentNode = node.childNodes[offset - 1];
+    let currentNode = getLastSelectableChildBeforeOffset(node, offset);
+    if (currentNode == undefined) return null;
+
+    if (isSuggestionHint(currentNode)) {
+      const nextNode = getNextSelectableChildAfterOffset(node, offset);
+      const nextNodeIndex = getNodeIndex(nextNode);
+      if (nextNodeIndex == undefined) return null;
+
+      return {
+        nodeIndex: Number(nextNodeIndex),
+        offset: 0,
+      };
+    }
+
     while (
       currentNode.nodeType != Node.TEXT_NODE &&
       currentNode.childNodes.length > 0
     ) {
       const childNode = currentNode.childNodes[0];
-      const childNodeIndex = (childNode as HTMLElement)?.dataset?.nodeIndex; // child node can be a text node
-      const nodeIndex = (currentNode as HTMLElement).dataset.nodeIndex;
+      const childNodeIndex = getNodeIndex(childNode); // child node can be a text node
+      const nodeIndex = getNodeIndex(currentNode);
 
       if (childNodeIndex == undefined && nodeIndex != undefined) {
         let finalOffset = 0;

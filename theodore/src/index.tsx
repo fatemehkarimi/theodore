@@ -1,4 +1,4 @@
-export { Theodore, type TheodoreProps } from './component/Theodore';
+export { Theodore, type TheodoreProps } from './components/Theodore';
 export type {
   TheodoreHandle,
   EditorState,

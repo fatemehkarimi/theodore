@@ -12,6 +12,7 @@ import { TextNode } from '../nodes/textNode/TextNode';
 import { isRTL } from '../rtl';
 import type { EditorState, RenderEmoji, TheodoreHandle } from '../types';
 import { computeLineHeightPx } from '../utils';
+import { SuggestionHint } from './SuggestionHint';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -197,6 +198,13 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
               nodes.length == 0 ? undefined : (
                 <>
                   {nodes.map((node) => {
+                    if (node.isGhost())
+                      return (
+                        <React.Fragment key={node.getKey()}>
+                          {node.render()}
+                          <SuggestionHint />
+                        </React.Fragment>
+                      );
                     return node.render();
                   })}
                 </>

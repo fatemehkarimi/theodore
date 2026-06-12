@@ -69,6 +69,7 @@ import {
   isElementInView,
   isEmoji,
   isSelectionAnchorSameAsFocus,
+  keepCaretBeforeSuggestionHint,
   reconcileTextNodeContentFromContentEditable,
   removeNodeFromTree,
   segmentText,
@@ -89,6 +90,9 @@ const useController = (
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
     let delegateHandleToBrowser = false;
+
+    keepCaretBeforeSuggestionHint(event, inputRef);
+    if (event.defaultPrevented) return;
 
     if (
       (event.metaKey || event.ctrlKey) &&
