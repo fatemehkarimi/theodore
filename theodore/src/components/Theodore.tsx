@@ -12,7 +12,7 @@ import { TextNode } from '../nodes/textNode/TextNode';
 import { isRTL } from '../rtl';
 import type { EditorState, RenderEmoji, TheodoreHandle } from '../types';
 import { computeLineHeightPx } from '../utils';
-import { SuggestionHint } from './SuggestionHint';
+import { SuggestionHint as SuggestionHintFC } from './SuggestionHint';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -28,10 +28,12 @@ type Props = Omit<
   theodoreRef?: React.Ref<TheodoreHandle>;
   shouldSuppressFocus?: boolean;
   suggestion?: string;
+  suggestionHint?: React.FC;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
-  (
-    {
+  (incomingProps, ref) => {
+    const hasSuggestionHint = 'suggestionHint' in incomingProps;
+    const {
       className,
       renderEmoji,
       editorState,
@@ -44,10 +46,12 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       theodoreRef,
       shouldSuppressFocus,
       suggestion,
+      suggestionHint,
       ...props
-    },
-    ref,
-  ) => {
+    } = incomingProps;
+    const SuggestionHint = hasSuggestionHint
+      ? suggestionHint
+      : SuggestionHintFC;
     const { tree } = editorState;
     const isEmpty = isEditorEmpty(tree);
     const inputRef = useRef<HTMLDivElement | null>(null);
@@ -198,7 +202,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
               nodes.length == 0 ? undefined : (
                 <>
                   {nodes.map((node) => {
-                    if (node.isGhost())
+                    if (node.isGhost() && SuggestionHint)
                       return (
                         <React.Fragment key={node.getKey()}>
                           {node.render()}
