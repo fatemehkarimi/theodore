@@ -22,6 +22,7 @@ import SendIcon from '../icons/Send';
 import '../index.css';
 import { getChatResponse } from './index';
 import { type ChatMessage, useChatAutocomplete } from './useChatAutocomplete';
+import { FancyTab } from './FancyTab';
 
 const ChatPage = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
@@ -169,7 +170,10 @@ const ChatPage = () => {
         rejectActiveSuggestion();
       } else if (
         keyboardEvent.key == 'Backspace' ||
-        keyboardEvent.key == 'Delete'
+        keyboardEvent.key == 'Delete' ||
+        (keyboardEvent.ctrlKey &&
+          !keyboardEvent.shiftKey &&
+          keyboardEvent.key.toLowerCase() == 'z')
       ) {
         rejectActiveSuggestion();
       }
@@ -225,6 +229,7 @@ const ChatPage = () => {
           ref={editorRef}
           shouldSuppressFocus={isMobile && isPickerVisible}
           suggestion={suggestion}
+          suggestionHint={FancyTab}
         />
         <div className={styles.controller}>
           <EmojiOutlined
