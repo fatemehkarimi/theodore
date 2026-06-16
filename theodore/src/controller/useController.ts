@@ -1526,15 +1526,13 @@ const useController = (
       setTree(newTree);
     }
 
-    if (node.isGhost()) history.commit();
-    else
-      history.pushAndCommit([
-        {
-          command: COMMAND_INSERT_UNEDITABLE_NODE,
-          nodeIndex: node.getIndex(),
-          prevState: null,
-        },
-      ]);
+    history.pushAndCommit([
+      {
+        command: COMMAND_INSERT_UNEDITABLE_NODE,
+        nodeIndex: node.getIndex(),
+        prevState: null,
+      },
+    ]);
 
     setSelection({
       nodeIndex: node.getIndex(),
@@ -1576,6 +1574,19 @@ const useController = (
     updateEditorKey((key) => key + 1);
   };
 
+  const removeSuggestionHistory = () => {
+    const suggestionHistory = [];
+    let transactionId = undefined;
+
+    do {
+      const prevState = history.pop() as HistoryCommand;
+      if (transactionId == undefined) transactionId = prevState.transactionId;
+      suggestionHistory.push(prevState);
+    } while (transactionId == history.top()?.transactionId);
+
+    return suggestionHistory;
+  };
+
   const acceptSuggestion = () => {
     const newTree = [];
     for (let pIdx = 0; pIdx < tree.length; ++pIdx) {
@@ -1583,22 +1594,32 @@ const useController = (
 
       for (let idx = 0; idx < tree[pIdx].length; ++idx) {
         const node = tree[pIdx][idx];
+        const prevNode = idx - 1 >= 0 ? tree[pIdx][idx - 1] : null;
+        const nextNode =
+          idx + 1 < tree[pIdx].length ? tree[pIdx][idx + 1] : null;
+
         if (node.isGhost()) {
           if (node.getType() == 'ghostText') {
             const ghostNode = node as GhostTextNode;
-            const prevNode = tree[pIdx][idx - 1];
+            if (prevNode?.isTextNode() && nextNode?.isTextNode()) {
+              const prevNodeChild = prevNode.getChildren() ?? '';
+              const nextNodeChild = nextNode.getChildren() ?? '';
+              const prevText = prevNodeChild + nextNodeChild;
+              const nextText =
+                prevNodeChild +
+                (ghostNode as GhostTextNode).getChildren() +
+                nextNodeChild;
 
-            const selection = {
-              nodeIndex: prevNode.getIndex(),
-              offset: prevNode.getChildLength(),
-            };
-            if (prevNode.isTextNode()) {
-              const prevText = prevNode.getChildren();
-              (prevNode as TextNode).insertText(
-                (ghostNode as GhostTextNode).getChildren(),
-                prevNode.getChildLength(),
-              );
+              const newNode = (prevNode as TextNode).clone();
+              newNode.setChild(nextText);
+              newParagraph.push(newNode);
 
+              removeSuggestionHistory();
+
+              const selection = {
+                nodeIndex: prevNode.getIndex(),
+                offset: prevNodeChild.length,
+              };
               history.pushAndCommit([
                 {
                   command: COMMAND_INSERT_TEXT,
@@ -1613,21 +1634,79 @@ const useController = (
 
               setSelection({
                 nodeIndex: prevNode.getIndex(),
-                offset: prevNode.getChildLength(),
+                offset: nextText.length - nextNodeChild.length,
+              });
+            } else if (prevNode?.isTextNode()) {
+              const prevText = prevNode.getChildren() ?? '';
+              const nextText =
+                prevText + (ghostNode as GhostTextNode).getChildren();
+
+              const newNode = (prevNode as TextNode).clone();
+              newNode.setChild(nextText);
+              newParagraph.push(newNode);
+
+              removeSuggestionHistory();
+
+              const selection = {
+                nodeIndex: prevNode.getIndex(),
+                offset: prevText.length,
+              };
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: prevNode.getIndex(),
+                  prevState: prevText,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
+                },
+              ]);
+              setSelection({
+                nodeIndex: prevNode.getIndex(),
+                offset: nextText.length,
+              });
+            } else if (nextNode?.isTextNode()) {
+              const prevText = nextNode.getChildren() ?? '';
+              const nextText =
+                (ghostNode as GhostTextNode).getChildren() + prevText;
+
+              const newNode = (nextNode as TextNode).clone();
+              newNode.setChild(nextText);
+              newParagraph.push(newNode);
+
+              removeSuggestionHistory();
+
+              const selection = {
+                nodeIndex: nextNode.getIndex(),
+                offset: 0,
+              };
+              history.pushAndCommit([
+                {
+                  command: COMMAND_INSERT_TEXT,
+                  nodeIndex: nextNode.getIndex(),
+                  prevState: prevText,
+                  selection: {
+                    startSelection: selection,
+                    endSelection: selection,
+                  },
+                },
+              ]);
+              setSelection({
+                nodeIndex: nextNode.getIndex(),
+                offset: ghostNode.getChildLength(),
               });
             } else {
               const textNode = new TextNode(ghostNode.getIndex());
               textNode.setChild(ghostNode.getChildren());
               newParagraph.push(textNode);
+
+              removeSuggestionHistory();
               history.pushAndCommit([
                 {
                   command: COMMAND_INSERT_TEXT,
                   nodeIndex: textNode.getIndex(),
                   prevState: null,
-                  selection: {
-                    startSelection: selection,
-                    endSelection: selection,
-                  },
                 },
               ]);
 
@@ -1638,9 +1717,11 @@ const useController = (
             }
           }
         } else {
-          if (idx + 1 < tree[pIdx].length && node.isGhost()) {
-            newParagraph.push(node.clone());
-          } else newParagraph.push(node);
+          if (
+            !node.isTextNode() ||
+            (!prevNode?.isGhost() && !nextNode?.isGhost())
+          )
+            newParagraph.push(node);
         }
       }
       newTree.push(newParagraph);
@@ -1649,34 +1730,8 @@ const useController = (
   };
 
   const rejectSuggestion = () => {
-    let removedSelectedGhostIndex: number | undefined;
-    const selection = getSelection();
-    const newTree = tree.map((paragraph) =>
-      paragraph.filter((node) => {
-        if (!node.isGhost()) return true;
-
-        if (
-          selection?.startSelection.nodeIndex == node.getIndex() ||
-          selection?.endSelection.nodeIndex == node.getIndex()
-        ) {
-          removedSelectedGhostIndex = node.getIndex();
-        }
-
-        return false;
-      }),
-    );
-
-    if (removedSelectedGhostIndex == undefined) {
-      if (
-        newTree.some((paragraph, idx) => paragraph.length != tree[idx].length)
-      )
-        setTree(newTree);
-
-      return;
-    }
-
-    setTree(newTree);
-    setSelection(getSelectionAfterNodeRemove(tree, removedSelectedGhostIndex));
+    const ghostNode = tree.find((p) => p.find((node) => node.isGhost()));
+    if (ghostNode) handleUndo();
   };
 
   useLayoutEffect(() => {
