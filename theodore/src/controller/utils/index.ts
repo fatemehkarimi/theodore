@@ -1,18 +1,99 @@
 import emojiRegex from 'emoji-regex';
+import type { KeyboardEvent, MutableRefObject } from 'react';
 import { isDevelopment } from '../../environment';
+import { ARROW_RIGHT, END } from '../../keys';
 import type { Node as EditorNode } from '../../nodes/Node';
 import { TextNode } from '../../nodes/textNode/TextNode';
 import type { Tree } from '../../types';
 import type { SelectionDesc } from '../selection/types';
 
-/* eslint-disable no-unused-vars */
 type TextNodeUpdater = (textNode: TextNode) => void;
-/* eslint-enable no-unused-vars */
 
 const ALWAYS_IN_DOM_NODE_INDEX = 1;
 const ALWAYS_IN_DOM_NODE_SELECTION = {
   nodeIndex: ALWAYS_IN_DOM_NODE_INDEX,
   offset: 0,
+};
+
+const setCaretBeforeSuggestionHint = (hint: HTMLElement) => {
+  const selection = document.getSelection();
+  if (selection == null) return;
+
+  const range = document.createRange();
+  range.setStartBefore(hint);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+const getParagraphBoundaryPoint = (
+  range: Range,
+  allowSelectionInsideText: boolean,
+) => {
+  let node = range.startContainer;
+  let offset = range.startOffset;
+
+  if (node.nodeType == Node.TEXT_NODE) {
+    if (!allowSelectionInsideText && offset < (node.textContent?.length ?? 0))
+      return null;
+
+    const spanParentNode = node.parentNode;
+    const pNode = spanParentNode?.parentNode;
+    if (spanParentNode == null || pNode == null) return null;
+
+    return {
+      node: pNode,
+      offset:
+        Array.from(pNode.childNodes).findIndex(
+          (child) => child == (spanParentNode as Node),
+        ) + 1,
+    };
+  }
+
+  if (node.nodeType == Node.ELEMENT_NODE && node.nodeName != 'P') {
+    const childNode = node;
+    node = childNode.parentNode as Node;
+    const childIndex = Array.from(node.childNodes).findIndex(
+      (child) => child == childNode,
+    );
+    offset = offset == 1 ? childIndex + 1 : childIndex;
+  }
+
+  return { node, offset };
+};
+
+const keepCaretBeforeSuggestionHint = (
+  event: KeyboardEvent,
+  inputRef: MutableRefObject<HTMLDivElement | null>,
+) => {
+  if (event.shiftKey || ![ARROW_RIGHT, END].includes(event.key)) return;
+
+  const selection = document.getSelection();
+  if (selection == null || !selection.isCollapsed || selection.rangeCount == 0)
+    return;
+
+  const range = selection.getRangeAt(0);
+  if (!inputRef.current?.contains(range.commonAncestorContainer)) return;
+
+  const boundaryPoint = getParagraphBoundaryPoint(range, event.key == END);
+  if (boundaryPoint == null || boundaryPoint.node.nodeType != Node.ELEMENT_NODE)
+    return;
+
+  const childNodes = Array.from(boundaryPoint.node.childNodes);
+  const nextChild = childNodes[boundaryPoint.offset];
+  const lastChild = childNodes[childNodes.length - 1];
+  const trailingSuggestionHint =
+    lastChild instanceof HTMLElement &&
+    lastChild.dataset.suggestionHint === 'true'
+      ? lastChild
+      : null;
+
+  if (trailingSuggestionHint == null) return;
+
+  if (event.key == END || nextChild == trailingSuggestionHint) {
+    event.preventDefault();
+    setCaretBeforeSuggestionHint(trailingSuggestionHint);
+  }
 };
 
 export function getNode(
@@ -463,4 +544,5 @@ export {
   isElementInView,
   findSelectedNodeToInsertText,
   isSelectionAnchorSameAsFocus,
+  keepCaretBeforeSuggestionHint,
 };

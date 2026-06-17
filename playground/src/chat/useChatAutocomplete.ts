@@ -71,7 +71,7 @@ type UseChatAutocompleteArgs = {
 
 type AutoCompleteFlow = {
   requestMode: 'allow' | 'skip-next';
-  selectionMode: 'normal' | 'ignore-next-change';
+  selectionMode: 'normal' | 'ignore-programmatic';
   suggestionLifecycle: 'idle' | 'inserting' | 'visible';
 };
 
@@ -94,7 +94,7 @@ const useChatAutocomplete = ({
   const latestTreeRef = useRef<TheodoreTree | null>(null);
   const messagesRef = useRef(messages);
   const suggestionRef = useRef<string | undefined>(undefined);
-  const selectionIgnoreTimerRef = useRef<number | null>(null);
+  const selectionIgnoreFrameRef = useRef<number | null>(null);
   const autoCompleteFlowRef = useRef<AutoCompleteFlow>({
     ...INITIAL_AUTO_COMPLETE_FLOW,
   });
@@ -151,21 +151,23 @@ const useChatAutocomplete = ({
     autoCompleteRequestVersion.current += 1;
   }, [abortAutoCompleteRequest, clearAutoCompleteDebounce]);
 
-  const clearSelectionIgnoreTimer = useCallback(() => {
-    if (selectionIgnoreTimerRef.current != null) {
-      window.clearTimeout(selectionIgnoreTimerRef.current);
-      selectionIgnoreTimerRef.current = null;
+  const clearSelectionIgnoreFrames = useCallback(() => {
+    if (selectionIgnoreFrameRef.current != null) {
+      window.cancelAnimationFrame(selectionIgnoreFrameRef.current);
+      selectionIgnoreFrameRef.current = null;
     }
   }, []);
 
   const ignoreImmediateEditorSelectionChange = useCallback(() => {
-    updateAutoCompleteFlow({ selectionMode: 'ignore-next-change' });
-    clearSelectionIgnoreTimer();
-    selectionIgnoreTimerRef.current = window.setTimeout(() => {
-      updateAutoCompleteFlow({ selectionMode: 'normal' });
-      selectionIgnoreTimerRef.current = null;
-    }, 0);
-  }, [clearSelectionIgnoreTimer, updateAutoCompleteFlow]);
+    updateAutoCompleteFlow({ selectionMode: 'ignore-programmatic' });
+    clearSelectionIgnoreFrames();
+    selectionIgnoreFrameRef.current = window.requestAnimationFrame(() => {
+      selectionIgnoreFrameRef.current = window.requestAnimationFrame(() => {
+        updateAutoCompleteFlow({ selectionMode: 'normal' });
+        selectionIgnoreFrameRef.current = null;
+      });
+    });
+  }, [clearSelectionIgnoreFrames, updateAutoCompleteFlow]);
 
   const rejectActiveSuggestion = useCallback(() => {
     cancelPendingAutoComplete();
@@ -218,17 +220,19 @@ const useChatAutocomplete = ({
           doesSelectionTargetGhostNode(tree, newSelection)
         ) {
           updateAutoCompleteFlow({ suggestionLifecycle: 'visible' });
-        } else if (autoCompleteFlow.selectionMode == 'ignore-next-change') {
-          updateAutoCompleteFlow({ selectionMode: 'normal' });
+        } else if (autoCompleteFlow.selectionMode == 'ignore-programmatic') {
+          // Ignore selection churn from programmatic edits until layout settles.
         } else if (hasInsertedSuggestion) {
           updateAutoCompleteFlow({ suggestionLifecycle: 'visible' });
           if (isAutoCompletePending()) {
             cancelPendingAutoComplete();
           }
         } else if (autoCompleteFlow.suggestionLifecycle == 'inserting') {
-          updateAutoCompleteFlow({ suggestionLifecycle: 'idle' });
-          cancelPendingAutoComplete();
-          setSuggestion(undefined);
+          if (suggestionRef.current == undefined) {
+            updateAutoCompleteFlow({ suggestionLifecycle: 'idle' });
+            cancelPendingAutoComplete();
+            setSuggestion(undefined);
+          }
         } else if (isAutoCompletePending()) {
           cancelPendingAutoComplete();
           setSuggestion(undefined);
@@ -342,9 +346,9 @@ const useChatAutocomplete = ({
   useEffect(() => {
     return () => {
       cancelPendingAutoComplete();
-      clearSelectionIgnoreTimer();
+      clearSelectionIgnoreFrames();
     };
-  }, [cancelPendingAutoComplete, clearSelectionIgnoreTimer]);
+  }, [cancelPendingAutoComplete, clearSelectionIgnoreFrames]);
 
   return {
     acceptSuggestion,

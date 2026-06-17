@@ -70,3 +70,28 @@
   pointer-events: none;
   user-select: none;
 }
+
+.theodore_suggestionHint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, #fff 0%, #f8fafc 100%) padding-box,
+    radial-gradient(90% 120% at 26% 0%, #f3d48a 0%, transparent 34%) border-box,
+    radial-gradient(90% 120% at 74% 100%, #d7dde8 0%, transparent 36%)
+      border-box,
+    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)) border-box;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 0 0 2px rgba(243, 212, 138, 0.14);
+  color: rgba(0, 0, 0, 0.48);
+  vertical-align: middle;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  user-select: none;
+  pointer-events: none;
+}
