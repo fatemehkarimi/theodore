@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Landing SEO'
+  short_description: 'Diagnose landing SEO with Search Console'
+  default_prompt: 'Use $landing-seo to connect Search Console and diagnose Theodore landing SEO issues.'
