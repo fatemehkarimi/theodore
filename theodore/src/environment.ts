@@ -16,6 +16,12 @@ const IS_WINDOWS: boolean =
   typeof navigator !== 'undefined' &&
   navigator.userAgent.toLowerCase().includes('windows');
 
+const IS_MOBILE: boolean =
+  typeof navigator !== 'undefined' &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+
 export {
   IS_FIREFOX,
   IS_ANDROID,
@@ -23,4 +29,5 @@ export {
   IS_ANDROID_CHROME,
   isDevelopment,
   IS_WINDOWS,
+  IS_MOBILE,
 };
