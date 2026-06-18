@@ -16,11 +16,9 @@ const IS_WINDOWS: boolean =
   typeof navigator !== 'undefined' &&
   navigator.userAgent.toLowerCase().includes('windows');
 
-const IS_MOBILE: boolean =
-  typeof navigator !== 'undefined' &&
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
-  );
+const IS_MOBILE =
+  typeof window !== 'undefined' &&
+  (window.matchMedia?.('(pointer: coarse)').matches ?? false);
 
 export {
   IS_FIREFOX,
