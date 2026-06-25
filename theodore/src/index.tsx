@@ -1,6 +1,7 @@
 export { Theodore, type TheodoreProps } from './components/Theodore';
 export type {
   TheodoreHandle,
+  SuggestionHintProps,
   EditorState,
   Tree as TheodoreTree,
   onSelectionChangeFn,
