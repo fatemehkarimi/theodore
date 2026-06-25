@@ -10,7 +10,12 @@ import { isEditorEmpty } from '../controller/useEditorState';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
 import { TextNode } from '../nodes/textNode/TextNode';
 import { isRTL } from '../rtl';
-import type { EditorState, RenderEmoji, TheodoreHandle } from '../types';
+import type {
+  EditorState,
+  RenderEmoji,
+  SuggestionHintProps,
+  TheodoreHandle,
+} from '../types';
 import { computeLineHeightPx } from '../utils';
 import { SuggestionHint as SuggestionHintFC } from './SuggestionHint';
 
@@ -28,7 +33,7 @@ type Props = Omit<
   theodoreRef?: React.Ref<TheodoreHandle>;
   shouldSuppressFocus?: boolean;
   suggestion?: string;
-  suggestionHint?: React.FC;
+  suggestionHint?: React.FC<SuggestionHintProps>;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (incomingProps, ref) => {
@@ -206,7 +211,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
                       return (
                         <React.Fragment key={node.getKey()}>
                           {node.render()}
-                          <SuggestionHint />
+                          <SuggestionHint
+                            direction={startsWithRTL ? 'rtl' : 'ltr'}
+                          />
                         </React.Fragment>
                       );
                     return node.render();

@@ -1,4 +1,6 @@
-export function FancyTab() {
+import { SuggestionHintProps } from 'theodore-js';
+
+const FancyTab: React.FC<SuggestionHintProps> = () => {
   return (
     <svg
       width={40}
@@ -32,4 +34,6 @@ export function FancyTab() {
       </text>
     </svg>
   );
-}
+};
+
+export { FancyTab };

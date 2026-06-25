@@ -39,3 +39,7 @@ export type EditorState = {
   historyHandle: HistoryHandle;
   selectionHandle: SelectionHandle;
 };
+
+export type SuggestionHintProps = {
+  direction?: 'rtl' | 'ltr';
+};
