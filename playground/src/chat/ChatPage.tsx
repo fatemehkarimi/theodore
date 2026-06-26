@@ -47,9 +47,8 @@ const ChatPage = () => {
 
   const handleOnSelectionChange = useCallback(
     (newSelection: EditorSelection) => {
-      if (handleAutoCompleteSelectionChange(newSelection)) {
-        selectionPreviewRef.current?.onSelectionUpdate(newSelection);
-      }
+      handleAutoCompleteSelectionChange(newSelection);
+      selectionPreviewRef.current?.onSelectionUpdate(newSelection);
     },
     [handleAutoCompleteSelectionChange],
   );
@@ -168,14 +167,6 @@ const ChatPage = () => {
         keyboardEvent.stopImmediatePropagation();
         keyboardEvent.preventDefault();
         rejectActiveSuggestion();
-      } else if (
-        keyboardEvent.key == 'Backspace' ||
-        keyboardEvent.key == 'Delete' ||
-        (keyboardEvent.ctrlKey &&
-          !keyboardEvent.shiftKey &&
-          keyboardEvent.key.toLowerCase() == 'z')
-      ) {
-        rejectActiveSuggestion();
       }
     };
     editorRef.current?.addEventListener('keydown', handleKeyDown);
@@ -259,7 +250,10 @@ const ChatPage = () => {
       </div>
       <div className={styles.theodoreStateInfo}>
         <BlurInput label="Plain Text">
-          <p className={styles.textPreviewWrapper}>
+          <p
+            className={styles.textPreviewWrapper}
+            data-testid="plain-text-preview"
+          >
             {convertTreeToText(editorState.tree)}
           </p>
         </BlurInput>
