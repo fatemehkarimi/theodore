@@ -55,6 +55,7 @@ import {
   ALWAYS_IN_DOM_NODE_SELECTION,
   breakAndReplaceTextNode,
   cloneTree,
+  findGhostNode,
   findNode,
   findNodeAfter,
   findNodeBefore,
@@ -1730,7 +1731,7 @@ const useController = (
   };
 
   const rejectSuggestion = () => {
-    const ghostNode = tree.find((p) => p.find((node) => node.isGhost()));
+    const ghostNode = findGhostNode(tree);
     if (ghostNode) handleUndo();
   };
 

@@ -18,6 +18,7 @@ import type {
 } from '../types';
 import { computeLineHeightPx } from '../utils';
 import { SuggestionHint as SuggestionHintFC } from './SuggestionHint';
+import { useAutoComplete } from '../controller/autocomplete/useAutoComplete';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -76,6 +77,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       handleInsertSuggestion,
       clearAndSetContent,
     } = useController(inputRef, renderEmoji, setRemountKey, editorState);
+    useAutoComplete(inputRef, acceptSuggestion, rejectSuggestion, editorState);
 
     useImperativeHandle(theodoreRef, () => {
       return {
