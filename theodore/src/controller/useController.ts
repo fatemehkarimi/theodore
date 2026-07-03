@@ -101,7 +101,8 @@ const useController = (
       !event.shiftKey
     ) {
       event.preventDefault();
-      handleUndo();
+      const newTree = handleUndo();
+      setTree(newTree);
       return;
     }
 
@@ -132,12 +133,12 @@ const useController = (
   };
 
   const handleUndo = () => {
-    if (tree == null) return;
+    if (tree == null) tree;
     let transactionId = undefined;
     let newTree = tree;
     do {
       const prevState = history.pop();
-      if (prevState == null) return;
+      if (prevState == null) return newTree;
       if (transactionId == undefined) transactionId = prevState.transactionId;
       newTree = getTreeAfterUndo(newTree, prevState);
 
@@ -147,7 +148,7 @@ const useController = (
           prevState.selection?.endSelection,
         );
     } while (transactionId == history.top()?.transactionId);
-    setTree(newTree);
+    return newTree;
   };
 
   const getTreeAfterUndo = (tree: Tree, prevState: HistoryCommand) => {
@@ -958,10 +959,12 @@ const useController = (
   };
 
   const removeNodesInSelection = (shouldRemoveEmptyTextNodes?: boolean) => {
+    let sourceTree: Tree = cloneTree(tree);
+    sourceTree = removeSuggestionFromTree(sourceTree, true);
+
     const selection = getSelection();
     const selectedNodes = getEditorSelectedNode();
     const isSelectionCollapsed = isEditorSelectionCollapsed(selection);
-    const sourceTree = cloneTree(tree);
     const newTree: EditorNode[][] = isSelectionCollapsed ? sourceTree : [];
 
     if (isSelectionCollapsed) return newTree;
@@ -1730,9 +1733,85 @@ const useController = (
     setTree(newTree);
   };
 
-  const rejectSuggestion = () => {
+  const removeSuggestionFromTree = (
+    tree: Tree,
+    keepCurrentSelection: boolean,
+  ) => {
     const ghostNode = findGhostNode(tree);
-    if (ghostNode) handleUndo();
+
+    if (ghostNode) {
+      if (keepCurrentSelection) {
+        const currentSelection = getSelection();
+        if (currentSelection) {
+          const { startSelection, endSelection } = currentSelection;
+          let newStartSelection = startSelection;
+          let newEndSelection = endSelection;
+          if (startSelection.nodeIndex == ghostNode.getIndex()) {
+            const nextNode = findNodeBefore(tree, ghostNode.getIndex());
+            if (nextNode) {
+              newStartSelection = {
+                nodeIndex: nextNode.getIndex(),
+                offset: nextNode.isTextNode() ? nextNode.getChildLength() : 0,
+              };
+            } else {
+              const prevNode = findNodeBefore(tree, ghostNode.getIndex());
+              if (prevNode) {
+                newStartSelection = {
+                  nodeIndex: prevNode.getIndex(),
+                  offset: prevNode.isTextNode() ? prevNode.getChildLength() : 0,
+                };
+              } else newStartSelection = ALWAYS_IN_DOM_NODE_SELECTION;
+            }
+          }
+          if (endSelection.nodeIndex == ghostNode.getIndex()) {
+            const prevNode = findNodeBefore(tree, ghostNode.getIndex());
+            if (prevNode) {
+              newEndSelection = {
+                nodeIndex: prevNode.getIndex(),
+                offset: prevNode.isTextNode() ? prevNode.getChildLength() : 0,
+              };
+            } else {
+              const nextNode = findNodeAfter(tree, ghostNode.getIndex());
+              if (nextNode) {
+                newEndSelection = {
+                  nodeIndex: nextNode.getIndex(),
+                  offset: 0,
+                };
+              } else newEndSelection = ALWAYS_IN_DOM_NODE_SELECTION;
+            }
+          }
+          setSelection(newStartSelection, newEndSelection);
+        }
+
+        // reconcile history, we cannot throw away because changes related to other nodes will be removed too.
+        const histItems = removeSuggestionHistory();
+        const topValidHistory = history.top();
+        history.setHistoryStack([
+          ...history.getHistoryStack(),
+          ...histItems
+            .filter((h) => h.nodeIndex != ghostNode.getIndex())
+            .map((h) => ({
+              ...h,
+              transactionId: topValidHistory.transactionId,
+            })),
+        ]);
+
+        const newTree = tree.map((subTree) =>
+          subTree.filter((node) => !node.isGhost()),
+        );
+        return newTree;
+      } else {
+        const newTree = handleUndo();
+        return newTree;
+      }
+    }
+
+    return tree;
+  };
+
+  const rejectSuggestion = () => {
+    const newTree = removeSuggestionFromTree(tree, false);
+    setTree(newTree);
   };
 
   useLayoutEffect(() => {
