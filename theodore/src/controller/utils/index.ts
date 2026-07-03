@@ -332,23 +332,7 @@ const getSelectionAfterNodeRemove = (
         nodeIndex: prevNode.getIndex(),
         offset: prevNode.getChildLength(),
       };
-    /*else if (prevNode.getType() == 'paragraph') {
-      const pIdx = getParagraphIndexInTree(tree, prevNode.getIndex());
-      if (pIdx == -1) return ALWAYS_IN_DOM_NODE_SELECTION;
-      const p = tree[pIdx];
-      if (p.length == 1)
-        return {
-          nodeIndex: prevNode.getIndex(),
-          offset: 0,
-        };
-      const lastChildOfPrevNode = p[p.length - 1];
-      return {
-        nodeIndex: lastChildOfPrevNode.getIndex(),
-        offset: lastChildOfPrevNode.isTextNode()
-          ? lastChildOfPrevNode.getChildLength()
-          : 0,
-      };
-    }*/ else
+    else
       return {
         nodeIndex: prevNode.getIndex(),
         offset: 0,
