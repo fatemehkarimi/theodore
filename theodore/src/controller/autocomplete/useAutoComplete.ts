@@ -1,6 +1,6 @@
 import { MutableRefObject, useEffect } from 'react';
 import { EditorState } from '../../types';
-import { findGhostNode, isSelectionAnchorSameAsFocus } from '../utils';
+import { findGhostNodes, isSelectionAnchorSameAsFocus } from '../utils';
 
 const useAutoComplete = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
@@ -20,11 +20,14 @@ const useAutoComplete = (
       const keyboardEvent = event as KeyboardEvent;
       if (keyboardEvent.key == 'Backspace' || keyboardEvent.key == 'Delete') {
         const selection = getSelection();
-        const ghostNode = findGhostNode(tree);
-        if (ghostNode) {
+        const ghostNodes = findGhostNodes(tree);
+        if (ghostNodes.length > 0) {
           if (
             isSelectionAnchorSameAsFocus() &&
-            selection?.startSelection.nodeIndex == ghostNode.getIndex()
+            ghostNodes.some(
+              (ghostNode) =>
+                selection?.startSelection.nodeIndex == ghostNode.getIndex(),
+            )
           ) {
             rejectSuggestion();
           }

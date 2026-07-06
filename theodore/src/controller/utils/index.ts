@@ -507,8 +507,8 @@ const isSelectionAnchorSameAsFocus = () => {
   return range.startContainer == range.endContainer;
 };
 
-const findGhostNode = (tree: Tree) => {
-  return tree.flat().find((node) => node.isGhost());
+const findGhostNodes = (tree: Tree) => {
+  return tree.flat().filter((node) => node.isGhost());
 };
 
 export {
@@ -533,5 +533,5 @@ export {
   findSelectedNodeToInsertText,
   isSelectionAnchorSameAsFocus,
   keepCaretBeforeSuggestionHint,
-  findGhostNode,
+  findGhostNodes,
 };

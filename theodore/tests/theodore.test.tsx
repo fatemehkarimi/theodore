@@ -273,6 +273,246 @@ describe('autocomplete', () => {
     });
   });
 
+  it('should break a suggestion with emojis into ghost text and ghost emoji nodes', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = ({ suggestion }: { suggestion?: string }) => {
+      const editorState = useEditorState(undefined, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <Theodore
+          editorState={editorState}
+          renderEmoji={renderEmoji}
+          suggestion={suggestion}
+          data-testid="editor"
+        />
+      );
+    };
+
+    const { rerender } = render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('abc');
+    rerender(<Host suggestion="thank you ❤️❤️❤️" />);
+
+    await waitFor(() => {
+      const newTree = treeChanges[treeChanges.length - 1];
+      if (newTree == null) throw new Error('Missing tree update');
+
+      expect(newTree).toHaveLength(1);
+      expect(newTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+        'ghostText',
+        'ghostEmoji',
+        'ghostEmoji',
+        'ghostEmoji',
+      ]);
+      expect(newTree[0][1].getChildren()).toBe('abc');
+      expect(newTree[0][2].getChildren()).toBe('thank you ');
+      expect(newTree[0][3].getChildren()).toBe('❤️');
+      expect(newTree[0].every((node) => node.getContent() != '❤️')).toBe(true);
+    });
+  });
+
+  it('should convert ghost emoji nodes to emoji nodes when accepting a suggestion with emojis', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = ({ suggestion }: { suggestion?: string }) => {
+      const theodoreRef = useRef<TheodoreHandle>(null);
+      const editorState = useEditorState(undefined, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <>
+          <Theodore
+            editorState={editorState}
+            renderEmoji={renderEmoji}
+            suggestion={suggestion}
+            theodoreRef={theodoreRef}
+            data-testid="editor"
+          />
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.acceptSuggestion()}
+          >
+            accept
+          </button>
+        </>
+      );
+    };
+
+    const { rerender } = render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('abc');
+    rerender(<Host suggestion="thank you ❤️❤️❤️" />);
+
+    await waitFor(() => {
+      const suggestedTree = treeChanges[treeChanges.length - 1];
+      if (suggestedTree == null) throw new Error('Missing tree update');
+
+      expect(suggestedTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+        'ghostText',
+        'ghostEmoji',
+        'ghostEmoji',
+        'ghostEmoji',
+      ]);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'accept' }));
+
+    await waitFor(() => {
+      const acceptedTree = treeChanges[treeChanges.length - 1];
+      if (acceptedTree == null) throw new Error('Missing tree update');
+
+      expect(acceptedTree).toHaveLength(1);
+      expect(acceptedTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+        'emoji',
+        'emoji',
+        'emoji',
+      ]);
+      expect(acceptedTree[0][1].getChildren()).toBe('abcthank you ');
+      expect(acceptedTree[0][2].getChildren()).toBe('❤️');
+      expect(convertTreeToText(acceptedTree)).toBe('abcthank you ❤️❤️❤️');
+    });
+  });
+
+  it('should restore the tree with undo after accepting a suggestion with emojis', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = ({ suggestion }: { suggestion?: string }) => {
+      const theodoreRef = useRef<TheodoreHandle>(null);
+      const editorState = useEditorState(undefined, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <>
+          <Theodore
+            editorState={editorState}
+            renderEmoji={renderEmoji}
+            suggestion={suggestion}
+            theodoreRef={theodoreRef}
+            data-testid="editor"
+          />
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.acceptSuggestion()}
+          >
+            accept
+          </button>
+        </>
+      );
+    };
+
+    const { rerender } = render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('abc');
+    rerender(<Host suggestion="thank you ❤️❤️" />);
+
+    await waitFor(() => {
+      const suggestedTree = treeChanges[treeChanges.length - 1];
+      if (suggestedTree == null) throw new Error('Missing tree update');
+      expect(suggestedTree[0].some((node) => node.isGhost())).toBe(true);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'accept' }));
+
+    await waitFor(() => {
+      const acceptedTree = treeChanges[treeChanges.length - 1];
+      if (acceptedTree == null) throw new Error('Missing tree update');
+      expect(convertTreeToText(acceptedTree)).toBe('abcthank you ❤️❤️');
+    });
+
+    await user.click(editor);
+    await user.keyboard('{Control>}z{/Control}');
+
+    await waitFor(() => {
+      const undoneTree = treeChanges[treeChanges.length - 1];
+      if (undoneTree == null) throw new Error('Missing tree update');
+
+      expect(undoneTree).toHaveLength(1);
+      expect(undoneTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+      ]);
+      expect(undoneTree[0][1].getChildren()).toBe('abc');
+    });
+  });
+
+  it('should remove all ghost nodes when rejecting a suggestion with emojis', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = ({ suggestion }: { suggestion?: string }) => {
+      const theodoreRef = useRef<TheodoreHandle>(null);
+      const editorState = useEditorState(undefined, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <>
+          <Theodore
+            editorState={editorState}
+            renderEmoji={renderEmoji}
+            suggestion={suggestion}
+            theodoreRef={theodoreRef}
+            data-testid="editor"
+          />
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.rejectSuggestion()}
+          >
+            reject
+          </button>
+        </>
+      );
+    };
+
+    const { rerender } = render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('abc');
+    rerender(<Host suggestion="thank you ❤️❤️❤️" />);
+
+    await waitFor(() => {
+      const suggestedTree = treeChanges[treeChanges.length - 1];
+      if (suggestedTree == null) throw new Error('Missing tree update');
+      expect(suggestedTree[0].some((node) => node.isGhost())).toBe(true);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'reject' }));
+
+    await waitFor(() => {
+      const rejectedTree = treeChanges[treeChanges.length - 1];
+      if (rejectedTree == null) throw new Error('Missing tree update');
+
+      expect(rejectedTree).toHaveLength(1);
+      expect(rejectedTree[0]).toHaveLength(2);
+      expect(rejectedTree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+      ]);
+      expect(rejectedTree[0][1].getChildren()).toBe('abc');
+    });
+  });
+
   it('should create a new text node for suggestion when prev node is an emoji and accepting suggestion', async () => {
     const user = userEvent.setup();
     const treeChanges: Tree[] = [];

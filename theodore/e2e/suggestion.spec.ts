@@ -1,7 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
-import { expectNoPageErrors, installPageErrorTracking } from './utils';
+import {
+  expectNoPageErrors,
+  installPageErrorTracking,
+  undoShortcut,
+} from './utils';
 
 const SUGGESTION = 'how are you?';
+const EMOJI_SUGGESTION = 'thank you ❤️❤️❤️';
 
 const mockAutocomplete = (page: Page, predict: string = SUGGESTION) =>
   page.route('**/api/autocomplete', async (route) => {
@@ -83,6 +88,115 @@ test('should reject suggestion when user rejects the suggestion by pressing ESC'
 
   const editorText = (await editor.innerText()).replace(/\n/g, '');
   expect(editorText).toBe('hello');
+
+  const preview = page.getByTestId('plain-text-preview');
+  await expect(preview).toHaveText('hello');
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('should display a suggestion with emojis as ghost text and ghost emoji nodes', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+
+  await mockAutocomplete(page, EMOJI_SUGGESTION);
+
+  await page.goto('/chat');
+
+  const editor = page.locator('.theodore_contentEditable');
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+
+  const ghost = page.locator('.theodore_ghostText');
+  await expect(ghost).toBeVisible({ timeout: 5000 });
+  await expect(ghost).toHaveText('thank you ');
+  await expect(page.locator('.theodore_ghostEmoji')).toHaveCount(3);
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('should accept a suggestion with emojis when user presses tab', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+
+  await mockAutocomplete(page, EMOJI_SUGGESTION);
+
+  await page.goto('/chat');
+
+  const editor = page.locator('.theodore_contentEditable');
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+
+  const ghost = page.locator('.theodore_ghostText');
+  await expect(ghost).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('.theodore_ghostEmoji')).toHaveCount(3);
+
+  await page.keyboard.press('Tab');
+
+  await expect(ghost).toHaveCount(0);
+  await expect(page.locator('.theodore_ghostEmoji')).toHaveCount(0);
+  await expect(page.locator('.theodore_emojiNode')).toHaveCount(3);
+
+  const preview = page.getByTestId('plain-text-preview');
+  await expect(preview).toHaveText(`hello${EMOJI_SUGGESTION}`);
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('should restore the text with undo after accepting a suggestion with emojis', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+
+  await mockAutocomplete(page, EMOJI_SUGGESTION);
+
+  await page.goto('/chat');
+
+  const editor = page.locator('.theodore_contentEditable');
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+
+  const ghost = page.locator('.theodore_ghostText');
+  await expect(ghost).toBeVisible({ timeout: 5000 });
+
+  await page.keyboard.press('Tab');
+
+  const preview = page.getByTestId('plain-text-preview');
+  await expect(preview).toHaveText(`hello${EMOJI_SUGGESTION}`);
+
+  await page.keyboard.press(undoShortcut());
+
+  await expect(preview).toHaveText('hello');
+  await expect(
+    page.locator('.theodore_emojiNode:not(.theodore_ghostEmoji)'),
+  ).toHaveCount(0);
+
+  expectNoPageErrors(pageErrors);
+});
+
+test('should reject a suggestion with emojis when user presses ESC', async ({
+  page,
+}) => {
+  const pageErrors = installPageErrorTracking(page);
+
+  await mockAutocomplete(page, EMOJI_SUGGESTION);
+
+  await page.goto('/chat');
+
+  const editor = page.locator('.theodore_contentEditable');
+  await editor.click();
+  await editor.pressSequentially('hello', { delay: 100 });
+
+  const ghost = page.locator('.theodore_ghostText');
+  await expect(ghost).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('.theodore_ghostEmoji')).toHaveCount(3);
+
+  await page.keyboard.press('Escape');
+
+  await expect(ghost).toHaveCount(0);
+  await expect(page.locator('.theodore_ghostEmoji')).toHaveCount(0);
 
   const preview = page.getByTestId('plain-text-preview');
   await expect(preview).toHaveText('hello');

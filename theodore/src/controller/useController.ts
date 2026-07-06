@@ -24,6 +24,7 @@ import {
   TAB,
 } from '../keys';
 import EmojiNode from '../nodes/emojiNode/EmojiNode';
+import { GhostEmojiNode } from '../nodes/ghostEmojiNode/GhostEmojiNode';
 import { GhostTextNode } from '../nodes/ghostTextNode/GhostTextNode';
 import { Node as EditorNode } from '../nodes/Node';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
@@ -34,7 +35,13 @@ import {
   setCaretAfter,
   setCaretPosition,
 } from '../selection/selection';
-import type { EditorState, RenderEmoji, TextNodeDesc, Tree } from '../types';
+import type {
+  EditorState,
+  Optional,
+  RenderEmoji,
+  TextNodeDesc,
+  Tree,
+} from '../types';
 import { copyTextToClipboard, getTextFromDomSelection } from '../utils';
 import {
   COMMAND_INSERT_UNEDITABLE_NODE,
@@ -55,7 +62,7 @@ import {
   ALWAYS_IN_DOM_NODE_SELECTION,
   breakAndReplaceTextNode,
   cloneTree,
-  findGhostNode,
+  findGhostNodes,
   findNode,
   findNodeAfter,
   findNodeBefore,
@@ -374,7 +381,7 @@ const useController = (
           newText,
           renderEmoji,
         );
-        insertUneditableNodeInSelection(emojiNode);
+        insertUneditableNodesInSelection([emojiNode]);
         forceRemountEditor();
       } else if (newText && isEditorSelectionCollapsed(selection)) {
         const [newTree, node] = updateTextNodeInTree(
@@ -653,7 +660,7 @@ const useController = (
       return;
     }
 
-    const nodes = convertTextToNodes(plainText);
+    const nodes = convertTextToNodes(plainText, false);
     newTree = insertNodesInBetween(
       newTree,
       nodes,
@@ -676,7 +683,7 @@ const useController = (
   const handleInsertPlainText = (plainText: string) => {
     // plain text may contain emoji and paragraph
     let newTree = removeNodesInSelection();
-    let nodes = convertTextToNodes(plainText);
+    let nodes = convertTextToNodes(plainText, false);
     let flatNodes = nodes.flat();
 
     if (flatNodes.length == 0) return;
@@ -800,17 +807,18 @@ const useController = (
     setTree(newTree);
   };
 
-  const convertTextToNodes = (text: string): (EditorNode | EditorNode[])[] => {
+  const convertTextToNodes = (
+    text: string,
+    isSuggestion: boolean,
+  ): (EditorNode | EditorNode[])[] => {
     const segmentedText = segmentText(text);
     const result: (EditorNode | EditorNode[])[] = [];
     for (const segment of segmentedText) {
       const lastNode = result[result.length - 1];
       if (isEmoji(segment)) {
-        const emojiNode = new EmojiNode(
-          assignNodeIndex(),
-          segment,
-          renderEmoji,
-        );
+        const emojiNode = isSuggestion
+          ? new GhostEmojiNode(assignNodeIndex(), segment, renderEmoji)
+          : new EmojiNode(assignNodeIndex(), segment, renderEmoji);
 
         if (lastNode == undefined || !Array.isArray(lastNode))
           result.push(emojiNode);
@@ -827,13 +835,27 @@ const useController = (
           baseArray = lastNode;
         } else baseNode = lastNode;
 
-        if (baseNode == undefined || !baseNode.isTextNode()) {
-          const textNode = new TextNode(assignNodeIndex());
-          textNode.setChild(segment);
-          baseArray.push(textNode);
+        if (
+          baseNode == undefined ||
+          (!isSuggestion && !baseNode.isTextNode()) ||
+          baseNode.getType() != 'ghostText'
+        ) {
+          let textOrghostTextNode: TextNode | GhostTextNode;
+          if (isSuggestion)
+            textOrghostTextNode = new GhostTextNode(assignNodeIndex(), segment);
+          else {
+            const textNode = new TextNode(assignNodeIndex());
+            textNode.setChild(segment);
+            textOrghostTextNode = textNode;
+          }
+          baseArray.push(textOrghostTextNode);
         } else {
-          const currentText = (baseNode as TextNode).getChildren();
-          (baseNode as TextNode).setChild(currentText + segment);
+          if (isSuggestion) {
+            (baseNode as GhostTextNode).appendText(segment);
+          } else {
+            const currentText = (baseNode as TextNode).getChildren();
+            (baseNode as TextNode).setChild(currentText + segment);
+          }
         }
       }
     }
@@ -1308,8 +1330,9 @@ const useController = (
   };
 
   const handleInsertSuggestion = (suggestion: string) => {
-    const ghostNode = new GhostTextNode(assignNodeIndex(), suggestion);
-    insertUneditableNodeInSelection(ghostNode);
+    const nodes = convertTextToNodes(suggestion, true);
+    if (nodes.length == 0) return;
+    insertUneditableNodesInSelection(nodes.flat());
   };
 
   const insertNewParagraph = () => {
@@ -1453,7 +1476,8 @@ const useController = (
     });
   };
 
-  const insertUneditableNodeInSelection = (node: EditorNode) => {
+  const insertUneditableNodesInSelection = (nodes: EditorNode[]) => {
+    if (nodes.length == 0) return;
     let newTree = removeNodesInSelection(true);
     const selection = getSelection()?.startSelection;
     const selectedNodeOffset = selection?.offset ?? 0;
@@ -1480,7 +1504,7 @@ const useController = (
         const subTree = newTree[subtreeIdx];
         const newSubTree = [
           ...subTree.slice(0, nodeIdxInTree + offset),
-          node,
+          ...nodes,
           ...subTree.slice(nodeIdxInTree + offset),
         ];
         newTree[subtreeIdx] = newSubTree;
@@ -1500,7 +1524,7 @@ const useController = (
           newTree = updatedTree;
           newTree = insertNodesInBetween(
             newTree,
-            [node],
+            nodes,
             beforeTextNode.getIndex(),
             afterTextNode.getIndex(),
           );
@@ -1526,20 +1550,21 @@ const useController = (
       }
     } else {
       // todo: remove: null selection is not meaningful anymore
-      newTree[0] = [newTree[0][0], node, ...newTree[0].slice(1)];
+      newTree[0] = [newTree[0][0], ...nodes, ...newTree[0].slice(1)];
       setTree(newTree);
     }
 
-    history.pushAndCommit([
-      {
+    history.pushAndCommit(
+      nodes.map((node) => ({
         command: COMMAND_INSERT_UNEDITABLE_NODE,
         nodeIndex: node.getIndex(),
         prevState: null,
-      },
-    ]);
+      })),
+    );
 
+    const lastNode = nodes[nodes.length - 1];
     setSelection({
-      nodeIndex: node.getIndex(),
+      nodeIndex: lastNode.getIndex(),
       offset: 0,
     });
 
@@ -1548,7 +1573,7 @@ const useController = (
 
   const insertEmoji = (emoji: string) => {
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
-    insertUneditableNodeInSelection(emojiNode);
+    insertUneditableNodesInSelection([emojiNode]);
   };
 
   const getEditorSelectedNode = () => {
@@ -1592,144 +1617,133 @@ const useController = (
   };
 
   const acceptSuggestion = () => {
-    const newTree = [];
-    for (let pIdx = 0; pIdx < tree.length; ++pIdx) {
-      const newParagraph: EditorNode[] = [];
+    const ghostNodes = findGhostNodes(tree);
+    if (ghostNodes.length == 0) return;
 
-      for (let idx = 0; idx < tree[pIdx].length; ++idx) {
-        const node = tree[pIdx][idx];
-        const prevNode = idx - 1 >= 0 ? tree[pIdx][idx - 1] : null;
-        const nextNode =
-          idx + 1 < tree[pIdx].length ? tree[pIdx][idx + 1] : null;
+    const firstGhost = ghostNodes[0];
+    const lastGhost = ghostNodes[ghostNodes.length - 1];
+    const [pIdx, firstIdx] = getNodeIndexInTree(tree, firstGhost.getIndex());
+    const [, lastIdx] = getNodeIndexInTree(tree, lastGhost.getIndex());
+    const paragraph = tree[pIdx];
 
-        if (node.isGhost()) {
-          if (node.getType() == 'ghostText') {
-            const ghostNode = node as GhostTextNode;
-            if (prevNode?.isTextNode() && nextNode?.isTextNode()) {
-              const prevNodeChild = prevNode.getChildren() ?? '';
-              const nextNodeChild = nextNode.getChildren() ?? '';
-              const prevText = prevNodeChild + nextNodeChild;
-              const nextText =
-                prevNodeChild +
-                (ghostNode as GhostTextNode).getChildren() +
-                nextNodeChild;
+    const prevNode = paragraph[firstIdx - 1];
+    const nextNode =
+      lastIdx + 1 < paragraph.length ? paragraph[lastIdx + 1] : null;
+    const prevTextNode = prevNode?.isTextNode() ? (prevNode as TextNode) : null;
+    const nextTextNode = nextNode?.isTextNode() ? (nextNode as TextNode) : null;
 
-              const newNode = (prevNode as TextNode).clone();
-              newNode.setChild(nextText);
-              newParagraph.push(newNode);
+    const ghostIndices = new Set(ghostNodes.map((node) => node.getIndex()));
+    const suggestionHistory = removeSuggestionHistory();
+    const preSuggestionSelection = suggestionHistory.find((h) =>
+      ghostIndices.has(h.nodeIndex),
+    )?.selection;
 
-              removeSuggestionHistory();
+    const acceptHistory: Optional<
+      Omit<HistoryCommand, 'transactionId'>,
+      'selection'
+    >[] = suggestionHistory
+      .filter((h) => !ghostIndices.has(h.nodeIndex))
+      .reverse();
 
-              const selection = {
-                nodeIndex: prevNode.getIndex(),
-                offset: prevNodeChild.length,
-              };
-              history.pushAndCommit([
-                {
-                  command: COMMAND_INSERT_TEXT,
-                  nodeIndex: prevNode.getIndex(),
-                  prevState: prevText,
-                  selection: {
-                    startSelection: selection,
-                    endSelection: selection,
-                  },
-                },
-              ]);
+    const acceptedNodes: EditorNode[] = [];
+    let consumedPrev = false;
+    let consumedNext = false;
+    let acceptedSelection = {
+      nodeIndex: lastGhost.getIndex(),
+      offset: 0,
+    };
 
-              setSelection({
-                nodeIndex: prevNode.getIndex(),
-                offset: nextText.length - nextNodeChild.length,
-              });
-            } else if (prevNode?.isTextNode()) {
-              const prevText = prevNode.getChildren() ?? '';
-              const nextText =
-                prevText + (ghostNode as GhostTextNode).getChildren();
+    const run = paragraph.slice(firstIdx, lastIdx + 1);
+    run.forEach((node, runIdx) => {
+      const isFirstInRun = runIdx == 0;
+      const isLastInRun = runIdx == run.length - 1;
 
-              const newNode = (prevNode as TextNode).clone();
-              newNode.setChild(nextText);
-              newParagraph.push(newNode);
+      if (node.getType() == 'ghostEmoji') {
+        const emojiNode = (node as GhostEmojiNode).toEmojiNode();
+        acceptedNodes.push(emojiNode);
+        acceptHistory.push({
+          command: COMMAND_INSERT_UNEDITABLE_NODE,
+          nodeIndex: emojiNode.getIndex(),
+          prevState: null,
+          selection: preSuggestionSelection,
+        });
+        acceptedSelection = { nodeIndex: emojiNode.getIndex(), offset: 0 };
+      } else if (node.getType() == 'ghostText') {
+        const ghostText = (node as GhostTextNode).getChildren();
 
-              removeSuggestionHistory();
+        if (isFirstInRun && prevTextNode != null) {
+          const prevText = prevTextNode.getChildren() ?? '';
+          const newNode = prevTextNode.clone();
+          consumedPrev = true;
 
-              const selection = {
-                nodeIndex: prevNode.getIndex(),
-                offset: prevText.length,
-              };
-              history.pushAndCommit([
-                {
-                  command: COMMAND_INSERT_TEXT,
-                  nodeIndex: prevNode.getIndex(),
-                  prevState: prevText,
-                  selection: {
-                    startSelection: selection,
-                    endSelection: selection,
-                  },
-                },
-              ]);
-              setSelection({
-                nodeIndex: prevNode.getIndex(),
-                offset: nextText.length,
-              });
-            } else if (nextNode?.isTextNode()) {
-              const prevText = nextNode.getChildren() ?? '';
-              const nextText =
-                (ghostNode as GhostTextNode).getChildren() + prevText;
-
-              const newNode = (nextNode as TextNode).clone();
-              newNode.setChild(nextText);
-              newParagraph.push(newNode);
-
-              removeSuggestionHistory();
-
-              const selection = {
-                nodeIndex: nextNode.getIndex(),
-                offset: 0,
-              };
-              history.pushAndCommit([
-                {
-                  command: COMMAND_INSERT_TEXT,
-                  nodeIndex: nextNode.getIndex(),
-                  prevState: prevText,
-                  selection: {
-                    startSelection: selection,
-                    endSelection: selection,
-                  },
-                },
-              ]);
-              setSelection({
-                nodeIndex: nextNode.getIndex(),
-                offset: ghostNode.getChildLength(),
-              });
-            } else {
-              const textNode = new TextNode(ghostNode.getIndex());
-              textNode.setChild(ghostNode.getChildren());
-              newParagraph.push(textNode);
-
-              removeSuggestionHistory();
-              history.pushAndCommit([
-                {
-                  command: COMMAND_INSERT_TEXT,
-                  nodeIndex: textNode.getIndex(),
-                  prevState: null,
-                },
-              ]);
-
-              setSelection({
-                nodeIndex: textNode.getIndex(),
-                offset: textNode.getChildLength(),
-              });
-            }
+          if (isLastInRun && nextTextNode != null) {
+            const nextText = nextTextNode.getChildren() ?? '';
+            newNode.setChild(prevText + ghostText + nextText);
+            consumedNext = true;
+            acceptHistory.push({
+              command: COMMAND_INSERT_TEXT,
+              nodeIndex: prevTextNode.getIndex(),
+              prevState: prevText + nextText,
+              selection: preSuggestionSelection,
+            });
+          } else {
+            newNode.setChild(prevText + ghostText);
+            acceptHistory.push({
+              command: COMMAND_INSERT_TEXT,
+              nodeIndex: prevTextNode.getIndex(),
+              prevState: prevText,
+              selection: preSuggestionSelection,
+            });
           }
+          acceptedNodes.push(newNode);
+          acceptedSelection = {
+            nodeIndex: prevTextNode.getIndex(),
+            offset: prevText.length + ghostText.length,
+          };
+        } else if (isLastInRun && nextTextNode != null) {
+          const nextText = nextTextNode.getChildren() ?? '';
+          const newNode = nextTextNode.clone();
+          newNode.setChild(ghostText + nextText);
+          consumedNext = true;
+          acceptedNodes.push(newNode);
+          acceptHistory.push({
+            command: COMMAND_INSERT_TEXT,
+            nodeIndex: nextTextNode.getIndex(),
+            prevState: nextText,
+            selection: preSuggestionSelection,
+          });
+          acceptedSelection = {
+            nodeIndex: nextTextNode.getIndex(),
+            offset: ghostText.length,
+          };
         } else {
-          if (
-            !node.isTextNode() ||
-            (!prevNode?.isGhost() && !nextNode?.isGhost())
-          )
-            newParagraph.push(node);
+          const textNode = new TextNode(node.getIndex());
+          textNode.setChild(ghostText);
+          acceptedNodes.push(textNode);
+          acceptHistory.push({
+            command: COMMAND_INSERT_TEXT,
+            nodeIndex: textNode.getIndex(),
+            prevState: null,
+            selection: preSuggestionSelection,
+          });
+          acceptedSelection = {
+            nodeIndex: textNode.getIndex(),
+            offset: textNode.getChildLength(),
+          };
         }
       }
-      newTree.push(newParagraph);
-    }
+    });
+
+    const newParagraph = [
+      ...paragraph.slice(0, consumedPrev ? firstIdx - 1 : firstIdx),
+      ...acceptedNodes,
+      ...paragraph.slice(consumedNext ? lastIdx + 2 : lastIdx + 1),
+    ];
+    const newTree = [...tree];
+    newTree[pIdx] = newParagraph;
+
+    history.pushAndCommit(acceptHistory);
+    setSelection(acceptedSelection);
     setTree(newTree);
   };
 
@@ -1737,76 +1751,65 @@ const useController = (
     tree: Tree,
     keepCurrentSelection: boolean,
   ) => {
-    const ghostNode = findGhostNode(tree);
+    const ghostNodes = findGhostNodes(tree);
+    if (ghostNodes.length == 0) return tree;
 
-    if (ghostNode) {
-      if (keepCurrentSelection) {
-        const currentSelection = getSelection();
-        if (currentSelection) {
-          const { startSelection, endSelection } = currentSelection;
-          let newStartSelection = startSelection;
-          let newEndSelection = endSelection;
-          if (startSelection.nodeIndex == ghostNode.getIndex()) {
-            const nextNode = findNodeBefore(tree, ghostNode.getIndex());
-            if (nextNode) {
-              newStartSelection = {
-                nodeIndex: nextNode.getIndex(),
-                offset: nextNode.isTextNode() ? nextNode.getChildLength() : 0,
-              };
-            } else {
-              const prevNode = findNodeBefore(tree, ghostNode.getIndex());
-              if (prevNode) {
-                newStartSelection = {
-                  nodeIndex: prevNode.getIndex(),
-                  offset: prevNode.isTextNode() ? prevNode.getChildLength() : 0,
-                };
-              } else newStartSelection = ALWAYS_IN_DOM_NODE_SELECTION;
-            }
-          }
-          if (endSelection.nodeIndex == ghostNode.getIndex()) {
-            const prevNode = findNodeBefore(tree, ghostNode.getIndex());
-            if (prevNode) {
-              newEndSelection = {
-                nodeIndex: prevNode.getIndex(),
-                offset: prevNode.isTextNode() ? prevNode.getChildLength() : 0,
-              };
-            } else {
-              const nextNode = findNodeAfter(tree, ghostNode.getIndex());
-              if (nextNode) {
-                newEndSelection = {
-                  nodeIndex: nextNode.getIndex(),
-                  offset: 0,
-                };
-              } else newEndSelection = ALWAYS_IN_DOM_NODE_SELECTION;
-            }
-          }
-          setSelection(newStartSelection, newEndSelection);
+    if (keepCurrentSelection) {
+      const firstGhost = ghostNodes[0];
+      const lastGhost = ghostNodes[ghostNodes.length - 1];
+      const ghostIndices = new Set(ghostNodes.map((node) => node.getIndex()));
+
+      const getSelectionOutsideSuggestion = () => {
+        const prevNode = findNodeBefore(tree, firstGhost.getIndex());
+        if (prevNode) {
+          return {
+            nodeIndex: prevNode.getIndex(),
+            offset: prevNode.isTextNode() ? prevNode.getChildLength() : 0,
+          };
         }
+        const nextNode = findNodeAfter(tree, lastGhost.getIndex());
+        if (nextNode) {
+          return {
+            nodeIndex: nextNode.getIndex(),
+            offset: 0,
+          };
+        }
+        return ALWAYS_IN_DOM_NODE_SELECTION;
+      };
 
-        // reconcile history, we cannot throw away because changes related to other nodes will be removed too.
-        const histItems = removeSuggestionHistory();
-        const topValidHistory = history.top();
-        history.setHistoryStack([
-          ...history.getHistoryStack(),
-          ...histItems
-            .filter((h) => h.nodeIndex != ghostNode.getIndex())
-            .map((h) => ({
-              ...h,
-              transactionId: topValidHistory.transactionId,
-            })),
-        ]);
-
-        const newTree = tree.map((subTree) =>
-          subTree.filter((node) => !node.isGhost()),
-        );
-        return newTree;
-      } else {
-        const newTree = handleUndo();
-        return newTree;
+      const currentSelection = getSelection();
+      if (currentSelection) {
+        const { startSelection, endSelection } = currentSelection;
+        const newStartSelection = ghostIndices.has(startSelection.nodeIndex)
+          ? getSelectionOutsideSuggestion()
+          : startSelection;
+        const newEndSelection = ghostIndices.has(endSelection.nodeIndex)
+          ? getSelectionOutsideSuggestion()
+          : endSelection;
+        setSelection(newStartSelection, newEndSelection);
       }
-    }
 
-    return tree;
+      // reconcile history, we cannot throw away because changes related to other nodes will be removed too.
+      const histItems = removeSuggestionHistory();
+      const topValidHistory = history.top();
+      history.setHistoryStack([
+        ...history.getHistoryStack(),
+        ...histItems
+          .filter((h) => !ghostIndices.has(h.nodeIndex))
+          .map((h) => ({
+            ...h,
+            transactionId: topValidHistory.transactionId,
+          })),
+      ]);
+
+      const newTree = tree.map((subTree) =>
+        subTree.filter((node) => !node.isGhost()),
+      );
+      return newTree;
+    } else {
+      const newTree = handleUndo();
+      return newTree;
+    }
   };
 
   const rejectSuggestion = () => {
