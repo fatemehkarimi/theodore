@@ -4,6 +4,7 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 
 export default defineConfig({
   source: {
+    tsconfigPath: './tsconfig.build.json',
     entry: {
       index: ['./src/**'],
     },
@@ -18,6 +19,10 @@ export default defineConfig({
   output: {
     target: 'web',
     sourceMap: false,
+    minify: {
+      js: 'always',
+      css: 'always',
+    },
   },
   plugins: [pluginReact(), pluginSass()],
 });
