@@ -71,6 +71,17 @@
   user-select: none;
 }
 
+.theodore_ghostEmoji {
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.theodore_ghostEmoji * {
+  pointer-events: none;
+  user-select: none;
+}
+
 .theodore_suggestionHint {
   display: inline-flex;
   align-items: center;

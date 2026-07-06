@@ -194,6 +194,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
             if (subtree.length == 0) throw new Error('Subtree is empty');
             const paragraph = subtree[0] as ParagraphNode;
             const nodes = subtree.slice(1);
+            const lastGhostNode = [...nodes]
+              .reverse()
+              .find((node) => node.isGhost());
             const startsWithRTL =
               nodes.length == 0
                 ? defaultDirection == 'rtl'
@@ -209,7 +212,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
               nodes.length == 0 ? undefined : (
                 <>
                   {nodes.map((node) => {
-                    if (node.isGhost() && SuggestionHint)
+                    if (node == lastGhostNode && SuggestionHint)
                       return (
                         <React.Fragment key={node.getKey()}>
                           {node.render()}

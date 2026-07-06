@@ -20,6 +20,10 @@ class GhostTextNode extends Node {
     return this.children;
   }
 
+  public appendText(text: string) {
+    this.children += text;
+  }
+
   public clone(): Node {
     const ghostNode = new GhostTextNode(this.nodeIndex, this.children);
     return ghostNode;

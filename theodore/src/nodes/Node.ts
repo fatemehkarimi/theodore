@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 
-export type NodeType = 'text' | 'emoji' | 'paragraph' | 'ghostText';
-export type NodeStyle = 'ghost';
+export type NodeType =
+  | 'text'
+  | 'emoji'
+  | 'paragraph'
+  | 'ghostText'
+  | 'ghostEmoji';
 export class Node {
   protected nodeIndex: number;
   protected type: NodeType = 'text';
-  protected style: NodeStyle[] = [];
 
   constructor(nodeIndex: number) {
     this.nodeIndex = nodeIndex;
@@ -54,7 +57,7 @@ export class Node {
   }
 
   public isGhost(): boolean {
-    return ['ghostText'].includes(this.getType());
+    return ['ghostText', 'ghostEmoji'].includes(this.getType());
   }
 
   public getContent(): string {

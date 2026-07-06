@@ -2,8 +2,8 @@ import { RenderEmoji } from '../../types';
 import { Node } from '../Node';
 
 class EmojiNode extends Node {
-  private readonly emoji: string;
-  private readonly renderEmoji: RenderEmoji;
+  readonly emoji: string;
+  readonly renderEmoji: RenderEmoji;
 
   constructor(nodeIndex: number, emoji: string, renderEmoji: RenderEmoji) {
     super(nodeIndex);
