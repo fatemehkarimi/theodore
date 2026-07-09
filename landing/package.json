@@ -27,6 +27,8 @@
   },
   "scripts": {
     "dev": "next dev --port 7777",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "prebuild": "node scripts/generate-sitemap.mjs",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc -p tsconfig.json --noEmit"
