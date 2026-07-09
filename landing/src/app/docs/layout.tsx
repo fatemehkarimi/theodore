@@ -13,7 +13,7 @@ export default async function DocsLayout({
     <Layout
       navbar={<Navbar logo={<NavbarLogo />} />}
       footer={<Footer />}
-      docsRepositoryBase="https://github.com/yourusername/theodore/tree/main/landing"
+      docsRepositoryBase="https://github.com/fatemehkarimi/theodore/tree/main/landing"
       sidebar={{ defaultMenuCollapseLevel: 1 }}
       pageMap={pageMap}
       darkMode={false}

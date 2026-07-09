@@ -8,10 +8,14 @@ node_modules
 dist/
 .next
 out
+landing/public/sitemap.xml
 
 # IDE
 !.vscode/extensions.json
 .idea
+
+# Agents
+.codex-tools
 
 
 bin/
