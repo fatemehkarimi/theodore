@@ -1,0 +1,79 @@
+export const metadata = {
+  title: 'Component API | theodore-js Docs',
+  sidebarTitle: 'Component API',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Use the TheodoreHandle component API to insert emoji and replace editor content programmatically.',
+};
+
+# Component API
+
+The `Theodore` component accepts a `theodoreRef` prop that exposes imperative methods through the `TheodoreHandle` type. Use it when code outside the editor needs to update the editor directly, such as an emoji picker, saved draft loader, or send button.
+
+This example creates a ref for the editor, passes it to `Theodore`, then uses external buttons to insert an emoji or clear the content.
+
+```tsx
+import { useRef } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+
+export function MessageInput() {
+  const editorState = useEditorState();
+  const theodoreRef = useRef<TheodoreHandle>(null);
+
+  return (
+    <>
+      <Theodore
+        editorState={editorState}
+        renderEmoji={(emoji) => <img src={`/emoji/${emoji}.png`} alt={emoji} />}
+        theodoreRef={theodoreRef}
+      />
+
+      <button type="button" onClick={() => theodoreRef.current?.insertEmoji('😂')}>
+        Insert emoji
+      </button>
+
+      <button type="button" onClick={() => theodoreRef.current?.setContent('')}>
+        Clear
+      </button>
+    </>
+  );
+}
+```
+
+## `insertEmoji(emoji)`
+
+```ts
+insertEmoji: (emoji: string) => void;
+```
+
+Inserts an emoji at the current editor selection. If the user has selected a range, Theodore replaces that selection with the inserted emoji node.
+
+The string you pass to `insertEmoji` is forwarded to your `renderEmoji` function, so use the same value format that your renderer expects. For example, if `renderEmoji` maps native emoji characters to image paths, pass the native emoji character:
+
+```tsx
+theodoreRef.current?.insertEmoji('😂');
+```
+
+You can use this method to insert emoji into editor from external emoji pickers or custom toolbar buttons.
+
+## `setContent(content)`
+
+```ts
+setContent: (content: string) => void;
+```
+
+Replaces the current editor content with the provided plain text string.
+
+```tsx
+theodoreRef.current?.setContent('Hello 😂');
+```
+
+Use `setContent` when loading a draft, resetting the editor after a message is sent, or applying content from another part of your UI. Passing an empty string clears the editor:
+
+```tsx
+theodoreRef.current?.setContent('');
+```
+
+Theodore parses the provided text into its internal editor nodes. Emoji characters in the string are rendered through your `renderEmoji` function, the same as emoji typed or pasted by the user. After setting content, Theodore moves the selection to the end of the inserted content.

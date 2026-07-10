@@ -1,3 +1,8 @@
 {
-  "index": "Getting started"
+  "index": {
+    "title": "Getting started"
+  },
+  "component-api": {
+    "title": "Component API"
+  }
 }
