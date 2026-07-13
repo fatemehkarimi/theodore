@@ -1,0 +1,142 @@
+import { TextInputWithEmojiPicker } from '../../src/components/examples/TextInputWithEmojiPicker';
+
+export const metadata = {
+  title: 'Emoji Picker Text Input | theodore-js Examples',
+  sidebarTitle: 'Emoji Picker Text Input',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'How to display custom emojis in text input with React example',
+};
+
+# Emoji Picker Text Input
+
+Learn how to render custom emojis as images in a React text input and display them consistently across platforms with Theodore.
+This example also shows how to connect an emoji picker that stays visible on desktop and opens from a button on mobile.
+
+<TextInputWithEmojiPicker />
+
+## Steps to build
+
+### 1. Create the editor state and refs
+
+Import Theodore's base styles. Inside your component, create its editor state and keep refs for both the Theodore API and the
+editable element.
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+function TextInputWithEmojiPicker() {
+  const editorState = useEditorState();
+  const theodoreRef = useRef<TheodoreHandle>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Theodore
+      editorState={editorState}
+      renderEmoji={renderEmoji}
+      theodoreRef={theodoreRef}
+      ref={editorRef}
+      placeholder="Write a message"
+      maxLines={2}
+    />
+  );
+}
+```
+
+`editorState` holds the content and selection and `theodoreRef` exposes methods such as `insertEmoji`.
+
+### 2. Map each emoji to an image
+
+How you implement `renderEmoji` depends on how your app maps a native emoji to its corresponding image file. In this example,
+the images are stored in `public/labubu` and named using their Unicode code points. We convert the native emoji to that filename
+format, then return the matching image. It is recommended that `renderEmoji` returns a single `<img />` element.
+
+```tsx
+function nativeToUnified(emoji: string) {
+  return Array.from(emoji, (character) =>
+    character.codePointAt(0)?.toString(16),
+  )
+    .filter((code) => code !== undefined)
+    .join('-');
+}
+
+function renderEmoji(emoji: string) {
+  return <img src={`/labubu/${nativeToUnified(emoji)}.png`} alt={emoji} />;
+}
+```
+
+For example, `😀` maps to `public/labubu/1f600.png`. Keep the native emoji in `alt` so the image still has a text
+representation.
+
+Theodore now renders emoji characters as your images while preserving normal editing behavior.
+
+### 3. Connect the emoji picker
+
+When the user selects an emoji from the picker, we need a way to tell Theodore to insert it at the current cursor position. `TheodoreHandle`
+exposes the `insertEmoji` API through `theodoreRef`, so call it with the selected native emoji.
+
+```tsx
+const emojis = ['😀', '😂', '😍', '🥰', '😭', '👍', '❤️', '✨', '🎉'];
+
+function TextInputWithEmojiPicker() {
+  const editorState = useEditorState();
+  const theodoreRef = useRef<TheodoreHandle>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <>
+      <Theodore
+        editorState={editorState}
+        renderEmoji={renderEmoji}
+        theodoreRef={theodoreRef}
+        ref={editorRef}
+      />
+      <div aria-label="Emoji picker">
+        {emojis.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => theodoreRef.current?.insertEmoji(emoji)}
+          >
+            <img src={`/labubu/${nativeToUnified(emoji)}.png`} alt="" />
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+```
+
+### 4. Suppress the native keyboard on mobile
+
+When a custom emoji picker is open on mobile, the native keyboard should not open at the same time. Detect mobile devices on
+the client and pass the picker state to `shouldSuppressFocus`:
+
+```tsx
+const [isPickerOpen, setIsPickerOpen] = useState(false);
+const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+useEffect(() => {
+  setIsMobileDevice(isMobile());
+}, []);
+
+<Theodore
+  // Other props...
+  shouldSuppressFocus={isMobileDevice && isPickerOpen}
+/>
+```
+
+When `shouldSuppressFocus` is `true`, Theodore immediately blurs the editor whenever it receives focus. This stops the system
+keyboard from appearing while the custom picker is visible. Keep the prop `false` on desktop and whenever the picker is closed,
+otherwise the user will not be able to focus the editor normally.
+
+It is also recommended to close the custom emoji keyboard when the user taps outside the picker. You can do this by Keeping refs
+for the picker and its toggle button, listening for outside pointer events while the picker is open.
+
+See the [complete source code](https://github.com/fatemehkarimi/theodore/blob/master/landing/src/components/examples/TextInputWithEmojiPicker.tsx)
+on GitHub.

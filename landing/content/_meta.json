@@ -4,5 +4,8 @@
   },
   "component-api": {
     "title": "Component API"
+  },
+  "examples": {
+    "title": "Examples"
   }
 }
