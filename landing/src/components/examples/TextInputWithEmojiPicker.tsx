@@ -4,6 +4,7 @@ import { Smile } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
 import { isMobile, nativeToUnified } from '@/utils';
+import './TextInputWithEmojiPicker.css';
 
 const emojis = [
   '😀',
