@@ -2210,3 +2210,10 @@ h6 {
   display: inline-block !important;
   vertical-align: middle;
 }
+
+@media (max-width: 767px) {
+  .nextra-mobile-nav {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
