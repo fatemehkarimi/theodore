@@ -1,5 +1,10 @@
 # Project Rules
 
+## Package Roles
+
+- `@theodore/playground` is used for development and for writing end-to-end tests.
+- `@theodore/landing` is deployed at https://theodore-js.dev.
+
 ## Commit Messages
 
 When making a commit in this project, use this format:
