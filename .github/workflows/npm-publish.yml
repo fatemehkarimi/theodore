@@ -40,6 +40,22 @@ jobs:
       - name: Build package
         run: pnpm -C theodore build
 
+      - name: Determine npm dist-tag
+        id: npm-dist-tag
+        working-directory: theodore
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            tag="latest"
+          else
+            tag="next"
+          fi
+
+          echo "Publishing $version with the $tag dist-tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm
         working-directory: theodore
-        run: npm publish --access public
+        run: npm publish --access public --tag "${{ steps.npm-dist-tag.outputs.tag }}"
