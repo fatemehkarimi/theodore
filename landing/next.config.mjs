@@ -6,9 +6,24 @@ const withNextra = nextra({
   defaultShowCopyCode: true,
 });
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
+  ...(isDevelopment
+    ? {
+        async rewrites() {
+          return [
+            {
+              source: '/api/:path*',
+              destination: 'https://api.theodore-js.dev/:path*',
+            },
+          ];
+        },
+      }
+    : {
+        output: 'export',
+      }),
 };
 
 export default withNextra(nextConfig);

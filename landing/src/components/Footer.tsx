@@ -2,7 +2,14 @@ import React from 'react';
 import { Github, Heart } from 'lucide-react';
 import Link from 'next/link';
 
-export function Footer() {
+const defaultDescription =
+  'Theodore is an editor that replaces emoji characters with custom images, ensuring consistent display across all browsers';
+
+type FooterProps = {
+  description?: string;
+};
+
+export function Footer({ description = defaultDescription }: FooterProps) {
   return (
     <footer id="footer" className="bg-gray-900 text-gray-300 py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -10,10 +17,7 @@ export function Footer() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-2">
               <h3 className="text-2xl text-white mb-3">theodore-js</h3>
-              <p className="text-gray-400 mb-4">
-                Theodore is an editor that replaces emoji characters with custom
-                images, ensuring consistent display across all browsers
-              </p>
+              <p className="text-gray-400 mb-4">{description}</p>
               <div className="flex gap-4">
                 <a
                   href="https://github.com/fatemehkarimi/theodore"
