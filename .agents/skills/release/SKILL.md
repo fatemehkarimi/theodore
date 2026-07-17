@@ -7,7 +7,7 @@ description: Release Theodore by bumping theodore/package.json, pushing and merg
 
 ## Goal
 
-Publish a new `theodore-js` package release and update repo consumers after npm publication.
+Publish a new `theodore-js` package release and update repo consumers after stable npm publications.
 
 ## Preconditions
 
@@ -51,6 +51,8 @@ Publish a new `theodore-js` package release and update repo consumers after npm 
    Continue only when npm reports the requested version. If polling is blocked by network/auth, report that publication could not be verified.
 
 ## Update Consumers
+
+Perform this section only when the requested version matches the stable `x.y.z` form (`^[0-9]+\.[0-9]+\.[0-9]+$`). Skip the entire section for prerelease or other version forms, including versions such as `2.0.0-rc.0`, and report the consumer bump as intentionally skipped.
 
 1. Update every repo consumer package that pins `theodore-js` to the new version:
 
