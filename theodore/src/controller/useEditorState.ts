@@ -1,46 +1,64 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import ParagraphNode from '../nodes/paragraphNode/ParagraphNode';
-import type {
-  EditorState,
-  onSelectionChangeFn,
-  onTreeChangeFn,
-  Tree,
-} from '../types';
+import type { EditorState, EditorStateListener, Tree } from '../types';
 import { useHistory } from './history/useHistory';
 import { useSelection } from './selection/useSelection';
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,
 } from './utils';
+import type { EditorSelection } from './selection/types';
 
-const useEditorState = (
-  onSelectionChange?: onSelectionChangeFn,
-  onTreeChange?: onTreeChangeFn,
-): EditorState => {
+const useEditorState = (): EditorState => {
   const nodeIndexRef = useRef<number>(ALWAYS_IN_DOM_NODE_INDEX); // starts at 1 because 1 is a paragraph node that is always in dom
+  const listenersRef = useRef(new Set<EditorStateListener>());
+
+  const notifySelectionChange = useCallback((selection: EditorSelection) => {
+    for (const listener of [...listenersRef.current]) {
+      listener.onSelectionChange?.(selection);
+    }
+  }, []);
+
+  const notifyTreeChange = useCallback((tree: Tree) => {
+    for (const listener of [...listenersRef.current]) {
+      listener.onTreeChange?.(tree);
+    }
+  }, []);
+
+  const subscribe = useCallback((listener: EditorStateListener) => {
+    listenersRef.current.add(listener);
+
+    return () => {
+      listenersRef.current.delete(listener);
+    };
+  }, []);
 
   const selectionHandle = useSelection(
     ALWAYS_IN_DOM_NODE_SELECTION,
-    onSelectionChange,
+    notifySelectionChange,
   );
   const historyHandle = useHistory(selectionHandle.getSelection);
   const [tree, setTree] = useState<Tree>([
     [new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)],
   ]);
 
-  const assignNodeIndex = () => {
+  const assignNodeIndex = useCallback(() => {
     ++nodeIndexRef.current;
     return nodeIndexRef.current;
-  };
+  }, []);
 
-  const setTreeAndNotify = (tree: Tree) => {
-    setTree(tree);
-    onTreeChange?.(tree);
-  };
+  const setTreeAndNotify = useCallback(
+    (tree: Tree) => {
+      setTree(tree);
+      notifyTreeChange(tree);
+    },
+    [notifyTreeChange],
+  );
 
   return {
     tree,
     setTree: setTreeAndNotify,
+    subscribe,
     assignNodeIndex,
     historyHandle,
     selectionHandle,

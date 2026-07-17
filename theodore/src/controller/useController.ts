@@ -56,7 +56,7 @@ import { HistoryCommand } from './history/types';
 import {
   areNodeSelectionEqual,
   isEditorSelectionCollapsed,
-} from './selection/useSelection';
+} from './selection/utils';
 import {
   ALWAYS_IN_DOM_NODE_INDEX,
   ALWAYS_IN_DOM_NODE_SELECTION,

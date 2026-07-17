@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   convertTreeToText,
   EditorSelection,
@@ -71,7 +71,16 @@ const EditorPage = () => {
     [],
   );
 
-  const editorState = useEditorState(handleOnSelectionChange);
+  const editorState = useEditorState();
+  const subscribeToEditorState = editorState.subscribe;
+
+  useEffect(
+    () =>
+      subscribeToEditorState({
+        onSelectionChange: handleOnSelectionChange,
+      }),
+    [handleOnSelectionChange, subscribeToEditorState],
+  );
 
   const cancelHide = useCallback(() => {
     if (hideTimerRef.current != null) {

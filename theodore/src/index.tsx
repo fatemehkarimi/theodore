@@ -3,6 +3,7 @@ export type {
   TheodoreHandle,
   SuggestionHintProps,
   EditorState,
+  EditorStateListener,
   Tree as TheodoreTree,
   onSelectionChangeFn,
   onTreeChangeFn,
@@ -13,4 +14,10 @@ export {
   useEditorState,
   isEditorEmpty,
 } from './controller/useEditorState';
-export { isEditorSelectionCollapsed } from './controller/selection/useSelection';
+export { isEditorSelectionCollapsed } from './controller/selection/utils';
+export {
+  useSuggestion,
+  type SuggestionRequest,
+  type SuggestionRequestHandler,
+  type UseSuggestionOptions,
+} from './controller/autocomplete/useSuggestion';

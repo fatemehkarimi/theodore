@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  type SuggestionRequest,
   convertTreeToText,
-  type EditorSelection,
   Theodore,
   type TheodoreHandle,
+  useSuggestion,
   useEditorState,
 } from 'theodore-js';
 import 'theodore-js/style.css';
@@ -20,9 +21,15 @@ import { BlurInput } from '../BlurInput';
 import EmojiOutlined from '../icons/EmojiOutlined';
 import SendIcon from '../icons/Send';
 import '../index.css';
+import { getAutoComplete } from './autocomplete';
 import { getChatResponse } from './index';
-import { type ChatMessage, useChatAutocomplete } from './useChatAutocomplete';
-import { FancyTab } from './FancyTab';
+
+const AUTO_COMPLETE_MESSAGE_HISTORY_LIMIT = 7;
+
+type ChatMessage = {
+  sender: 'you' | 'friend';
+  message: string;
+};
 
 const ChatPage = () => {
   const theodoreRef = useRef<TheodoreHandle>(null);
@@ -30,38 +37,44 @@ const ChatPage = () => {
   const messageListRef = useRef<HTMLUListElement>(null);
   const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
   const hideTimerRef = useRef<number | null>(null);
-  const latestMessagesRef = useRef<ChatMessage[]>([]);
 
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const isMobile = isMobileDevice();
 
-  const {
-    acceptSuggestion,
-    handleSelectionChange: handleAutoCompleteSelectionChange,
-    handleTreeChange,
-    rejectActiveSuggestion,
-    setEditorState,
-    suggestion,
-  } = useChatAutocomplete({ messages, theodoreRef });
+  const editorState = useEditorState();
+  const subscribeToEditorState = editorState.subscribe;
 
-  const handleOnSelectionChange = useCallback(
-    (newSelection: EditorSelection) => {
-      handleAutoCompleteSelectionChange(newSelection);
-      selectionPreviewRef.current?.onSelectionUpdate(newSelection);
-    },
-    [handleAutoCompleteSelectionChange],
+  useEffect(
+    () =>
+      subscribeToEditorState({
+        onSelectionChange: (selection) => {
+          selectionPreviewRef.current?.onSelectionUpdate(selection);
+        },
+      }),
+    [subscribeToEditorState],
   );
 
-  const editorState = useEditorState(handleOnSelectionChange, handleTreeChange);
+  const requestSuggestion = useCallback(
+    ({ input, cursor, signal }: SuggestionRequest) =>
+      getAutoComplete(
+        input,
+        messages
+          .slice(-AUTO_COMPLETE_MESSAGE_HISTORY_LIMIT)
+          .map((message) => `${message.sender}: ${message.message}`),
+        cursor,
+        signal,
+      ),
+    [messages],
+  );
 
-  useEffect(() => {
-    setEditorState(editorState);
-  }, [editorState, setEditorState]);
-
-  useEffect(() => {
-    latestMessagesRef.current = messages;
-  }, [messages]);
+  const { acceptSuggestion, rejectActiveSuggestion, suggestion } =
+    useSuggestion({
+      debounceMs: 2000,
+      editorState,
+      requestSuggestion,
+      theodoreRef,
+    });
 
   const cancelHide = useCallback(() => {
     if (hideTimerRef.current != null) {
@@ -90,9 +103,7 @@ const ChatPage = () => {
   }, [cancelHide]);
 
   const handleSelectEmoji = (emoji: PickerEmoji) => {
-    if (theodoreRef.current != null) {
-      theodoreRef.current.insertEmoji(emoji.native);
-    }
+    theodoreRef.current?.insertEmoji(emoji.native);
   };
 
   const handleSendMessage = useCallback(() => {
@@ -103,13 +114,8 @@ const ChatPage = () => {
 
     const userMessage: ChatMessage = { sender: 'you', message: content };
     const loadingMessage: ChatMessage = { sender: 'friend', message: '...' };
-    const nextMessages = [...latestMessagesRef.current, userMessage];
-    latestMessagesRef.current = [...nextMessages, loadingMessage];
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      userMessage,
-      loadingMessage,
-    ]);
+    const nextMessages = [...messages, userMessage];
+    setMessages([...nextMessages, loadingMessage]);
     theodoreRef.current?.setContent('');
 
     void (async () => {
@@ -133,11 +139,10 @@ const ChatPage = () => {
             message: response ?? 'Sorry, something went wrong.',
           };
         }
-        latestMessagesRef.current = updatedMessages;
         return updatedMessages;
       });
     })();
-  }, [editorState.tree, rejectActiveSuggestion]);
+  }, [editorState.tree, messages, rejectActiveSuggestion]);
 
   const handleAcceptSuggestion = useCallback(() => {
     acceptSuggestion(editorState.tree);
@@ -169,10 +174,10 @@ const ChatPage = () => {
         rejectActiveSuggestion();
       }
     };
-    editorRef.current?.addEventListener('keydown', handleKeyDown);
+    const editor = editorRef.current;
+    editor?.addEventListener('keydown', handleKeyDown);
 
-    return () =>
-      editorRef.current?.removeEventListener('keydown', handleKeyDown);
+    return () => editor?.removeEventListener('keydown', handleKeyDown);
   }, [
     handleAcceptSuggestion,
     handleSendMessage,
@@ -220,7 +225,7 @@ const ChatPage = () => {
           ref={editorRef}
           shouldSuppressFocus={isMobile && isPickerVisible}
           suggestion={suggestion}
-          suggestionHint={FancyTab}
+          // suggestionHint={FancyTab}
         />
         <div className={styles.controller}>
           <EmojiOutlined
