@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { describe, expect, it, test } from '@rstest/core';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -12,6 +12,23 @@ import {
 
 const renderEmoji = (emoji: string) => <span>{emoji}</span>;
 type Tree = ReturnType<typeof useEditorState>['tree'];
+
+const useTreeChangeListener = (
+  editorState: ReturnType<typeof useEditorState>,
+  onTreeChange: (tree: Tree) => void,
+) => {
+  const subscribeToEditorState = editorState.subscribe;
+  const onTreeChangeRef = useRef(onTreeChange);
+  onTreeChangeRef.current = onTreeChange;
+
+  useEffect(
+    () =>
+      subscribeToEditorState({
+        onTreeChange: (tree) => onTreeChangeRef.current(tree),
+      }),
+    [subscribeToEditorState],
+  );
+};
 
 const areTreesEqual = (firstTree: Tree, secondTree: Tree) => {
   if (firstTree.length !== secondTree.length) return false;
@@ -40,7 +57,8 @@ describe('theodore', () => {
     const user = userEvent.setup();
 
     const Host = () => {
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         const newText = convertTreeToText(newTree);
         const currentText = convertTreeToText(editorState.tree);
         expect(newText).not.toBe(currentText);
@@ -72,7 +90,8 @@ describe('theodore', () => {
     }> = [];
 
     const Host = () => {
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push({
           newTree,
           currentTree: editorState.tree,
@@ -110,7 +129,8 @@ describe('autocomplete', () => {
     const treeChanges: Tree[] = [];
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -153,7 +173,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -216,7 +237,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -278,7 +300,8 @@ describe('autocomplete', () => {
     const treeChanges: Tree[] = [];
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -325,7 +348,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -395,7 +419,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -461,7 +486,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 
@@ -520,7 +546,8 @@ describe('autocomplete', () => {
 
     const Host = ({ suggestion }: { suggestion?: string }) => {
       const theodoreRef = useRef<TheodoreHandle>(null);
-      const editorState = useEditorState(undefined, (newTree) => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
         treeChanges.push(newTree);
       });
 

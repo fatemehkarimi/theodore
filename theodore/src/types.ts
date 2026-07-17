@@ -24,6 +24,11 @@ export interface onTreeChangeFn {
   (tree: Tree): void;
 }
 
+export type EditorStateListener = {
+  onSelectionChange?: onSelectionChangeFn;
+  onTreeChange?: onTreeChangeFn;
+};
+
 export type TextNodeDesc = {
   type: 'text';
   text: string | null;
@@ -35,6 +40,7 @@ export type Tree = EditorNode[][];
 export type EditorState = {
   tree: Tree;
   setTree(tree: Tree): void;
+  subscribe(listener: EditorStateListener): () => void;
   assignNodeIndex(): number;
   historyHandle: HistoryHandle;
   selectionHandle: SelectionHandle;
