@@ -11,7 +11,7 @@ export function PreReleaseHero() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
             <Sparkles className="w-4 h-4" />
-            theodore-js 2.0 · Suggestions, your way
+            inline suggestions in v 2.0.0
           </div>
 
           <h1 className="text-5xl md:text-7xl mb-6 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
@@ -19,9 +19,8 @@ export function PreReleaseHero() {
           </h1>
 
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Render ideas as inline ghost text, choose exactly how people accept
-            or reject them, and make every suggestion hint feel native to your
-            product.
+            Display suggestion as inline ghost text, choose exactly how people
+            accept or reject them.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -39,12 +38,12 @@ export function PreReleaseHero() {
             </Button>
           </div>
 
-          <div className="max-w-2xl mx-auto bg-white border border-violet-200 rounded-xl p-6 shadow-md">
-            <p className="text-lg text-gray-800">
+          <div className="pre-release-suggestion-preview max-w-2xl mx-auto bg-white border border-violet-200 rounded-xl p-4 shadow-md">
+            <p className="text-lg text-gray-800" style={{ marginBlock: 0 }}>
               We&apos;re going to launch it{' '}
               <span className="text-gray-400">this week 🎉</span>{' '}
               <span className="inline-flex items-center gap-2 px-2 py-1 border border-violet-200 rounded-full text-xs text-violet-700">
-                your controls
+                Tab
               </span>
             </p>
           </div>
