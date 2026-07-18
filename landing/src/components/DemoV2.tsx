@@ -445,21 +445,18 @@ export function DemoV2() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-block mb-4 px-4 py-2 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
-              Live suggestion playground
-            </div>
             <h2 className="text-4xl mb-4">Complete the thought.</h2>
             <p className="text-gray-600">
-              Watch Theodore stage a suggestion, then take control with your
-              keyboard.
+              Start typing, then pause to see how suggestion looks like in
+              theoodre.
             </p>
           </div>
 
           <Card className="p-6 mb-8">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-gray-700">
-                Ghost-text editor
-              </label>
+            <div
+              className="flex items-center"
+              style={{ justifyContent: 'flex-end' }}
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -481,12 +478,12 @@ export function DemoV2() {
               editorState={editorState}
               renderEmoji={renderEmoji}
               className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
-              placeholder="Start a thought and pause for a suggestion…"
+              placeholder="Start typing..."
               style={{
                 fontSize: '16px',
                 lineHeight: '24ppx',
               }}
-              maxLines={7}
+              maxLines={3}
               theodoreRef={theodoreRef}
               ref={editorRef}
               suggestion={suggestion}
