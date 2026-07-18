@@ -13,6 +13,7 @@ const sitemapRules = [
     type: 'app-static',
     appDir: file('src/app'),
     changefreq: 'weekly',
+    excludedRoutes: ['/pre-release'],
     priorityByLoc: (loc) => (loc === '/' ? '1' : '0.8'),
     sharedSources: [
       file('src/app/layout.tsx'),
@@ -67,6 +68,10 @@ function expandRule(rule) {
       .filter((source) => path.basename(source) === 'page.tsx')
       .filter(
         (source) => !routeSegments(rule.appDir, source).some(isDynamicSegment),
+      )
+      .filter(
+        (source) =>
+          !rule.excludedRoutes?.includes(appRoute(rule.appDir, source)),
       )
       .map((source) => {
         const loc = appRoute(rule.appDir, source);

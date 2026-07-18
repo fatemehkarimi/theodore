@@ -4,12 +4,16 @@ import { PreReleaseHero } from '@/components/PreReleaseHero';
 import { SuggestionFeatures } from '@/components/SuggestionFeatures';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   title: 'theodore-js 2.0 | Custom Inline Suggestions',
   description:
     'Build editor suggestions with ghost text, programmable accept and reject controls, and fully custom suggestion hints.',
   alternates: {
     canonical: '/pre-release',
+  },
+  robots: {
+    index: false,
+    follow: false,
   },
 };
 
@@ -23,3 +27,5 @@ export default function PreReleasePage() {
     </div>
   );
 }
+
+export { metadata };
