@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/pre-release',
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function PreReleasePage() {
