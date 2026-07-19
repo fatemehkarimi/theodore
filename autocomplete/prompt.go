@@ -2,31 +2,13 @@ package main
 
 import "fmt"
 
-var AutocompletePrompt = `You are an autocomplete engine for a chat application.
-Task:
-Continue the user's message naturally.
-- Keep it short (1–8 words)
-- Do NOT repeat the input
-- Do NOT explain
-- Only output the completion
-- Match the tone and style of the conversation.
-- Do NOT include reasoning, analysis, self-checks, markdown thoughts, or <think> tags.
-- If you need to reason, do it silently and output only the final completion.
-
-Conversation:
-%s
-
-User is typing:
-"%s" and the cursor postion is at %d`
+var AutocompletePrompt = `Suggest autocomplete based on current text and cursor position. keep your suggestion short and just tell the suggestion. do not repeat the input.
+current text:
+"%s" and the cursor postion is at %d
+`
 
 func GenerateAutocompletePrompt(r RequstAutocomplete) string {
-	conversationMsgs := ""
-	for _, m := range r.Messages {
-		conversationMsgs += (m.Text + "\n")
-	}
-
-	prompt := fmt.Sprintf(AutocompletePrompt, conversationMsgs, r.Input, r.Cursor)
-
+	prompt := fmt.Sprintf(AutocompletePrompt, r.Input, r.Cursor)
 	return prompt
 }
 
