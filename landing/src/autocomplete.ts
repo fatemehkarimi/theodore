@@ -8,7 +8,7 @@ export async function getAutoComplete(
   signal: AbortSignal,
 ): Promise<string | null> {
   try {
-    const response = await fetch('/api/autocomplete', {
+    const response = await fetch('https://api.theodore-js.dev/autocomplete', {
       method: 'POST',
       signal,
       headers: {
