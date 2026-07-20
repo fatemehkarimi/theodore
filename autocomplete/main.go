@@ -138,7 +138,6 @@ func main() {
 		autocompleteRateLimiter: newClientRateLimiters(cfg.AutocompleteRateLimitToAgent),
 	}
 
-	fmt.Println(cfg.AutocompleteRateLimitToAgent)
 	mux.HandleFunc("/autocomplete", server.autocompleteHandler)
 	// mux.HandleFunc("/chat", server.chatHandler)
 
