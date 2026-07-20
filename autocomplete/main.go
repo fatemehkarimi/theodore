@@ -57,7 +57,10 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	prompt := GenerateAutocompletePrompt(requestAutoComplete)
 
-	if s.autocompleteRateLimiter != nil && !s.autocompleteRateLimiter.allow(clientIP(r)) {
+	clientIP := clientIP(r)
+	isAllowed := s.autocompleteRateLimiter.allow(clientIP)
+	log.Printf("Checking limit for ip %s %t", clientIP, isAllowed)
+	if s.autocompleteRateLimiter != nil && !isAllowed {
 		writeAutocompleteResponse(w, ResponseAutocomplete{Predict: randomLoremIpsum()})
 		return
 	}
@@ -135,6 +138,7 @@ func main() {
 		autocompleteRateLimiter: newClientRateLimiters(cfg.AutocompleteRateLimitToAgent),
 	}
 
+	fmt.Println(cfg.AutocompleteRateLimitToAgent)
 	mux.HandleFunc("/autocomplete", server.autocompleteHandler)
 	// mux.HandleFunc("/chat", server.chatHandler)
 
