@@ -14,8 +14,9 @@ import (
 )
 
 type server struct {
-	agent  agent.Agent
-	config config.Config
+	agent                   agent.Agent
+	config                  config.Config
+	autocompleteRateLimiter *clientRateLimiters
 }
 
 func createCORSMiddleware(cfg config.Config) func(http.Handler) http.Handler {
@@ -54,6 +55,12 @@ func (s server) autocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prompt := GenerateAutocompletePrompt(requestAutoComplete)
+
+	if s.autocompleteRateLimiter != nil && !s.autocompleteRateLimiter.allow(clientIP(r)) {
+		writeAutocompleteResponse(w, ResponseAutocomplete{Predict: randomLoremIpsum()})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.config.AutocompleteTimeout)*time.Second)
 	defer cancel()
 
@@ -122,12 +129,13 @@ func main() {
 	mux := http.NewServeMux()
 
 	server := server{
-		agent:  agent,
-		config: cfg,
+		agent:                   agent,
+		config:                  cfg,
+		autocompleteRateLimiter: newClientRateLimiters(cfg.AutocompleteRateLimitToAgent),
 	}
 
 	mux.HandleFunc("/autocomplete", server.autocompleteHandler)
-	mux.HandleFunc("/chat", server.chatHandler)
+	// mux.HandleFunc("/chat", server.chatHandler)
 
 	handler := createCORSMiddleware(cfg)(mux)
 	fmt.Println("Server is up and running at port 8080")
