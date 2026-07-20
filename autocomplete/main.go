@@ -135,7 +135,7 @@ func main() {
 	}
 
 	mux.HandleFunc("/autocomplete", server.autocompleteHandler)
-	mux.HandleFunc("/chat", server.chatHandler)
+	// mux.HandleFunc("/chat", server.chatHandler)
 
 	handler := createCORSMiddleware(cfg)(mux)
 	fmt.Println("Server is up and running at port 8080")
