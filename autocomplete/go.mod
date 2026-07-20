@@ -2,6 +2,8 @@ module autocomplete
 
 go 1.26.3
 
+require golang.org/x/time v0.15.0
+
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
