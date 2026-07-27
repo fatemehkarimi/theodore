@@ -5,6 +5,7 @@ import (
 	arvanagent "autocomplete/arvanAgent"
 	"autocomplete/config"
 	localagent "autocomplete/localAgent"
+	openrouteragent "autocomplete/openRouterAgent"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -124,10 +125,13 @@ func main() {
 
 	var agent agent.Agent
 
-	if cfg.AgentMode == "local" {
+	switch cfg.AgentMode {
+	case "local":
 		agent = localagent.New(cfg)
-	} else {
+	case "arvan":
 		agent = arvanagent.New(cfg)
+	default:
+		agent = openrouteragent.New(cfg)
 	}
 
 	mux := http.NewServeMux()
