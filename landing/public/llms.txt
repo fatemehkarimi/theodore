@@ -1,0 +1,13 @@
+# theodore-js
+
+> A React content-editable component for consistent, customizable emoji rendering across browsers.
+
+theodore-js replaces native emoji characters with application-provided React elements while preserving editing behavior. It supports custom emoji renderers, TypeScript, controlled editor state, undo history, and inline autocomplete suggestions.
+
+## Resources
+
+- [Documentation](https://theodore-js.dev/docs)
+- [GitHub repository](https://github.com/fatemehkarimi/theodore)
+- [Examples](https://github.com/fatemehkarimi/theodore/tree/master/examples)
+- [Releases](https://github.com/fatemehkarimi/theodore/releases)
+- [npm package](https://www.npmjs.com/package/theodore-js)

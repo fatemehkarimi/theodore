@@ -23,6 +23,7 @@ export function Footer({ description = defaultDescription }: FooterProps) {
                   href="https://github.com/fatemehkarimi/theodore"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="theodore-js on GitHub"
                   className="hover:text-violet-400 transition-colors"
                 >
                   <Github className="w-5 h-5" />
@@ -130,6 +131,7 @@ export function Footer({ description = defaultDescription }: FooterProps) {
               by fatemeh karimi, for classy web apps{' '}
               <img
                 src="/1f485-1f3fb.png"
+                alt=""
                 className="w-4 h-4"
                 style={{ marginBlockStart: '-8px' }}
               />

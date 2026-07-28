@@ -7,10 +7,12 @@ import { Installation } from '../components/Installation';
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
-      <Hero />
-      <DemoSection />
-      <Features />
-      <Installation />
+      <main>
+        <Hero />
+        <DemoSection />
+        <Features />
+        <Installation />
+      </main>
       <Footer />
     </div>
   );

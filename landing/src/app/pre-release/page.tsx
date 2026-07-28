@@ -20,9 +20,11 @@ const metadata: Metadata = {
 export default function PreReleasePage() {
   return (
     <div className="min-h-screen bg-white">
-      <PreReleaseHero />
-      <DemoV2 />
-      <SuggestionFeatures />
+      <main>
+        <PreReleaseHero />
+        <DemoV2 />
+        <SuggestionFeatures />
+      </main>
       <Footer description="A React editor for expressive emoji rendering and product-native inline suggestions, with full control over how every suggestion looks and behaves." />
     </div>
   );

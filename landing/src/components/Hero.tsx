@@ -39,16 +39,21 @@ export function Hero() {
       </div>
 
       {/* Decorative elements */}
-      <div className="absolute top-20 left-10 text-6xl opacity-20 animate-pulse">
+      <div
+        aria-hidden="true"
+        className="absolute top-20 left-10 text-6xl opacity-20 animate-pulse"
+      >
         😀
       </div>
       <div
+        aria-hidden="true"
         className="absolute bottom-20 right-10 text-6xl opacity-20 animate-pulse"
         style={{ animationDelay: '1s' }}
       >
         🎉
       </div>
       <div
+        aria-hidden="true"
         className="absolute top-40 right-20 text-5xl opacity-20 animate-pulse"
         style={{ animationDelay: '0.5s' }}
       >
