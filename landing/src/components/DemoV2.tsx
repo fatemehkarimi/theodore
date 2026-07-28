@@ -479,7 +479,11 @@ export function DemoV2() {
               editorState={editorState}
               renderEmoji={renderEmoji}
               className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
+              placeholderClassName="landing-demo-placeholder"
               placeholder="Start typing..."
+              role="textbox"
+              aria-label="Autocomplete demo editor"
+              aria-multiline="true"
               style={{
                 fontSize: '16px',
                 lineHeight: '24ppx',
@@ -505,7 +509,10 @@ export function DemoV2() {
                   setSelectedSet(value as keyof typeof emojiSets)
                 }
               >
-                <SelectTrigger className="w-[180px] fit-content-select">
+                <SelectTrigger
+                  aria-label="Select emoji style"
+                  className="w-[180px] fit-content-select"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

@@ -90,6 +90,7 @@ export const TheodoreTextInput: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label="Copy npm install command"
                       className="absolute top-2 right-2 text-gray-300 hover:text-white"
                       onClick={() => copyToClipboard(npmInstall, setCopiedNpm)}
                     >
@@ -109,6 +110,7 @@ export const TheodoreTextInput: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label="Copy yarn install command"
                       className="absolute top-2 right-2 text-gray-300 hover:text-white"
                       onClick={() =>
                         copyToClipboard(yarnInstall, setCopiedYarn)
@@ -130,6 +132,7 @@ export const TheodoreTextInput: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label="Copy pnpm install command"
                       className="absolute top-2 right-2 text-gray-300 hover:text-white"
                       onClick={() =>
                         copyToClipboard(pnpmInstall, setCopiedPnpm)
@@ -171,6 +174,7 @@ export const TheodoreTextInput: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label="Copy basic usage example"
                   className="absolute top-2 right-2 text-gray-300 hover:text-white z-10"
                   onClick={() => copyToClipboard(codeExample, setCopiedCode)}
                 >

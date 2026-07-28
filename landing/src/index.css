@@ -2183,6 +2183,10 @@ html {
   max-width: fit-content;
 }
 
+.theodore_placeholder.landing-demo-placeholder {
+  color: var(--color-gray-500);
+}
+
 .pre-release-suggestion-preview {
   padding-inline: 0.5rem;
 }
