@@ -247,7 +247,7 @@ export function DemoV2() {
     rejectActiveSuggestion,
     suggestion: backendSuggestion,
   } = useSuggestion({
-    debounceMs: 2000,
+    debounceMs: 500,
     editorState,
     requestSuggestion,
     theodoreRef,
