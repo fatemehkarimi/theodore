@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-var AutocompletePrompt = `Suggest autocomplete based on current text and cursor position. keep your suggestion short and just tell the suggestion. do not repeat the input.
+var AutocompletePrompt = `Suggest autocomplete based on current text and cursor position. keep your suggestion 2-8 words and just tell the suggestion. do not repeat the input.
 current text:
 "%s" and the cursor postion is at %d
 `
