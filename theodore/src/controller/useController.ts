@@ -86,14 +86,15 @@ import {
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
-  renderEmoji: RenderEmoji,
   updateEditorKey: Dispatch<SetStateAction<number>>,
   editorState: EditorState,
+  renderEmoji?: RenderEmoji,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
     editorState;
   const { getSelection, setSelection } = selectionHandle;
   const { history } = historyHandle;
+  const shouldRenderEmojis = renderEmoji != undefined;
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
@@ -375,7 +376,7 @@ const useController = (
       const newText = (event as InputEvent).data;
       const selection = getSelection();
 
-      if (IS_WINDOWS && newText && isEmoji(newText)) {
+      if (IS_WINDOWS && newText && shouldRenderEmojis && isEmoji(newText)) {
         const emojiNode = new EmojiNode(
           assignNodeIndex(),
           newText,
@@ -815,7 +816,7 @@ const useController = (
     const result: (EditorNode | EditorNode[])[] = [];
     for (const segment of segmentedText) {
       const lastNode = result[result.length - 1];
-      if (isEmoji(segment)) {
+      if (shouldRenderEmojis && isEmoji(segment)) {
         const emojiNode = isSuggestion
           ? new GhostEmojiNode(assignNodeIndex(), segment, renderEmoji)
           : new EmojiNode(assignNodeIndex(), segment, renderEmoji);
@@ -1572,6 +1573,10 @@ const useController = (
   };
 
   const insertEmoji = (emoji: string) => {
+    if (!shouldRenderEmojis) {
+      handleInsertTextFromKeyboard(emoji);
+      return;
+    }
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
     insertUneditableNodesInSelection([emojiNode]);
   };

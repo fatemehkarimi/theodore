@@ -25,7 +25,7 @@ type Props = Omit<
   'contentEditable' | 'onKeyDown' | 'onPaste' | 'onCut'
 > & {
   editorState: EditorState;
-  renderEmoji: RenderEmoji;
+  renderEmoji?: RenderEmoji;
   placeholder?: string | React.ReactNode;
   wrapperClassName?: string;
   placeholderClassName?: string;
@@ -76,7 +76,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       handleCut,
       handleInsertSuggestion,
       clearAndSetContent,
-    } = useController(inputRef, renderEmoji, setRemountKey, editorState);
+    } = useController(inputRef, setRemountKey, editorState, renderEmoji);
     useAutoComplete(inputRef, acceptSuggestion, rejectSuggestion, editorState);
 
     useImperativeHandle(theodoreRef, () => {

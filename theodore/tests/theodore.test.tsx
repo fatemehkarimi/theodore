@@ -612,3 +612,114 @@ describe('autocomplete', () => {
     });
   });
 });
+
+describe('optional emoji rendering/ renderEmoji prop is not provided', () => {
+  const renderEditorWithoutEmojiRenderer = () => {
+    const treeChanges: Tree[] = [];
+
+    const Host = () => {
+      const theodoreRef = useRef<TheodoreHandle>(null);
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return (
+        <>
+          <Theodore
+            editorState={editorState}
+            theodoreRef={theodoreRef}
+            data-testid="editor"
+          />
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.insertEmoji('😀')}
+          >
+            insert grinning emoji
+          </button>
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.insertEmoji('😂')}
+          >
+            insert laughing emoji
+          </button>
+        </>
+      );
+    };
+
+    render(<Host />);
+
+    return treeChanges;
+  };
+
+  const expectSingleTextNode = (treeChanges: Tree[], text: string) => {
+    const tree = treeChanges[treeChanges.length - 1];
+    if (tree == null) throw new Error('Missing tree update');
+
+    expect(tree).toHaveLength(1);
+    expect(tree[0]).toHaveLength(2);
+    expect(tree[0].map((node) => node.getType())).toEqual([
+      'paragraph',
+      'text',
+    ]);
+    expect(tree[0][1].getChildren()).toBe(text);
+    expect(convertTreeToText(tree)).toBe(text);
+  };
+
+  it('should render single emoji in text node', async () => {
+    const user = userEvent.setup();
+    const treeChanges = renderEditorWithoutEmojiRenderer();
+
+    await user.click(screen.getByTestId('editor'));
+    await user.click(
+      screen.getByRole('button', { name: 'insert grinning emoji' }),
+    );
+
+    await waitFor(() => expectSingleTextNode(treeChanges, '😀'));
+  });
+
+  it('should render multiple emojis in a single text node', async () => {
+    const user = userEvent.setup();
+    const treeChanges = renderEditorWithoutEmojiRenderer();
+
+    await user.click(screen.getByTestId('editor'));
+    await user.click(
+      screen.getByRole('button', { name: 'insert grinning emoji' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'insert laughing emoji' }),
+    );
+
+    await waitFor(() => expectSingleTextNode(treeChanges, '😀😂'));
+  });
+
+  it('should render emoji after normal text in a single text node', async () => {
+    const user = userEvent.setup();
+    const treeChanges = renderEditorWithoutEmojiRenderer();
+    const editor = screen.getByTestId('editor');
+
+    await user.click(editor);
+    await user.keyboard('hello');
+    await user.click(
+      screen.getByRole('button', { name: 'insert grinning emoji' }),
+    );
+
+    await waitFor(() => expectSingleTextNode(treeChanges, 'hello😀'));
+  });
+
+  it('should render emoji in the middle of normal text in a single text node', async () => {
+    const user = userEvent.setup();
+    const treeChanges = renderEditorWithoutEmojiRenderer();
+    const editor = screen.getByTestId('editor');
+
+    await user.click(editor);
+    await user.keyboard('he');
+    await user.click(
+      screen.getByRole('button', { name: 'insert grinning emoji' }),
+    );
+    await user.click(editor);
+    await user.keyboard('llo');
+
+    await waitFor(() => expectSingleTextNode(treeChanges, 'he😀llo'));
+  });
+});
