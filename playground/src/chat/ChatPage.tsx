@@ -70,7 +70,7 @@ const ChatPage = () => {
 
   const { acceptSuggestion, rejectActiveSuggestion, suggestion } =
     useSuggestion({
-      debounceMs: 2000,
+      debounceMs: 500,
       editorState,
       requestSuggestion,
       theodoreRef,

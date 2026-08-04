@@ -8,15 +8,14 @@ import {
 } from 'theodore-js';
 import 'theodore-js/style.css';
 import styles from '../App.module.scss';
+import { BlurInput } from '../BlurInput';
 import { AnimatedPicker, type PickerEmoji } from '../components/AnimatedPicker';
 import { PlaygroundPageChrome } from '../components/PlaygroundPageChrome';
-import { isMobileDevice, renderAppleEmoji } from '../utils';
-import { SelectionPreview } from '../components/SelectionPreview';
 import type { SelectionPreviewHandle } from '../components/SelectionPreview';
-import { Slogan } from '../components/Slogan';
-import { BlurInput } from '../BlurInput';
+import { SelectionPreview } from '../components/SelectionPreview';
 import EmojiOutlined from '../icons/EmojiOutlined';
 import '../index.css';
+import { isMobileDevice, renderAppleEmoji } from '../utils';
 
 const copyTextToClipboard = async (text: string) => {
   if (
@@ -57,10 +56,11 @@ const copyTextToClipboard = async (text: string) => {
 };
 
 type EditorPageProps = {
+  title?: string;
   useEmojiRenderer?: boolean;
 };
 
-const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
+const EditorPage = ({ useEmojiRenderer = true, title }: EditorPageProps) => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
@@ -115,7 +115,7 @@ const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
   return (
     <main data-testid="editor-page">
       <PlaygroundPageChrome>
-        <Slogan />
+        <h2>{title}</h2>
         <div className={styles.theodoreWrapper}>
           <Theodore
             theodoreRef={theodoreRef}
