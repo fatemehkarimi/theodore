@@ -412,6 +412,18 @@ const useController = (
     if (inputType != 'deleteContentBackward') return;
     /* deleteContentBackward is used for autocorrect on android devices */
     const target = event.currentTarget as HTMLDivElement;
+    const domSelection = document.getSelection();
+    const domRange =
+      domSelection != null && domSelection.rangeCount > 0
+        ? domSelection.getRangeAt(0)
+        : null;
+    const browserSelectionAfterDelete =
+      domRange?.collapsed && target.contains(domRange.commonAncestorContainer)
+        ? convertDomSelectionToEditorSelection(
+            domRange.startContainer,
+            domRange.startOffset,
+          )
+        : null;
     const [renderedTree, doesEditorRemovedAnyNode] =
       reconcileTextNodeContentFromContentEditable(target, tree);
     if (renderedTree == null) return;
@@ -426,10 +438,13 @@ const useController = (
           setSelection(getSelectionAfterNodeRemove(tree, selectedNodeIndex));
         } else {
           const node = renderedTree[pIdx][idx];
-          if (selectedNodeIndex && node && node.isTextNode()) {
+          if (node && node.isTextNode()) {
             setSelection({
               nodeIndex: selectedNodeIndex,
-              offset: node.getChildLength(),
+              offset:
+                browserSelectionAfterDelete?.nodeIndex == selectedNodeIndex
+                  ? browserSelectionAfterDelete.offset
+                  : node.getChildLength(),
             });
           }
         }
