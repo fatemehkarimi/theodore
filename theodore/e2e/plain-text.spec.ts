@@ -632,3 +632,121 @@ test('copying text from empty editor should be ""', async ({ page }) => {
 
   expectNoPageErrors(pageErrors);
 });
+
+test.describe('render emoji as normal text when renderEmoji prop is not provided', () => {
+  test('should correctly display single emoji character', async ({ page }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const picker = page.locator('em-emoji-picker');
+
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: '😀' }).first().click();
+
+    await expectExactText(editor, '😀');
+    await expect(editor.locator('.theodore_emojiNode')).toHaveCount(0);
+    await expectExactText(page.getByTestId('plain-text-preview'), '😀');
+
+    expectNoPageErrors(pageErrors);
+  });
+
+  test('should correctly display multiple emoji characters', async ({
+    page,
+  }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const picker = page.locator('em-emoji-picker');
+
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: '😀' }).first().click();
+    await picker.getByRole('button', { name: '😂' }).first().click();
+
+    await expectExactText(editor, '😀😂');
+    await expect(editor.locator('.theodore_emojiNode')).toHaveCount(0);
+    await expectExactText(page.getByTestId('plain-text-preview'), '😀😂');
+
+    expectNoPageErrors(pageErrors);
+  });
+
+  test('should correctly display emoji characters after normal text', async ({
+    page,
+  }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const picker = page.locator('em-emoji-picker');
+
+    await editor.click();
+    await editor.pressSequentially('hello', { delay: 100 });
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: '😀' }).first().click();
+    await picker.getByRole('button', { name: '😂' }).first().click();
+
+    await expectExactText(editor, 'hello😀😂');
+    await expect(editor.locator('.theodore_emojiNode')).toHaveCount(0);
+    await expectExactText(page.getByTestId('plain-text-preview'), 'hello😀😂');
+
+    expectNoPageErrors(pageErrors);
+  });
+
+  test('should correctly display emoji character in the middle of normal text', async ({
+    page,
+  }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const picker = page.locator('em-emoji-picker');
+
+    await editor.click();
+    await editor.pressSequentially('hello', { delay: 100 });
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('ArrowLeft', { delay: 30 });
+    }
+    await delay(30);
+
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: '😀' }).first().click();
+
+    await expectExactText(editor, 'he😀llo');
+    await expect(editor.locator('.theodore_emojiNode')).toHaveCount(0);
+    await expectExactText(page.getByTestId('plain-text-preview'), 'he😀llo');
+
+    expectNoPageErrors(pageErrors);
+  });
+
+  test('should remove emoji character(👗) after pressing single backspace', async ({
+    page,
+  }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const preview = page.getByTestId('plain-text-preview');
+    const picker = page.locator('em-emoji-picker');
+
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.locator('input').fill('dress');
+    await picker.getByRole('button', { name: '👗' }).first().click();
+
+    await expectExactText(editor, '👗');
+    await expectExactText(preview, '👗');
+
+    await page.keyboard.press('Backspace');
+
+    await expectExactText(editor, '');
+    await expectExactText(preview, '');
+    await expect(page.getByText(PLACEHOLDER, { exact: true })).toBeVisible();
+
+    expectNoPageErrors(pageErrors);
+  });
+});

@@ -73,6 +73,7 @@ import {
   getNodeIndexInTree,
   getParagraphIndexInTree,
   getSelectionAfterNodeRemove,
+  getTextDeletionRange,
   insertNodesInBetween,
   isElementInView,
   isEmoji,
@@ -86,14 +87,15 @@ import {
 
 const useController = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
-  renderEmoji: RenderEmoji,
   updateEditorKey: Dispatch<SetStateAction<number>>,
   editorState: EditorState,
+  renderEmoji?: RenderEmoji,
 ) => {
   const { selectionHandle, historyHandle, assignNodeIndex, tree, setTree } =
     editorState;
   const { getSelection, setSelection } = selectionHandle;
   const { history } = historyHandle;
+  const shouldRenderEmojis = renderEmoji != undefined;
 
   const handleKeyDown: React.KeyboardEventHandler = (event) => {
     const key = event.key;
@@ -263,7 +265,7 @@ const useController = (
     ) {
       const data = (event as any)?.data as string | null | undefined;
       if (data) {
-        if (isEmoji(data)) {
+        if (shouldRenderEmojis && isEmoji(data)) {
           if (!IS_WINDOWS) {
             const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
             if (emoji != null) insertEmoji(emoji);
@@ -375,7 +377,7 @@ const useController = (
       const newText = (event as InputEvent).data;
       const selection = getSelection();
 
-      if (IS_WINDOWS && newText && isEmoji(newText)) {
+      if (IS_WINDOWS && newText && shouldRenderEmojis && isEmoji(newText)) {
         const emojiNode = new EmojiNode(
           assignNodeIndex(),
           newText,
@@ -410,6 +412,18 @@ const useController = (
     if (inputType != 'deleteContentBackward') return;
     /* deleteContentBackward is used for autocorrect on android devices */
     const target = event.currentTarget as HTMLDivElement;
+    const domSelection = document.getSelection();
+    const domRange =
+      domSelection != null && domSelection.rangeCount > 0
+        ? domSelection.getRangeAt(0)
+        : null;
+    const browserSelectionAfterDelete =
+      domRange?.collapsed && target.contains(domRange.commonAncestorContainer)
+        ? convertDomSelectionToEditorSelection(
+            domRange.startContainer,
+            domRange.startOffset,
+          )
+        : null;
     const [renderedTree, doesEditorRemovedAnyNode] =
       reconcileTextNodeContentFromContentEditable(target, tree);
     if (renderedTree == null) return;
@@ -424,10 +438,13 @@ const useController = (
           setSelection(getSelectionAfterNodeRemove(tree, selectedNodeIndex));
         } else {
           const node = renderedTree[pIdx][idx];
-          if (selectedNodeIndex && node && node.isTextNode()) {
+          if (node && node.isTextNode()) {
             setSelection({
               nodeIndex: selectedNodeIndex,
-              offset: node.getChildLength(),
+              offset:
+                browserSelectionAfterDelete?.nodeIndex == selectedNodeIndex
+                  ? browserSelectionAfterDelete.offset
+                  : node.getChildLength(),
             });
           }
         }
@@ -552,11 +569,13 @@ const useController = (
         return;
       }
       const text = startTextNode.getChildren() ?? '';
-      const remainingText = isBackward
-        ? text.slice(0, selection.startSelection.offset - 1) +
-          text.slice(selection.startSelection.offset)
-        : text.slice(0, selection.startSelection.offset) +
-          text.slice(selection.startSelection.offset + 1);
+      const [deletionStart, deletionEnd] = getTextDeletionRange(
+        text,
+        selection.startSelection.offset,
+        isBackward,
+      );
+      const remainingText =
+        text.slice(0, deletionStart) + text.slice(deletionEnd);
 
       if (remainingText.length > 0) {
         history.pushAndCommit([
@@ -571,9 +590,7 @@ const useController = (
         setTree(makeTreeNonEmpty(newTree));
         setSelection({
           nodeIndex: startTextNode.getIndex(),
-          offset: isBackward
-            ? selection.startSelection.offset - 1
-            : selection.startSelection.offset,
+          offset: deletionStart,
         });
       } else {
         const nodeBefore = findNodeBefore(newTree, startTextNode.getIndex());
@@ -815,7 +832,7 @@ const useController = (
     const result: (EditorNode | EditorNode[])[] = [];
     for (const segment of segmentedText) {
       const lastNode = result[result.length - 1];
-      if (isEmoji(segment)) {
+      if (shouldRenderEmojis && isEmoji(segment)) {
         const emojiNode = isSuggestion
           ? new GhostEmojiNode(assignNodeIndex(), segment, renderEmoji)
           : new EmojiNode(assignNodeIndex(), segment, renderEmoji);
@@ -1572,6 +1589,10 @@ const useController = (
   };
 
   const insertEmoji = (emoji: string) => {
+    if (!shouldRenderEmojis) {
+      handleInsertTextFromKeyboard(emoji);
+      return;
+    }
     const emojiNode = new EmojiNode(assignNodeIndex(), emoji, renderEmoji);
     insertUneditableNodesInSelection([emojiNode]);
   };

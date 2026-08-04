@@ -56,7 +56,11 @@ const copyTextToClipboard = async (text: string) => {
   }
 };
 
-const EditorPage = () => {
+type EditorPageProps = {
+  useEmojiRenderer?: boolean;
+};
+
+const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
@@ -116,7 +120,7 @@ const EditorPage = () => {
           <Theodore
             theodoreRef={theodoreRef}
             editorState={editorState}
-            renderEmoji={renderAppleEmoji}
+            {...(useEmojiRenderer ? { renderEmoji: renderAppleEmoji } : {})}
             className={styles.theodore}
             placeholderClassName={styles.theodorePlaceholder}
             placeholder="write something and surprise the world..."
