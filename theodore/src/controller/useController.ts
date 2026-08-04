@@ -73,6 +73,7 @@ import {
   getNodeIndexInTree,
   getParagraphIndexInTree,
   getSelectionAfterNodeRemove,
+  getTextDeletionRange,
   insertNodesInBetween,
   isElementInView,
   isEmoji,
@@ -264,7 +265,7 @@ const useController = (
     ) {
       const data = (event as any)?.data as string | null | undefined;
       if (data) {
-        if (isEmoji(data)) {
+        if (shouldRenderEmojis && isEmoji(data)) {
           if (!IS_WINDOWS) {
             const emoji = getFirstEmoji(data); // on chrome android, the data is very buggy when insert ♥️ in the middle of string
             if (emoji != null) insertEmoji(emoji);
@@ -553,11 +554,13 @@ const useController = (
         return;
       }
       const text = startTextNode.getChildren() ?? '';
-      const remainingText = isBackward
-        ? text.slice(0, selection.startSelection.offset - 1) +
-          text.slice(selection.startSelection.offset)
-        : text.slice(0, selection.startSelection.offset) +
-          text.slice(selection.startSelection.offset + 1);
+      const [deletionStart, deletionEnd] = getTextDeletionRange(
+        text,
+        selection.startSelection.offset,
+        isBackward,
+      );
+      const remainingText =
+        text.slice(0, deletionStart) + text.slice(deletionEnd);
 
       if (remainingText.length > 0) {
         history.pushAndCommit([
@@ -572,9 +575,7 @@ const useController = (
         setTree(makeTreeNonEmpty(newTree));
         setSelection({
           nodeIndex: startTextNode.getIndex(),
-          offset: isBackward
-            ? selection.startSelection.offset - 1
-            : selection.startSelection.offset,
+          offset: deletionStart,
         });
       } else {
         const nodeBefore = findNodeBefore(newTree, startTextNode.getIndex());

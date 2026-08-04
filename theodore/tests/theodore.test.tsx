@@ -121,6 +121,88 @@ describe('theodore', () => {
       areTreesEqual(treeChanges[1].newTree, treeChanges[1].currentTree),
     ).toBe(false);
   });
+
+  it('should remove text node when user types a Unicode character consisting of multiple UTF-16 code units (𐐀) in input, then presses Backspace', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = () => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return <Theodore editorState={editorState} data-testid="editor" />;
+    };
+
+    render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('𐐀');
+
+    await waitFor(() => {
+      const tree = treeChanges[treeChanges.length - 1];
+      if (tree == null) throw new Error('Missing tree update');
+
+      expect(tree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+      ]);
+      expect(tree[0][1].getChildren()).toBe('𐐀');
+    });
+
+    await user.keyboard('{Backspace}');
+
+    await waitFor(() => {
+      const tree = treeChanges[treeChanges.length - 1];
+      if (tree == null) throw new Error('Missing tree update');
+
+      expect(tree).toHaveLength(1);
+      expect(tree[0].map((node) => node.getType())).toEqual(['paragraph']);
+    });
+  });
+
+  it('should remove text node when user types a Unicode character consisting of multiple UTF-16 code units (𐐀) in input, moves cursor left, then presses Delete', async () => {
+    const user = userEvent.setup();
+    const treeChanges: Tree[] = [];
+
+    const Host = () => {
+      const editorState = useEditorState();
+      useTreeChangeListener(editorState, (newTree) => {
+        treeChanges.push(newTree);
+      });
+
+      return <Theodore editorState={editorState} data-testid="editor" />;
+    };
+
+    render(<Host />);
+
+    const editor = screen.getByTestId('editor');
+    await user.click(editor);
+    await user.keyboard('𐐀');
+
+    await waitFor(() => {
+      const tree = treeChanges[treeChanges.length - 1];
+      if (tree == null) throw new Error('Missing tree update');
+
+      expect(tree[0].map((node) => node.getType())).toEqual([
+        'paragraph',
+        'text',
+      ]);
+      expect(tree[0][1].getChildren()).toBe('𐐀');
+    });
+
+    await user.keyboard('{ArrowLeft}{Delete}');
+
+    await waitFor(() => {
+      const tree = treeChanges[treeChanges.length - 1];
+      if (tree == null) throw new Error('Missing tree update');
+
+      expect(tree).toHaveLength(1);
+      expect(tree[0].map((node) => node.getType())).toEqual(['paragraph']);
+    });
+  });
 });
 
 describe('autocomplete', () => {
@@ -643,6 +725,12 @@ describe('optional emoji rendering/ renderEmoji prop is not provided', () => {
           >
             insert laughing emoji
           </button>
+          <button
+            type="button"
+            onClick={() => theodoreRef.current?.insertEmoji('👗')}
+          >
+            insert dress emoji
+          </button>
         </>
       );
     };
@@ -721,5 +809,28 @@ describe('optional emoji rendering/ renderEmoji prop is not provided', () => {
     await user.keyboard('llo');
 
     await waitFor(() => expectSingleTextNode(treeChanges, 'he😀llo'));
+  });
+
+  it('should remove emoji character(👗) after pressing single backspace', async () => {
+    const user = userEvent.setup();
+    const treeChanges = renderEditorWithoutEmojiRenderer();
+    const editor = screen.getByTestId('editor');
+
+    await user.click(editor);
+    await user.click(
+      screen.getByRole('button', { name: 'insert dress emoji' }),
+    );
+    await waitFor(() => expectSingleTextNode(treeChanges, '👗'));
+
+    await user.click(editor);
+    await user.keyboard('{Backspace}');
+
+    await waitFor(() => {
+      const tree = treeChanges[treeChanges.length - 1];
+      if (tree == null) throw new Error('Missing tree update');
+
+      expect(tree).toHaveLength(1);
+      expect(tree[0].map((node) => node.getType())).toEqual(['paragraph']);
+    });
   });
 });

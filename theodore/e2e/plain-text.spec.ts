@@ -722,4 +722,31 @@ test.describe('render emoji as normal text when renderEmoji prop is not provided
 
     expectNoPageErrors(pageErrors);
   });
+
+  test('should remove emoji character(👗) after pressing single backspace', async ({
+    page,
+  }) => {
+    const pageErrors = installPageErrorTracking(page);
+    await page.goto('/plain-text-emojis');
+
+    const editor = page.getByTestId('editor');
+    const preview = page.getByTestId('plain-text-preview');
+    const picker = page.locator('em-emoji-picker');
+
+    await page.getByTestId('emoji-picker').click();
+    await expect(picker).toBeVisible();
+    await picker.locator('input').fill('dress');
+    await picker.getByRole('button', { name: '👗' }).first().click();
+
+    await expectExactText(editor, '👗');
+    await expectExactText(preview, '👗');
+
+    await page.keyboard.press('Backspace');
+
+    await expectExactText(editor, '');
+    await expectExactText(preview, '');
+    await expect(page.getByText(PLACEHOLDER, { exact: true })).toBeVisible();
+
+    expectNoPageErrors(pageErrors);
+  });
 });

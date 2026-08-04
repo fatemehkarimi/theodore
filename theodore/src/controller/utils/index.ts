@@ -9,6 +9,7 @@ import type { SelectionDesc } from '../selection/types';
 
 type TextNodeUpdater = (textNode: TextNode) => void;
 
+const EMOJI_REGEX_EMOJI_DETECTOR = emojiRegex();
 const ALWAYS_IN_DOM_NODE_INDEX = 1;
 const ALWAYS_IN_DOM_NODE_SELECTION = {
   nodeIndex: ALWAYS_IN_DOM_NODE_INDEX,
@@ -347,9 +348,35 @@ const isEmoji = (text: string): boolean => {
 };
 
 const getFirstEmoji = (s: string): string | null =>
-  s.match(
-    /\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*|[\u{1F1E6}-\u{1F1FF}]{2}/u,
-  )?.[0] ?? null;
+  s.match(EMOJI_REGEX_EMOJI_DETECTOR)?.[0] ?? null;
+
+const getTextDeletionRange = (
+  text: string,
+  offset: number,
+  isBackward: boolean,
+): [start: number, end: number] => {
+  const fallbackRange: [number, number] = isBackward
+    ? [Math.max(0, offset - 1), offset]
+    : [offset, Math.min(text.length, offset + 1)];
+
+  if (typeof (Intl as any).Segmenter !== 'function') return fallbackRange;
+
+  const segments = [
+    ...new (Intl as any).Segmenter(undefined, {
+      granularity: 'grapheme',
+    }).segment(text),
+  ] as Array<{ index: number; segment: string }>;
+  const segment = isBackward
+    ? [...segments].reverse().find(({ index }) => index < offset)
+    : segments.find(
+        ({ index, segment }) =>
+          index <= offset && offset < index + segment.length,
+      );
+
+  return segment == null
+    ? fallbackRange
+    : [segment.index, segment.index + segment.segment.length];
+};
 
 const insertNodesInBetween = (
   tree: Tree,
@@ -400,7 +427,6 @@ const insertNodesInBetween = (
   return newTree;
 };
 
-const EMOJI_REGEX_EMOJI_DETECTOR = emojiRegex();
 const segmentText = (text: string): string[] => {
   if (typeof (Intl as any).Segmenter === 'function') {
     return [
@@ -527,6 +553,7 @@ export {
   getSelectionAfterNodeRemove,
   isEmoji,
   getFirstEmoji,
+  getTextDeletionRange,
   insertNodesInBetween,
   segmentText,
   isElementInView,
