@@ -20,4 +20,4 @@ export {
   type SuggestionRequest,
   type SuggestionRequestHandler,
   type UseSuggestionOptions,
-} from './controller/autocomplete/useSuggestion';
+} from './controller/suggestion/useSuggestion';

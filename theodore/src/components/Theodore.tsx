@@ -18,7 +18,7 @@ import type {
 } from '../types';
 import { computeLineHeightPx } from '../utils';
 import { SuggestionHint as SuggestionHintFC } from './SuggestionHint';
-import { useAutoComplete } from '../controller/autocomplete/useAutoComplete';
+import { useSuggestionHandlers } from '../controller/suggestion/useSuggestionHandlers';
 
 type Props = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
@@ -77,7 +77,12 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       handleInsertSuggestion,
       clearAndSetContent,
     } = useController(inputRef, setRemountKey, editorState, renderEmoji);
-    useAutoComplete(inputRef, acceptSuggestion, rejectSuggestion, editorState);
+    useSuggestionHandlers(
+      inputRef,
+      acceptSuggestion,
+      rejectSuggestion,
+      editorState,
+    );
 
     useImperativeHandle(theodoreRef, () => {
       return {
@@ -215,16 +220,18 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
                     if (node == lastGhostNode && SuggestionHint)
                       return (
                         <React.Fragment key={node.getKey()}>
-                          {node.render()}
+                          {node.render(undefined, acceptSuggestion)}
                           <SuggestionHint
                             direction={startsWithRTL ? 'rtl' : 'ltr'}
+                            acceptSuggestion={acceptSuggestion}
                           />
                         </React.Fragment>
                       );
-                    return node.render();
+                    return node.render(undefined, acceptSuggestion);
                   })}
                 </>
               ),
+              undefined,
               startsWithRTL ? 'rtl' : 'ltr',
             );
           })}

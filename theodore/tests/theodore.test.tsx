@@ -205,7 +205,7 @@ describe('theodore', () => {
   });
 });
 
-describe('autocomplete', () => {
+describe('suggestion', () => {
   it('should add suggestion node to the tree', async () => {
     const user = userEvent.setup();
     const treeChanges: Tree[] = [];

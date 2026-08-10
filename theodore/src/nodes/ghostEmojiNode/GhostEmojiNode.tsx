@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { RenderEmoji } from '../../types';
 import EmojiNode from '../emojiNode/EmojiNode';
 
@@ -28,13 +29,17 @@ class GhostEmojiNode extends EmojiNode {
     return new EmojiNode(this.nodeIndex, this.emoji, this.renderEmoji);
   }
 
-  public render() {
+  public render(
+    _children?: ReactNode | undefined,
+    acceptSuggestion?: () => void,
+  ) {
     const emojiEl = this.renderEmoji(this.emoji);
     return (
       <span
         key={this.getKey()}
         data-node-index={this.getIndex()}
         className="theodore_emojiNode theodore_ghostEmoji"
+        onClick={acceptSuggestion}
       >
         {emojiEl}
       </span>

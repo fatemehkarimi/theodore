@@ -23,6 +23,7 @@ class ParagraphNode extends Node {
 
   public render(
     children?: ReactNode | undefined,
+    _acceptSuggestion?: () => void,
     dir?: 'ltr' | 'rtl',
   ): React.ReactNode {
     return (

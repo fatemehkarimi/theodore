@@ -31,8 +31,10 @@ export class Node {
     throw new Error('not implemented');
   }
 
-  public render(children?: ReactNode | undefined): ReactNode {
-    void children;
+  public render(
+    _children?: ReactNode | undefined,
+    _acceptSuggestion?: () => void,
+  ): ReactNode {
     throw new Error('not implemented');
   }
 
