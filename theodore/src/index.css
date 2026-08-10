@@ -38,7 +38,6 @@
 
 .theodore_emojiNode {
   margin: 0px 1.5px;
-  pointer-events: none;
   user-select: initial;
 }
 
@@ -62,23 +61,21 @@
 
 .theodore_ghostText {
   color: rgba(0, 0, 0, 0.35);
-  pointer-events: none;
   user-select: none;
+  cursor: pointer;
 }
 
 .theodore_ghostText * {
-  pointer-events: none;
   user-select: none;
 }
 
 .theodore_ghostEmoji {
   opacity: 0.5;
-  pointer-events: none;
   user-select: none;
+  cursor: pointer;
 }
 
 .theodore_ghostEmoji * {
-  pointer-events: none;
   user-select: none;
 }
 
@@ -104,5 +101,5 @@
   font-size: 0.82rem;
   line-height: 1.2;
   user-select: none;
-  pointer-events: none;
+  cursor: pointer;
 }

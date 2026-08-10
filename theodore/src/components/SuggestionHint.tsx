@@ -2,14 +2,20 @@ import React from 'react';
 import { IS_MOBILE } from '../environment';
 import { SuggestionHintProps } from '../types';
 
-const SuggestionHint: React.FC<SuggestionHintProps> = ({ direction }) => {
+const SuggestionHint: React.FC<SuggestionHintProps> = ({
+  direction,
+  acceptSuggestion,
+}) => {
   return (
     <span
       key="suggestion-hint"
       contentEditable={false}
       data-suggestion-hint="true"
       className="theodore_suggestionHint"
-      onMouseDown={(event) => event.preventDefault()}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        acceptSuggestion?.();
+      }}
     >
       {IS_MOBILE ? (
         <svg

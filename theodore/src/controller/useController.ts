@@ -1624,6 +1624,10 @@ const useController = (
     updateEditorKey((key) => key + 1);
   };
 
+  const resetEditor = () => {
+    editorState.reset();
+  };
+
   const removeSuggestionHistory = () => {
     const suggestionHistory = [];
     let transactionId = undefined;
@@ -1904,6 +1908,7 @@ const useController = (
     handleOnInput,
     handleInsertSuggestion,
     clearAndSetContent,
+    resetEditor,
   };
 };
 

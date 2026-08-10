@@ -70,7 +70,7 @@ const ChatPage = () => {
 
   const { acceptSuggestion, rejectActiveSuggestion, suggestion } =
     useSuggestion({
-      debounceMs: 2000,
+      debounceMs: 500,
       editorState,
       requestSuggestion,
       theodoreRef,
@@ -241,16 +241,25 @@ const ChatPage = () => {
             onLeave={scheduleHide}
             onSelectEmoji={handleSelectEmoji}
           />
-          {isMobile ? (
+          <div className={styles.editorActions}>
             <button
               type="button"
-              className={styles.mobileSendButton}
-              aria-label="Send message"
-              onClick={handleSendMessage}
+              className={styles.copyButton}
+              onClick={() => theodoreRef.current?.resetEditor()}
             >
-              <SendIcon className={styles.mobileSendIcon} />
+              reset
             </button>
-          ) : null}
+            {isMobile ? (
+              <button
+                type="button"
+                className={styles.mobileSendButton}
+                aria-label="Send message"
+                onClick={handleSendMessage}
+              >
+                <SendIcon className={styles.mobileSendIcon} />
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className={styles.theodoreStateInfo}>

@@ -2,7 +2,7 @@ import { MutableRefObject, useEffect } from 'react';
 import { EditorState } from '../../types';
 import { findGhostNodes, isSelectionAnchorSameAsFocus } from '../utils';
 
-const useAutoComplete = (
+const useSuggestionHandlers = (
   inputRef: MutableRefObject<HTMLDivElement | null>,
   acceptSuggestion: () => void,
   rejectSuggestion: () => void,
@@ -47,4 +47,4 @@ const useAutoComplete = (
   }, [inputRef, getSelection]);
 };
 
-export { useAutoComplete };
+export { useSuggestionHandlers };

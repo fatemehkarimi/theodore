@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Node } from '../Node';
 
 class GhostTextNode extends Node {
@@ -33,12 +34,16 @@ class GhostTextNode extends Node {
     return '';
   }
 
-  public render() {
+  public render(
+    _children?: ReactNode | undefined,
+    acceptSuggestion?: () => void,
+  ) {
     return (
       <span
         data-node-index={this.getIndex()}
         key={this.getKey()}
         className="theodore_ghostText"
+        onClick={acceptSuggestion}
       >
         {this.children}
       </span>

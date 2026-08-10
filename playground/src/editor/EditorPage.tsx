@@ -8,15 +8,14 @@ import {
 } from 'theodore-js';
 import 'theodore-js/style.css';
 import styles from '../App.module.scss';
+import { BlurInput } from '../BlurInput';
 import { AnimatedPicker, type PickerEmoji } from '../components/AnimatedPicker';
 import { PlaygroundPageChrome } from '../components/PlaygroundPageChrome';
-import { isMobileDevice, renderAppleEmoji } from '../utils';
-import { SelectionPreview } from '../components/SelectionPreview';
 import type { SelectionPreviewHandle } from '../components/SelectionPreview';
-import { Slogan } from '../components/Slogan';
-import { BlurInput } from '../BlurInput';
+import { SelectionPreview } from '../components/SelectionPreview';
 import EmojiOutlined from '../icons/EmojiOutlined';
 import '../index.css';
+import { isMobileDevice, renderAppleEmoji } from '../utils';
 
 const copyTextToClipboard = async (text: string) => {
   if (
@@ -57,10 +56,11 @@ const copyTextToClipboard = async (text: string) => {
 };
 
 type EditorPageProps = {
+  title?: string;
   useEmojiRenderer?: boolean;
 };
 
-const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
+const EditorPage = ({ useEmojiRenderer = true, title }: EditorPageProps) => {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionPreviewRef = useRef<SelectionPreviewHandle>(null);
@@ -115,7 +115,7 @@ const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
   return (
     <main data-testid="editor-page">
       <PlaygroundPageChrome>
-        <Slogan />
+        <h2>{title}</h2>
         <div className={styles.theodoreWrapper}>
           <Theodore
             theodoreRef={theodoreRef}
@@ -141,32 +141,41 @@ const EditorPage = ({ useEmojiRenderer = true }: EditorPageProps) => {
               isVisible={isPickerVisible}
               onSelectEmoji={handleSelectEmoji}
             />
-            <button
-              type="button"
-              className={styles.copyButton}
-              onClick={handleCopy}
-              data-testid="copy-editor-text"
-              aria-label="Copy editor text"
-            >
-              {copied ? (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className={styles.copyButtonIcon}
-                >
-                  <path d="M9.2 16.2 4.9 11.9l-1.4 1.4 5.7 5.7L21 7.2l-1.4-1.4z" />
-                </svg>
-              ) : (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className={styles.copyButtonIcon}
-                >
-                  <path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                </svg>
-              )}
-              {copied ? 'Copied' : 'Copy'}
-            </button>
+            <div className={styles.editorActions}>
+              <button
+                type="button"
+                className={styles.copyButton}
+                onClick={() => theodoreRef.current?.resetEditor()}
+              >
+                reset
+              </button>
+              <button
+                type="button"
+                className={styles.copyButton}
+                onClick={handleCopy}
+                data-testid="copy-editor-text"
+                aria-label="Copy editor text"
+              >
+                {copied ? (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className={styles.copyButtonIcon}
+                  >
+                    <path d="M9.2 16.2 4.9 11.9l-1.4 1.4 5.7 5.7L21 7.2l-1.4-1.4z" />
+                  </svg>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className={styles.copyButtonIcon}
+                  >
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                  </svg>
+                )}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
           </div>
         </div>
         <div

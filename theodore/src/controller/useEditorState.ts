@@ -55,11 +55,19 @@ const useEditorState = (): EditorState => {
     [notifyTreeChange],
   );
 
+  const reset = () => {
+    historyHandle.history.reset();
+    nodeIndexRef.current = ALWAYS_IN_DOM_NODE_INDEX;
+    selectionHandle.setSelection(ALWAYS_IN_DOM_NODE_SELECTION);
+    setTreeAndNotify([[new ParagraphNode(ALWAYS_IN_DOM_NODE_INDEX)]]);
+  };
+
   return {
     tree,
     setTree: setTreeAndNotify,
     subscribe,
     assignNodeIndex,
+    reset,
     historyHandle,
     selectionHandle,
   };
