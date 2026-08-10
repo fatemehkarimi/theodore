@@ -19,6 +19,11 @@ export class History {
     this.transactionId += 1;
   }
 
+  reset() {
+    this.stack = [];
+    this.transactionId = 0;
+  }
+
   pop() {
     return this.stack.pop();
   }

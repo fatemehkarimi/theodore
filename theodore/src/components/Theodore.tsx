@@ -76,6 +76,7 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       handleCut,
       handleInsertSuggestion,
       clearAndSetContent,
+      resetEditor,
     } = useController(inputRef, setRemountKey, editorState, renderEmoji);
     useSuggestionHandlers(
       inputRef,
@@ -95,6 +96,9 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         setContent: (content: string) => {
           clearAndSetContent(content);
         },
+        resetEditor: () => {
+          resetEditor();
+        },
         acceptSuggestion: () => {
           acceptSuggestion();
         },
@@ -102,7 +106,14 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
           rejectSuggestion();
         },
       };
-    }, [acceptSuggestion, rejectSuggestion, insertEmoji, insertNewParagraph]);
+    }, [
+      acceptSuggestion,
+      clearAndSetContent,
+      insertEmoji,
+      insertNewParagraph,
+      rejectSuggestion,
+      resetEditor,
+    ]);
 
     useEffect(() => {
       document.addEventListener('selectionchange', handleSelectionChange);
