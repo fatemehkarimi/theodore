@@ -1,0 +1,62 @@
+export const metadata = {
+  title: 'Rendering Custom Emojis | theodore-js Docs',
+  sidebarTitle: 'Rendering Custom Emojis',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Use the renderEmoji prop to render Unicode emoji with custom images in the Theodore editor.',
+};
+
+# Rendering Custom Emojis
+
+By default, Theodore keeps emoji as native text. Pass a `renderEmoji` function when you want Theodore
+to replace recognized Unicode emoji with your own React elements.
+
+The function receives the emoji string and must return a `ReactElement`:
+
+```ts
+(emoji: string) => ReactElement
+```
+
+For predictable editor behavior, we recommend returning a single `<img />` element from your
+renderer.
+
+For example, you can map emoji characters to image assets and render them consistently across
+browsers:
+
+```tsx
+import { Theodore, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+const emojiAssets: Record<string, string> = {
+  '😀': '/emoji/grinning-face.png',
+  '😂': '/emoji/face-with-tears-of-joy.png',
+  '❤️': '/emoji/red-heart.png',
+};
+
+function renderEmoji(emoji: string) {
+  return (
+    <img
+      src={emojiAssets[emoji] ?? '/emoji/unknown.png'}
+      alt={emoji}
+      width={22}
+      height={22}
+    />
+  );
+}
+
+export function MessageInput() {
+  const editorState = useEditorState();
+
+  return <Theodore editorState={editorState} renderEmoji={renderEmoji} />;
+}
+```
+It is recommended to return a single `<img />` element from your function.
+
+The same renderer is used for emoji typed or pasted by the user and emoji inserted through
+`theodoreRef.current?.insertEmoji(emoji)`. Make sure your renderer handles every value that your
+application can insert and always returns a React element.
+
+See [Text input with emoji picker](/docs/examples/text-input-with-emoji-picker) for a complete example
+that combines custom emoji rendering with an external picker.

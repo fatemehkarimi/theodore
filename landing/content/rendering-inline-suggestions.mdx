@@ -1,0 +1,159 @@
+export const metadata = {
+  title: 'Rendering Inline Suggestions | theodore-js Docs',
+  sidebarTitle: 'Overview',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Render inline text suggestions in Theodore and let users accept or reject generated completions.',
+};
+
+# Rendering Inline Suggestions
+
+Pass a `suggestion` string to display a completion as ghost text at the current editor selection. The
+suggestion remains separate from the editor content until the user accepts it.
+
+```tsx
+import { useRef } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+
+type MessageInputProps = {
+  suggestion?: string;
+};
+
+export function MessageInput({ suggestion }: MessageInputProps) {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      theodoreRef={theodoreRef}
+    />
+  );
+}
+```
+
+## Accepting a suggestion
+
+Clicking or tapping the ghost text accepts the suggestion automatically. You can also provide another
+interaction by calling `acceptSuggestion()` through the `TheodoreHandle`.
+
+The following example initializes a `TheodoreHandle`, accepts the suggestion when the user presses
+Tab, and then clears the accepted suggestion from component state:
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+export function MessageInput() {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+  const [suggestion, setSuggestion] = useState<string | undefined>(
+    ' suggested text',
+  );
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const acceptOnTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !suggestion) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      theodoreRef.current?.acceptSuggestion();
+      setSuggestion(undefined);
+    };
+
+    editor.addEventListener('keydown', acceptOnTab);
+    return () => editor.removeEventListener('keydown', acceptOnTab);
+  }, [suggestion]);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      theodoreRef={theodoreRef}
+    />
+  );
+}
+```
+
+After accepting the suggestion, stop passing the accepted value through the `suggestion` prop. If you
+use the `useSuggestion` hook, call the hook's `acceptSuggestion` function instead so it also clears
+the active suggestion state.
+
+Tab is a familiar acceptance shortcut on desktop. On mobile, prefer an interaction suited to your
+interface, such as accepting suggestion on Enter.
+
+## Rejecting a suggestion
+
+The active suggestion is removed when the user continues editing. You can also reject it explicitly
+by calling `rejectSuggestion()` through the `TheodoreHandle`.
+
+The following example initializes a `TheodoreHandle`, rejects the suggestion when the user presses
+Escape, and then clears the rejected suggestion from component state:
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+export function MessageInput() {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+  const [suggestion, setSuggestion] = useState<string | undefined>(
+    ' suggested text',
+  );
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const rejectOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !suggestion) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      theodoreRef.current?.rejectSuggestion();
+      setSuggestion(undefined);
+    };
+
+    editor.addEventListener('keydown', rejectOnEscape);
+    return () => editor.removeEventListener('keydown', rejectOnEscape);
+  }, [suggestion]);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      theodoreRef={theodoreRef}
+    />
+  );
+}
+```
+
+Escape is a common rejection shortcut on desktop. Mobile interfaces typically do not need a dedicated
+rejection key because users can dismiss the suggestion by continuing to type.
+
+## Implementing suggestion logic
+
+When to show suggestion strings and how to generate them is up to you. You can use
+the [`useSuggestion` hook](/docs/rendering-inline-suggestions/use-suggestion-hook) to handle editor
+subscriptions, request debouncing, stale-request cancellation, and suggestion state.
+
+## Suggestion hint
+
+Theodore renders a hint after an active suggestion to show how the user can accept it. For example, a
+desktop hint might display “Tab” when that key accepts the suggestion. See
+[Suggestion Hint](/docs/rendering-inline-suggestions/suggestion-hint) to replace the default hint with
+your own component.

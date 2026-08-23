@@ -1,0 +1,60 @@
+export const metadata = {
+  title: 'Utility Functions | theodore-js Docs',
+  sidebarTitle: 'Utility Functions',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Use Theodore utility functions to convert editor trees to text and inspect editor content and selections.',
+};
+
+# Utility Functions
+
+Theodore exports utility functions for reading editor state without modifying it.
+
+## `convertTreeToText(tree)`
+
+```ts
+function convertTreeToText(tree: TheodoreTree): string;
+```
+
+Converts a Theodore editor tree to plain text. Content within each paragraph is joined together, and
+paragraphs are separated with newline characters. Temporary ghost nodes used for inline suggestions
+are excluded from the returned text until the suggestion is accepted.
+
+```tsx
+import { convertTreeToText } from 'theodore-js';
+
+const text = convertTreeToText(editorState.tree);
+```
+
+## `isEditorEmpty(tree)`
+
+```ts
+function isEditorEmpty(tree: TheodoreTree): boolean;
+```
+
+Returns `true` when the tree has no paragraphs or contains only its initial empty paragraph. Use it to
+check whether the editor has user content:
+
+```tsx
+import { isEditorEmpty } from 'theodore-js';
+
+const isEmpty = isEditorEmpty(editorState.tree);
+```
+
+## `isEditorSelectionCollapsed(selection)`
+
+```ts
+function isEditorSelectionCollapsed(selection: EditorSelection): boolean;
+```
+
+Returns `true` when the selection is a cursor: its start and end have the same node index and character
+offset. It returns `false` for a range selection or when the selection is `null`.
+
+```tsx
+import { isEditorSelectionCollapsed } from 'theodore-js';
+
+const selection = editorState.selectionHandle.getSelection();
+const hasCursor = isEditorSelectionCollapsed(selection);
+```

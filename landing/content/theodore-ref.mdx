@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Component API | theodore-js Docs',
-  sidebarTitle: 'Component API',
+  title: 'TheodoreRef | theodore-js Docs',
+  sidebarTitle: 'TheodoreRef',
   theme: {
     breadcrumb: false,
   },
@@ -8,11 +8,11 @@ export const metadata = {
     'Use the TheodoreHandle component API to insert emoji and replace editor content programmatically.',
 };
 
-# Component API
+# TheodoreRef
 
 The `Theodore` component accepts a `theodoreRef` prop that exposes imperative methods through the `TheodoreHandle` type. Use it when code outside the editor needs to update the editor directly, such as an emoji picker, saved draft loader, or send button.
 
-This example creates a ref for the editor, passes it to `Theodore`, then uses external buttons to insert an emoji or clear the content.
+This example creates a ref for the editor, passes it to `Theodore`, then uses external buttons to insert an emoji or reset the editor.
 
 ```tsx
 import { useRef } from 'react';
@@ -34,7 +34,7 @@ export function MessageInput() {
         Insert emoji
       </button>
 
-      <button type="button" onClick={() => theodoreRef.current?.setContent('')}>
+      <button type="button" onClick={() => theodoreRef.current?.resetEditor()}>
         Clear
       </button>
     </>
@@ -77,3 +77,35 @@ theodoreRef.current?.setContent('');
 ```
 
 Theodore parses the provided text into its internal editor nodes. Emoji characters in the string are rendered through your `renderEmoji` function, the same as emoji typed or pasted by the user. After setting content, Theodore moves the selection to the end of the inserted content.
+
+## `acceptSuggestion()`
+
+```ts
+acceptSuggestion: () => void;
+```
+
+Accepts the current `suggestion` and converts it into regular editor content. If there is no active suggestion, this method does nothing.
+
+Call `acceptSuggestion` from your own interaction handler when the user indicates that they want to accept the suggestion—for example, by pressing Tab on desktop or Enter on mobile.
+
+After accepting a suggestion, stop passing it through the `suggestion` prop. You can either remove the prop value or replace it with a new suggestion.
+
+## `rejectSuggestion()`
+
+```ts
+rejectSuggestion: () => void;
+```
+
+Rejects and removes the current `suggestion` without adding it to the editor content. If there is no active suggestion, this method does nothing.
+
+Call `rejectSuggestion` from your own interaction handler when the user dismisses the suggestion—for example, by pressing Escape on desktop. After rejecting a suggestion, stop passing it through the `suggestion` prop. You can either remove the prop value or replace it with a new suggestion.
+
+## `resetEditor()`
+
+```ts
+resetEditor: () => void;
+```
+
+Clears the editor content and resets its undo history. Use `resetEditor` when the previous content should no longer be recoverable—for example, after a message has been sent.
+
+This method differs from calling `setContent('')`, which clears the content but preserves the undo history. After `setContent('')`, the user can still restore the previous content by pressing Ctrl+Z.

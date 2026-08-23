@@ -1,0 +1,136 @@
+export const metadata = {
+  title: 'Component Props | theodore-js Docs',
+  sidebarTitle: 'Component Props',
+  theme: {
+    breadcrumb: false,
+  },
+  description: 'Configure the Theodore editor with component props for emoji rendering, placeholders, text direction, and more.',
+};
+
+# Component Props
+
+The `Theodore` component requires an `editorState` prop. All other component-specific props are
+optional.
+
+| Prop | Required | Purpose |
+| --- | :---: | --- |
+| `editorState` | Yes | Holds the editor content, selection, and undo history |
+| `theodoreRef` | No | Exposes imperative editor methods |
+| `ref` | No | References the editable `div` |
+| `renderEmoji` | No | Renders emoji with custom React elements |
+| `placeholder` | No | Shows content while the editor is empty |
+| `suggestion` | No | Displays inline ghost text |
+| `suggestionHint` | No | Customizes or hides the suggestion hint |
+| `defaultDirection` | No | Sets the fallback text direction |
+| `maxLines` | No | Limits the editor's visible height |
+| `shouldSuppressFocus` | No | Prevents the native keyboard from opening |
+| `className` | No | Styles the editable element |
+| `wrapperClassName` | No | Styles the outer wrapper |
+| `placeholderClassName` | No | Styles a string placeholder |
+
+## `editorState`
+
+**Type:** `EditorState` · **Required**
+
+The editor state created by `useEditorState()`. Theodore uses it to manage content, selection, and undo
+history.
+
+**Related:** [Editor State](/docs/use-editor-state)
+
+## `theodoreRef`
+
+**Type:** `React.Ref<TheodoreHandle>` · **Default:** `undefined`
+
+Exposes Theodore's imperative methods, such as inserting emoji, replacing content, and resetting the
+editor.
+
+**Related:** [TheodoreRef](/docs/theodore-ref)
+
+## `ref`
+
+**Type:** `React.Ref<HTMLDivElement>` · **Default:** `undefined`
+
+A forwarded ref to the `contentEditable` element. Use it when you need direct access to the underlying
+DOM element.
+
+## `renderEmoji`
+
+**Type:** `(emoji: string) => ReactElement` · **Default:** native emoji text
+
+Called with each recognized emoji value. Return the React element Theodore should render, typically a
+single `<img />`. Without this prop, emoji remain native text.
+
+**Related:** [Rendering Custom Emojis](/docs/rendering-custom-emojis)
+
+## `placeholder`
+
+**Type:** `string | React.ReactNode` · **Default:** `undefined`
+
+Content shown while the editor is empty. A string receives Theodore's default placeholder styling and
+animation. Other React nodes are rendered directly.
+
+## `suggestion`
+
+**Type:** `string` · **Default:** `undefined`
+
+Inline ghost text displayed at the current selection. The suggestion remains separate from the plain
+text content until it is accepted.
+
+**Related:** [Rendering Inline Suggestions](/docs/rendering-inline-suggestions)
+
+## `suggestionHint`
+
+**Type:** `React.FC<SuggestionHintProps> | null` · **Default:** Theodore's built-in hint
+
+A component rendered after an inline suggestion. It receives the text direction and an
+`acceptSuggestion` callback. Pass `null` to hide the hint.
+
+**Related:** [Suggestion Hint](/docs/rendering-inline-suggestions/suggestion-hint)
+
+## `defaultDirection`
+
+**Type:** `'ltr' | 'rtl'` · **Default:** `'ltr'`
+
+The fallback text direction for an empty paragraph or one beginning with a non-text node. When a
+paragraph begins with text, Theodore infers its direction from the first character.
+
+## `maxLines`
+
+**Type:** `number` · **Default:** unlimited
+
+The maximum number of lines the editor can grow to. Additional content makes the editor scrollable.
+Values less than or equal to zero do not set a maximum height.
+
+## `shouldSuppressFocus`
+
+**Type:** `boolean` · **Default:** `false`
+
+When `true`, Theodore blurs the editor whenever it receives focus. Use this on mobile while a custom
+emoji picker is open to prevent the native keyboard from appearing at the same time.
+
+## `className`
+
+**Type:** `string` · **Default:** `undefined`
+
+Adds a CSS class to the `contentEditable` element.
+
+## `wrapperClassName`
+
+**Type:** `string` · **Default:** `undefined`
+
+Adds a CSS class to the outer wrapper around the `contentEditable` element.
+
+## `placeholderClassName`
+
+**Type:** `string` · **Default:** `undefined`
+
+Adds a CSS class to Theodore's placeholder element when `placeholder` is a string. It does not apply
+when you provide a custom React node.
+
+## Native HTML Props
+
+Most other `div` attributes and event props are forwarded to the `contentEditable` element, including
+`aria-*`, `data-*`, `style`, `onFocus`, and `onBlur`.
+
+The `contentEditable`, `onKeyDown`, `onPaste`, and `onCut` props are not accepted because Theodore
+manages them internally.

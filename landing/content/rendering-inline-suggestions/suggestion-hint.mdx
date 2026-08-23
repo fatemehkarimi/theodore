@@ -1,0 +1,61 @@
+export const metadata = {
+  title: 'Suggestion Hint | theodore-js Docs',
+  sidebarTitle: 'Suggestion Hint',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    "Replace Theodore's default inline suggestion hint with a custom React component.",
+};
+
+# Suggestion Hint
+
+Theodore renders a default hint after an active suggestion. Pass a `suggestionHint` component to
+replace it. Your component receives the text direction and an `acceptSuggestion` callback.
+
+Your hint can have any visual style or internal structure, but its outermost element must include
+`data-suggestion-hint="true"`. Theodore uses this attribute to identify the hint while managing the
+editor selection. We also recommend setting `contentEditable={false}` on that element so the user
+cannot move the editor selection into the hint.
+
+For example:
+
+```tsx
+import type { SuggestionHintProps } from 'theodore-js';
+
+function SuggestionHint({ direction, acceptSuggestion }: SuggestionHintProps) {
+  return (
+    <span
+      dir={direction}
+      data-suggestion-hint="true"
+      contentEditable={false}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        acceptSuggestion?.();
+      }}
+    >
+      Accept
+    </span>
+  );
+}
+```
+
+Pass the component to Theodore to display it whenever a suggestion is active:
+
+```tsx
+<Theodore
+  editorState={editorState}
+  suggestion={suggestion}
+  suggestionHint={SuggestionHint}
+/>
+```
+
+To show no element after the suggestion, pass `null` instead:
+
+```tsx
+<Theodore
+  editorState={editorState}
+  suggestion={suggestion}
+  suggestionHint={null}
+/>
+```
