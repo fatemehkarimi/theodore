@@ -1,6 +1,6 @@
 # Theodore 😄
 
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/theodore-js/theodore/blob/main/LICENSE)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/fatemehkarimi/theodore)
 [![npm version](https://img.shields.io/npm/v/theodore-js.svg)](https://www.npmjs.com/package/theodore-js)
 
 **Theodore** is an emoji-friendly, content-editable text input for React. It replaces native emoji characters with your own images so they render consistently across browsers.
