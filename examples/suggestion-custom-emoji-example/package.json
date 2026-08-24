@@ -1,15 +1,14 @@
 {
-  "name": "theodore-chat-app-example",
+  "name": "theodore-suggestion-custom-emoji-example",
   "version": "1.0.0",
-  "description": "This project shows how to use theodore-js in a chat app",
-  "keywords": [
-    "theodore-js",
-    "contenteditable",
-    "emoji"
-  ],
+  "private": true,
+  "description": "A minimal theodore-js suggestion example with custom emojis",
   "main": "src/index.tsx",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
   "dependencies": {
-    "loader-utils": "3.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-scripts": "5.0.1",
@@ -19,12 +18,6 @@
     "@types/react": "18.2.38",
     "@types/react-dom": "18.2.15",
     "typescript": "4.4.4"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
   },
   "browserslist": [
     ">0.2%",

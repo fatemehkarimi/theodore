@@ -68,7 +68,7 @@ export default function App() {
   const handleSend = () => {
     const content = convertTreeToText(editorState.tree);
     setMessages((currentMessages) => [...currentMessages, content.trim()]);
-    theodoreRef.current?.setContent('');
+    theodoreRef.current?.resetEditor();
   };
 
   const handleAddEmoji = (emoji: string) => {
