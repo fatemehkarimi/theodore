@@ -18,7 +18,7 @@ for requesting and managing suggestion state.
 ## Usage
 
 ```tsx
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   Theodore,
   type SuggestionRequest,
@@ -34,6 +34,7 @@ type SuggestionResponse = {
 
 export function MessageInput() {
   const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
   const theodoreRef = useRef<TheodoreHandle>(null);
 
   const requestSuggestion = useCallback(
@@ -66,24 +67,39 @@ export function MessageInput() {
       theodoreRef,
     });
 
-  return (
-    <>
-      <Theodore
-        editorState={editorState}
-        suggestion={suggestion}
-        theodoreRef={theodoreRef}
-      />
+  useEffect(() => {
+    const editor = editorRef.current;
 
-      <button
-        type="button"
-        onClick={() => acceptSuggestion(editorState.tree)}
-      >
-        Accept suggestion
-      </button>
-      <button type="button" onClick={rejectActiveSuggestion}>
-        Reject suggestion
-      </button>
-    </>
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (suggestion == null) return;
+
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        acceptSuggestion(editorState.tree);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        rejectActiveSuggestion();
+      }
+    };
+
+    editor?.addEventListener('keydown', handleKeyDown);
+    return () => editor?.removeEventListener('keydown', handleKeyDown);
+  }, [
+    acceptSuggestion,
+    editorState.tree,
+    rejectActiveSuggestion,
+    suggestion,
+  ]);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      theodoreRef={theodoreRef}
+    />
   );
 }
 ```

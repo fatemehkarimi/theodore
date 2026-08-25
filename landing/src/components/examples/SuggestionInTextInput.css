@@ -1,0 +1,84 @@
+.suggestion-input-example {
+  max-width: 42rem;
+  margin-block: 1.5rem;
+  padding: 22px;
+  border: 1px solid var(--color-violet-200);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f5f3ff 0%, #fff 55%, #faf5ff 100%);
+  box-shadow: 0 12px 32px rgb(76 29 149 / 10%);
+}
+
+.suggestion-input-example__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-violet-900);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.suggestion-input-example__status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-violet-600);
+  box-shadow: 0 0 0 4px rgb(139 92 246 / 14%);
+}
+
+.suggestion-input-example__description {
+  margin: 6px 0 16px;
+  color: var(--color-gray-600);
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+
+.suggestion-input-example__editor-shell {
+  padding: 16px 18px 12px;
+  border: 1px solid #d8b4fe;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(76 29 149 / 7%);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.suggestion-input-example__editor-shell:focus-within {
+  border-color: var(--color-violet-400);
+  box-shadow: 0 0 0 4px rgb(167 139 250 / 18%);
+}
+
+.suggestion-input-example__input {
+  min-height: 72px;
+  padding: 2px;
+  outline: none;
+  color: var(--color-gray-900);
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+
+.suggestion-input-example__placeholder {
+  top: 2px;
+  left: 2px;
+  padding: 0;
+  color: var(--color-gray-400);
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+
+.suggestion-input-example__hint {
+  margin: 8px 2px 0;
+  color: var(--color-gray-500);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .suggestion-input-example {
+    padding: 14px;
+  }
+
+  .suggestion-input-example__editor-shell {
+    padding-inline: 14px;
+  }
+}
