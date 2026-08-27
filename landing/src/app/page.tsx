@@ -1,4 +1,4 @@
-import { DemoSection } from '@/components/DemoSection';
+import { Articles } from '../components/Articles';
 import { Features } from '../components/Features';
 import { Footer } from '../components/Footer';
 import { Hero } from '../components/Hero';
@@ -9,9 +9,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <main>
         <Hero />
-        <DemoSection />
         <Features />
         <Installation />
+        <Articles />
       </main>
       <Footer />
     </div>

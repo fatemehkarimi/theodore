@@ -208,7 +208,7 @@ const copyTextToClipboard = (text: string) => {
   }
 };
 
-export function DemoV2() {
+export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
   const editorState = useEditorState();
   const [copied, setCopied] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -442,18 +442,27 @@ export function DemoV2() {
   );
 
   return (
-    <section id="demo" className="py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl mb-4">Complete the thought.</h2>
-            <p className="text-gray-600">
-              Start typing, then pause to see how suggestion looks like in
-              theoodre.
-            </p>
-          </div>
+    <section
+      id="demo"
+      className={embedded ? 'landing-hero-demo' : 'py-20 bg-white'}
+    >
+      <div
+        className={
+          embedded ? undefined : 'container mx-auto px-4 sm:px-6 lg:px-8'
+        }
+      >
+        <div className={embedded ? undefined : 'max-w-4xl mx-auto'}>
+          {!embedded && (
+            <div className="text-center mb-12">
+              <h2 className="text-4xl mb-4">Complete the thought.</h2>
+              <p className="text-gray-600">
+                Start typing, then pause to see how suggestion looks like in
+                theoodre.
+              </p>
+            </div>
+          )}
 
-          <Card className="p-6 mb-8">
+          <Card className={embedded ? 'landing-demo-card p-6' : 'p-6 mb-8'}>
             <div
               className="flex items-center"
               style={{ justifyContent: 'flex-end' }}

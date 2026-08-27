@@ -3,7 +3,7 @@ import { Github, Heart } from 'lucide-react';
 import Link from 'next/link';
 
 const defaultDescription =
-  'Theodore is an editor that replaces emoji characters with custom images, ensuring consistent display across all browsers';
+  'Use theodore-js to bring inline suggestions and custom-rendered emoji to your React inputs, with consistent rendering across every browser.';
 
 type FooterProps = {
   description?: string;

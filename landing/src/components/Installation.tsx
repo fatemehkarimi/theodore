@@ -5,14 +5,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Copy, Check } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { highlightElement } from '@speed-highlight/core';
 import Link from 'next/link';
 
 export function Installation() {
-  const [copiedNpm, setCopiedNpm] = useState(false);
-  const [copiedYarn, setCopiedYarn] = useState(false);
-  const [copiedPnpm, setCopiedPnpm] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const codeRef = useRef<HTMLElement | null>(null);
 
@@ -31,177 +27,127 @@ export function Installation() {
     }
   }, []);
 
-  const npmInstall = 'npm install theodore-js';
-  const yarnInstall = 'yarn add theodore-js';
-  const pnpmInstall = 'pnpm add theodore-js';
-  const codeExample = `import React, { useRef } from 'react';
-import { Theodore, TheodoreHandle, useEditorState } from 'theodore-js';
+  const codeExample = `import { useRef } from 'react';
+import {
+  Theodore,
+  type TheodoreHandle,
+  useEditorState,
+  useSuggestion,
+} from 'theodore-js';
 import 'theodore-js/style.css';
 
-const renderEmoji = (emoji: string) => {
-  if (emoji === '') return <></>;
-  const unified = nativeToUnified(emoji);
-  const path = \`/img-apple-64/\${unified}.png\`;
-  return <img src={path} width={22} height={22} alt={emoji} />;
-};
+import { renderEmoji, requestSuggestion } from './editor-config';
 
-export const TheodoreTextInput: React.FC = () => {
+export function Composer() {
   const theodoreRef = useRef<TheodoreHandle>(null);
   const editorState = useEditorState();
 
-  const handleSelectEmoji = (emoji: { native: string }) => {
-    theodoreRef.current?.insertEmoji(emoji.native);
-  };
+  const { suggestion } = useSuggestion({
+    editorState,
+    theodoreRef,
+    requestSuggestion,
+  });
 
   return (
     <Theodore
-      theodoreRef={theodoreRef}
       editorState={editorState}
+      theodoreRef={theodoreRef}
       renderEmoji={renderEmoji}
+      suggestion={suggestion}
       placeholder="Write something..."
-      maxLines={5}
     />
   );
-};`;
+}`;
 
   return (
     <section id="installation" className="py-20 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl mb-4">Quick Start</h2>
-            <p className="text-gray-600">Get up and running in seconds</p>
+            <p className="text-gray-600">
+              Connect custom emoji rendering and ghost-text suggestions in one
+              component.
+            </p>
           </div>
 
-          <div className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-medium mb-4">Installation</h3>
-              <Tabs defaultValue="npm" className="w-full">
-                <TabsList className="grid w-full max-w-[400px] grid-cols-3">
-                  <TabsTrigger value="npm">npm</TabsTrigger>
-                  <TabsTrigger value="yarn">yarn</TabsTrigger>
-                  <TabsTrigger value="pnpm">pnpm</TabsTrigger>
-                </TabsList>
-                <TabsContent value="npm">
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                      <code>{npmInstall}</code>
-                    </pre>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Copy npm install command"
-                      className="absolute top-2 right-2 text-gray-300 hover:text-white"
-                      onClick={() => copyToClipboard(npmInstall, setCopiedNpm)}
-                    >
-                      {copiedNpm ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </TabsContent>
-                <TabsContent value="yarn">
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                      <code>{yarnInstall}</code>
-                    </pre>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Copy yarn install command"
-                      className="absolute top-2 right-2 text-gray-300 hover:text-white"
-                      onClick={() =>
-                        copyToClipboard(yarnInstall, setCopiedYarn)
-                      }
-                    >
-                      {copiedYarn ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </TabsContent>
-                <TabsContent value="pnpm">
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                      <code>{pnpmInstall}</code>
-                    </pre>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Copy pnpm install command"
-                      className="absolute top-2 right-2 text-gray-300 hover:text-white"
-                      onClick={() =>
-                        copyToClipboard(pnpmInstall, setCopiedPnpm)
-                      }
-                    >
-                      {copiedPnpm ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-medium mb-4">Basic Usage</h3>
-              <div className="relative">
-                <pre
-                  className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto"
-                  style={{
-                    borderRadius: '0.5rem',
-                    padding: '1rem',
-                    margin: 0,
-                  }}
-                >
-                  <code
-                    ref={codeRef}
-                    className="shj-lang-ts"
-                    style={{
-                      fontSize: '1rem',
-                      backgroundColor: 'var(--color-gray-900)',
-                    }}
-                  >
-                    {codeExample}
-                  </code>
-                </pre>
+          <div className="landing-quick-start-layout">
+            <Card className="landing-quick-start-code">
+              <div className="landing-code-window-header">
+                <div className="landing-code-window-dots" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <span className="landing-code-filename">Composer.tsx</span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  aria-label="Copy basic usage example"
-                  className="absolute top-2 right-2 text-gray-300 hover:text-white z-10"
+                  aria-label="Copy usage example"
+                  className="landing-code-copy"
                   onClick={() => copyToClipboard(codeExample, setCopiedCode)}
                 >
                   {copiedCode ? (
-                    <Check className="w-4 h-4" />
+                    <>
+                      <Check className="w-4 h-4" /> Copied
+                    </>
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <>
+                      <Copy className="w-4 h-4" /> Copy
+                    </>
                   )}
                 </Button>
               </div>
+
+              <pre className="landing-code-window-body">
+                <code
+                  ref={codeRef}
+                  className="shj-lang-ts"
+                  style={{
+                    fontSize: '0.875rem',
+                    backgroundColor: 'var(--color-gray-900)',
+                  }}
+                >
+                  {codeExample}
+                </code>
+              </pre>
             </Card>
 
-            <div className="bg-violet-50 border border-violet-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-2 text-violet-900">
-                📚 Documentation
-              </h3>
-              <p className="text-violet-700 mb-4">
-                Explore the full API reference, usage examples, and advanced
-                guides.
-              </p>
-              <Link
-                href="/docs"
-                className="inline-flex items-center justify-center rounded-md border border-violet-300 bg-transparent px-4 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
-              >
-                Read the docs
+            <aside className="landing-quick-start-guide">
+              <Card className="landing-quick-start-guide-card">
+                <h3>What you provide</h3>
+                <ol>
+                  <li>
+                    <span aria-hidden="true">01</span>
+                    <div>
+                      <code>renderEmoji</code>
+                      <p>Controls which image represents each emoji.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span aria-hidden="true">02</span>
+                    <div>
+                      <code>requestSuggestion</code>
+                      <p>Connects Theodore to your suggestion API.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span aria-hidden="true">03</span>
+                    <div>
+                      <strong>Editor state and UI</strong>
+                      <p>
+                        Theodore handles content, rendering, and ghost text.
+                      </p>
+                    </div>
+                  </li>
+                </ol>
+              </Card>
+
+              <Link href="/docs" className="landing-quick-start-docs">
+                Need the complete setup? Read the documentation
+                <span aria-hidden="true">→</span>
               </Link>
-            </div>
+            </aside>
           </div>
         </div>
       </div>

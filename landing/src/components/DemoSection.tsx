@@ -139,131 +139,98 @@ export function DemoSection() {
   );
 
   return (
-    <section id="demo" className="py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl mb-4">Try It Live</h2>
-            <p className="text-gray-600">
-              Experience consistent emoji rendering in action
-            </p>
-          </div>
-
-          <Card className="p-6 mb-8">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-gray-700">
-                Interactive Editor
-              </label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="gap-2"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" /> Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" /> Copy
-                  </>
-                )}
-              </Button>
-            </div>
-            <Theodore
-              editorState={editorState}
-              renderEmoji={renderEmoji}
-              className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
-              placeholderClassName="landing-demo-placeholder"
-              placeholder="Try typing with emojis! 😊"
-              role="textbox"
-              aria-label="Interactive emoji editor"
-              aria-multiline="true"
-              style={{
-                fontSize: '16px',
-                lineHeight: '24ppx',
-              }}
-              maxLines={7}
-              theodoreRef={theodoreRef}
-              ref={editorRef}
-            />
-
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600">Quick Insert:</p>
-              <Select
-                value={selectedSet}
-                onValueChange={(value) =>
-                  setSelectedSet(value as keyof typeof emojiSets)
-                }
-              >
-                <SelectTrigger
-                  aria-label="Select emoji style"
-                  className="w-[180px] fit-content-select"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(emojiSets).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>
-                      {value.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {SelectedEmojis.map((emoji) => (
-                <button
-                  key={emoji.name}
-                  onClick={() => {
-                    theodoreRef.current?.insertEmoji(emoji.name);
-                  }}
-                  className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-violet-50"
-                >
-                  {selectedSet != 'placeholder' ? (
-                    <img
-                      key={emoji.name}
-                      src={`/${selectedSet}/${emoji.path}.${emojiSets[selectedSet].type}`}
-                      alt={emoji.name}
-                      className="w-8 h-8"
-                    />
-                  ) : (
-                    <span className="text-2xl">☺️</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          {/* <div className="grid md:grid-cols-2 gap-6">
-            <Card className="p-6">
-              <div className="mb-3">
-                <span className="text-3xl mb-2 block">🎯</span>
-                <h3 className="text-lg font-medium mb-2">
-                  Native Emoji Support
-                </h3>
-                <p className="text-sm text-gray-600">
-                  All emojis render consistently, regardless of the user's
-                  browser or operating system.
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="mb-3">
-                <span className="text-3xl mb-2 block">🛡️</span>
-                <h3 className="text-lg font-medium mb-2">Reliable Editing</h3>
-                <p className="text-sm text-gray-600">
-                  Content-editable with robust emoji handling, no unexpected
-                  formatting issues.
-                </p>
-              </div>
-            </Card>
-          </div> */}
-        </div>
+    <div id="demo" className="landing-hero-demo">
+      <div className="landing-demo-heading text-center">
+        <h2 className="text-4xl mb-4">Try It Live</h2>
+        <p className="text-gray-600">
+          Experience consistent emoji rendering in action
+        </p>
       </div>
-    </section>
+
+      <Card className="landing-demo-card p-6">
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-medium text-gray-700">
+            Interactive Editor
+          </label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            className="gap-2"
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4" /> Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" /> Copy
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Theodore
+          editorState={editorState}
+          renderEmoji={renderEmoji}
+          className="min-h-[100px] p-4 border-2 border-violet-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white text-gray-800"
+          placeholderClassName="landing-demo-placeholder"
+          placeholder="Try typing with emojis! 😊"
+          role="textbox"
+          aria-label="Interactive emoji editor"
+          aria-multiline="true"
+          style={{ fontSize: '16px', lineHeight: '24px' }}
+          maxLines={7}
+          theodoreRef={theodoreRef}
+          ref={editorRef}
+        />
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">Quick Insert:</p>
+          <Select
+            value={selectedSet}
+            onValueChange={(value) =>
+              setSelectedSet(value as keyof typeof emojiSets)
+            }
+          >
+            <SelectTrigger
+              aria-label="Select emoji style"
+              className="w-[180px] fit-content-select"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(emojiSets).map(([key, value]) => (
+                <SelectItem key={key} value={key}>
+                  {value.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {SelectedEmojis.map((emoji) => (
+            <button
+              type="button"
+              key={emoji.name}
+              aria-label={`Insert ${emoji.name}`}
+              onClick={() => theodoreRef.current?.insertEmoji(emoji.name)}
+              className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-violet-50"
+            >
+              {selectedSet !== 'placeholder' ? (
+                <img
+                  src={`/${selectedSet}/${emoji.path}.${emojiSets[selectedSet].type}`}
+                  alt=""
+                  className="w-8 h-8"
+                />
+              ) : (
+                <span className="text-2xl">☺️</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
   );
 }

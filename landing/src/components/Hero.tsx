@@ -1,44 +1,79 @@
+import { Github } from 'lucide-react';
+import { DemoV2 } from './DemoV2';
 import { HeroActions } from './HeroActions';
+import { InstallCommand } from './InstallCommand';
 
 export function Hero() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-purple-50 pt-20 pb-32"
+      className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-purple-50 pb-32"
     >
+      <nav className="landing-home-nav" aria-label="Main navigation">
+        <a className="landing-home-brand" href="/" aria-label="Theodore home">
+          <span aria-hidden="true">😊</span>
+          <span>theodore-js</span>
+          <span className="landing-version-badge">v2.0.0</span>
+        </a>
+
+        <div className="landing-home-nav-links">
+          <a href="/docs">Docs</a>
+          <a
+            href="https://github.com/fatemehkarimi/theodore"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Github aria-hidden="true" />
+            GitHub
+          </a>
+        </div>
+      </nav>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block mb-4 px-4 py-2 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
-            Cross-Browser Emoji Rendering
+        <div className="landing-hero-layout">
+          <div className="landing-hero-copy text-center">
+            <h1 className="landing-hero-heading">
+              Build{' '}
+              <span className="landing-hero-heading-primary">
+                richer React inputs
+              </span>{' '}
+              with{' '}
+              <span className="landing-hero-heading-suggestions">
+                inline suggestions
+              </span>{' '}
+              and{' '}
+              <span className="landing-hero-heading-emoji">
+                custom-rendered emoji
+              </span>
+              .
+            </h1>
+
+            <InstallCommand />
+
+            <div className="landing-hero-actions-wrap">
+              <HeroActions />
+            </div>
+
+            <div className="landing-hero-benefits flex flex-wrap gap-8 justify-center text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">👻</span>
+                <span>Supports Ghost Text</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">😊</span>
+                <span>Consistent Emoji Rendering</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⚡</span>
+                <span>Lightweight</span>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-5xl md:text-7xl mb-6 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-            theodore-js
-          </h1>
-
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Theodore is an editor that replaces emoji characters with custom
-            images, ensuring consistent display across all browsers
-          </p>
-          <HeroActions />
-          <div className="flex flex-wrap gap-8 justify-center text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">😊</span>
-              <span>Consistent Rendering</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🌐</span>
-              <span>Cross-Browser</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span>Lightweight</span>
-            </div>
-          </div>
+          <DemoV2 embedded />
         </div>
       </div>
 
-      {/* Decorative elements */}
       <div
         aria-hidden="true"
         className="absolute top-20 left-10 text-6xl opacity-20 animate-pulse"

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Github } from 'lucide-react';
+import { ArrowRight, Package } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function HeroActions() {
@@ -28,14 +28,14 @@ export function HeroActions() {
         className="gap-2"
         onClick={() =>
           window.open(
-            'https://github.com/fatemehkarimi/theodore',
+            'https://www.npmjs.com/package/theodore-js',
             '_blank',
             'noopener,noreferrer',
           )
         }
       >
-        <Github className="w-4 h-4" />
-        View on GitHub
+        <Package className="w-4 h-4" />
+        View on npm
       </Button>
     </div>
   );
