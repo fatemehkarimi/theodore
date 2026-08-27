@@ -29,8 +29,14 @@ func (oa OpenRouterAgent) Generate(ctx context.Context, prompt string) (*agent.G
 		return nil, fmt.Errorf("OPEN ROUTER API KEY environment variable is not set")
 	}
 
+	var fallbackModels []string
+	if oa.config.OpenRouterAgent.FallbackModel != "" {
+		fallbackModels = []string{oa.config.OpenRouterAgent.FallbackModel}
+	}
+
 	payload := chatCompletionRequest{
-		Model: oa.config.OpenRouterAgent.Model,
+		Model:  oa.config.OpenRouterAgent.Model,
+		Models: fallbackModels,
 		Messages: []chatMessage{
 			{
 				Role:    "user",
@@ -72,7 +78,7 @@ func (oa OpenRouterAgent) Generate(ctx context.Context, prompt string) (*agent.G
 	}
 
 	if len(response.Choices) == 0 {
-		return nil, fmt.Errorf("arvan agent response has no choices")
+		return nil, fmt.Errorf("openrouter agent response has no choices")
 	}
 
 	return &agent.GenerateResponse{
