@@ -1,7 +1,9 @@
 package openrouteragent
 
 type chatCompletionRequest struct {
+	// Model is the primary model; Models contains ordered fallbacks that OpenRouter tries if the primary fails.
 	Model       string        `json:"model"`
+	Models      []string      `json:"models,omitempty"`
 	Messages    []chatMessage `json:"messages"`
 	MaxTokens   int           `json:"max_tokens"`
 	Temperature float64       `json:"temperature"`

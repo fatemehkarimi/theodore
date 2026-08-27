@@ -26,6 +26,7 @@ type Config struct {
 		MaxTokens          int
 		Temprature         float64
 		Model              string
+		FallbackModel      string
 		RemoteAgentTimeout int
 	}
 }
@@ -62,6 +63,7 @@ func ReadConfig() Config {
 	c.OpenRouterAgent.MaxTokens = viper.GetInt("app.agent.openrouter.max_tokens")
 	c.OpenRouterAgent.Temprature = viper.GetFloat64("app.agent.openrouter.temprature")
 	c.OpenRouterAgent.Model = viper.GetString("app.agent.openrouter.model")
+	c.OpenRouterAgent.FallbackModel = viper.GetString("app.agent.openrouter.fallback_model")
 	c.OpenRouterAgent.RemoteAgentTimeout = viper.GetInt("app.agent.openrouter.remote_agent_timeout")
 
 	return c
