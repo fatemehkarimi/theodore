@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import React, {
   useEffect,
   useImperativeHandle,
@@ -185,7 +184,11 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
     }, [props.autoFocus]);
 
     return (
-      <div className={clsx('theodore_wrapper', wrapperClassName)}>
+      <div
+        className={['theodore_wrapper', wrapperClassName]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <div
           className={`theodore_contentEditable ${className ?? ''}`}
           contentEditable="true"
@@ -245,13 +248,13 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         {placeholder != undefined ? (
           typeof placeholder == 'string' ? (
             <div
-              className={clsx(
+              className={[
                 'theodore_placeholder',
-                {
-                  theodore_hiddenPlaceholder: !isEmpty,
-                },
+                !isEmpty && 'theodore_hiddenPlaceholder',
                 placeholderClassName,
-              )}
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
               {placeholder}
             </div>

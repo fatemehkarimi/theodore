@@ -154,9 +154,6 @@ importers:
 
   theodore:
     dependencies:
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       emoji-regex:
         specifier: ^10.6.0
         version: 10.6.0
