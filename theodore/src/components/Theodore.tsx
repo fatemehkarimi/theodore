@@ -34,7 +34,7 @@ type Props = Omit<
   theodoreRef?: React.Ref<TheodoreHandle>;
   shouldSuppressFocus?: boolean;
   suggestion?: string;
-  suggestionHint?: React.FC<SuggestionHintProps>;
+  suggestionHint?: React.FC<SuggestionHintProps> | null;
 };
 const Theodore = React.forwardRef<HTMLDivElement, Props>(
   (incomingProps, ref) => {
@@ -67,7 +67,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       acceptSuggestion,
       rejectSuggestion,
       insertEmoji,
-      insertNewParagraph,
       handleKeyDown,
       handleOnBeforeInput,
       handleOnInput,
@@ -90,9 +89,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
         insertEmoji: (emoji) => {
           insertEmoji(emoji);
         },
-        insertNewParagraph: () => {
-          insertNewParagraph();
-        },
         setContent: (content: string) => {
           clearAndSetContent(content);
         },
@@ -110,7 +106,6 @@ const Theodore = React.forwardRef<HTMLDivElement, Props>(
       acceptSuggestion,
       clearAndSetContent,
       insertEmoji,
-      insertNewParagraph,
       rejectSuggestion,
       resetEditor,
     ]);

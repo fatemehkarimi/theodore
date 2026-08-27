@@ -30,7 +30,6 @@ function emojiImagePath(emoji: string) {
 export function TextInputWithEmojiPicker() {
   const editorState = useEditorState();
   const theodoreRef = useRef<TheodoreHandle>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const pickerToggleRef = useRef<HTMLButtonElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -82,7 +81,6 @@ export function TextInputWithEmojiPicker() {
             editorState={editorState}
             renderEmoji={renderEmoji}
             theodoreRef={theodoreRef}
-            ref={editorRef}
             placeholder="Write a message"
             className="emoji-picker-example__input"
             placeholderClassName="emoji-picker-example__placeholder"

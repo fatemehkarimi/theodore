@@ -1,31 +1,56 @@
 import React from 'react';
 import { Card } from './ui/card';
-import { Globe, Zap, Keyboard, Code } from 'lucide-react';
+import {
+  Globe,
+  Keyboard,
+  Palette,
+  RotateCcw,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 
 const features = [
   {
     icon: Globe,
-    title: 'Cross-Browser Compatibility',
+    tone: 'emoji',
+    title: 'Consistent emoji everywhere',
     description:
-      'Ensures emojis look the same on Chrome, Firefox, Safari, Edge, and all modern browsers.',
+      'Render emoji with your own images so they look identical across browsers and platforms.',
+  },
+  {
+    icon: Sparkles,
+    tone: 'suggestions',
+    title: 'Ghost text for suggestions',
+    description:
+      'Show inline suggestions without adding them to the user’s content until accepted.',
   },
   {
     icon: Keyboard,
-    title: 'Ctrl+Z Undo Support',
+    tone: 'interaction',
+    title: 'Flexible accept and reject',
     description:
-      'Built-in undo history so users can revert edits instantly with Ctrl+Z.',
+      'Use Tab, Escape, buttons, gestures, or custom product logic to control suggestions.',
+  },
+  {
+    icon: Palette,
+    tone: 'design',
+    title: 'Fully customizable UI',
+    description:
+      'Style emoji, ghost text, and suggestion hints to match your product.',
+  },
+  {
+    icon: RotateCcw,
+    tone: 'editor',
+    title: 'Reliable editing',
+    description:
+      'Preserve expected editor behavior, including undo and keyboard interactions.',
   },
   {
     icon: Zap,
-    title: 'Lightweight & Fast',
+    tone: 'performance',
+    title: 'Lightweight by design',
     description:
-      "Minimal overhead with maximum performance. Won't slow down your application.",
-  },
-  {
-    icon: Code,
-    title: 'TypeScript Support',
-    description:
-      'Fully typed definitions for a better developer experience and fewer bugs.',
+      'Add both capabilities without adopting a heavy, opinionated editor framework.',
   },
 ];
 
@@ -40,22 +65,22 @@ export function Features() {
           <div className="text-center mb-16">
             <h2 className="text-4xl mb-4">Why theodore-js?</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Use Theodore in web apps to consistently render emojis on every
-              browser
+              Render emoji consistently, add inline suggestions, and keep full
+              control over behavior and presentation.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
+          <div className="landing-features-grid grid gap-6">
+            {features.map((feature) => (
               <Card
-                key={index}
-                className="p-6 hover:shadow-lg transition-shadow bg-white"
+                key={feature.title}
+                className={`landing-feature-card landing-feature-card--${feature.tone}`}
               >
-                <div className="w-12 h-12 bg-violet-100 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-violet-600" />
+                <div className="landing-feature-icon">
+                  <feature.icon aria-hidden="true" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
               </Card>
             ))}
           </div>

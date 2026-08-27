@@ -1,0 +1,138 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #202123;
+  background: #f7f7f8;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.content {
+  width: min(100%, 720px);
+  margin-top: -10vh;
+}
+
+h1 {
+  margin: 0 0 32px;
+  text-align: center;
+  font-size: clamp(26px, 5vw, 34px);
+  font-weight: 500;
+}
+
+.prompt-box {
+  padding: 16px 18px 12px;
+  background: white;
+  border: 1px solid #dedede;
+  border-radius: 24px;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 7%);
+}
+
+.prompt-input {
+  min-height: 52px;
+  padding: 4px 2px;
+  font-size: 16px;
+  line-height: 24px;
+  outline: none;
+}
+
+.prompt-placeholder {
+  top: 4px;
+  left: 2px;
+  color: #8e8e93;
+  line-height: 24px;
+}
+
+.prompt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 34px;
+}
+
+.hint {
+  margin: 0 2px;
+  color: #777;
+  font-size: 12px;
+}
+
+.emoji-control {
+  position: relative;
+  margin-left: auto;
+}
+
+.emoji-toggle,
+.emoji-picker button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.emoji-toggle {
+  width: 32px;
+  height: 32px;
+}
+
+.emoji-toggle:hover,
+.emoji-picker button:hover {
+  background: #f1f1f1;
+}
+
+.emoji-toggle img,
+.emoji-picker img {
+  width: 22px;
+  height: 22px;
+}
+
+.emoji-picker {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  gap: 4px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
+}
+
+.emoji-picker button {
+  width: 36px;
+  height: 36px;
+}
+
+.custom-emoji {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: -4px;
+}

@@ -1,0 +1,154 @@
+import { SuggestionInTextInput } from '../../src/components/examples/SuggestionInTextInput';
+
+export const metadata = {
+  title: 'Suggestion in Text Input | theodore-js Examples',
+  sidebarTitle: 'Suggestion in Text Input',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'How to display, accept, and reject inline text suggestions in a React text input with Theodore.',
+};
+
+# Suggestion in Text Input
+
+Learn how to request completions as someone types, display them as inline ghost text, and let the user accept or reject them.
+
+<SuggestionInTextInput />
+
+## Steps to build
+
+### 1. Create the editor state and refs
+
+Create one editor state and pass the same instance to both `useSuggestion` and `Theodore`. Keep refs for the editable element
+and Theodore's imperative API.
+
+```tsx
+import { useRef } from 'react';
+import { Theodore, type TheodoreHandle, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+function SuggestionInTextInput() {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      theodoreRef={theodoreRef}
+      editorState={editorState}
+      placeholder="Start writing..."
+      maxLines={4}
+    />
+  );
+}
+```
+
+### 2. Generate and display suggestions
+
+Your application needs a way to generate suggestions, but Theodore does not care how you generate them. They can come from
+local logic, an AI model, or a remote service. Theodore only needs the resulting string passed to its `suggestion` prop.
+
+Remote requests may need to be debounced or aborted when the user edits the content, moves the cursor, accepts or rejects a
+suggestion, or leaves the page. You can implement that lifecycle yourself or use the optional `useSuggestion` hook. The hook
+subscribes to content and selection changes, debounces requests, aborts pending requests when they are no longer relevant,
+ignores responses whose input or cursor position is stale, and keeps its suggestion state synchronized when a suggestion is
+accepted or rejected.
+
+```tsx
+import { useRef } from 'react';
+import {
+  Theodore,
+  type SuggestionRequest,
+  type TheodoreHandle,
+  useEditorState,
+  useSuggestion,
+} from 'theodore-js';
+
+function SuggestionInTextInput() {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+
+  const { acceptSuggestion, rejectActiveSuggestion, suggestion } =
+    useSuggestion({
+      debounceMs: 700,
+      editorState,
+      requestSuggestion,
+      theodoreRef,
+    });
+
+  return (
+    <Theodore
+      ref={editorRef}
+      theodoreRef={theodoreRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      placeholder="Start writing..."
+      maxLines={4}
+    />
+  );
+}
+
+const suggestions = [
+  ' lorem ipsum',
+  ' dolor sit amet',
+  ' consectetur adipiscing elit',
+  ' sed do eiusmod tempor',
+];
+
+function requestSuggestion({ input, signal }: SuggestionRequest) {
+  if (signal.aborted) return Promise.resolve(null);
+
+  const suggestion = suggestions[input.length % suggestions.length];
+  return Promise.resolve(suggestion);
+}
+```
+
+Provide `useSuggestion` with a `requestSuggestion` function that returns the suggested continuation or `null`.
+
+The suggestion remains separate from the editor's plain text until it is accepted. Clicking or tapping the ghost text accepts
+it. Theodore's default hint displays the expected shortcut, while the application decides which keyboard events accept or
+reject the suggestion.
+
+### 3. Add explicit keyboard controls
+
+This example accepts the suggestion with Tab on desktop or Enter on mobile, and rejects it with Escape. When using
+`useSuggestion`, call the hook's functions so its state stays synchronized with the suggestion rendered by Theodore. With a
+custom implementation, call the corresponding Theodore ref method and clear your own suggestion state.
+
+```tsx
+useEffect(() => {
+  const editor = editorRef.current;
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (suggestion == null) return;
+
+    if (event.key === 'Tab' || (isMobileDevice && event.key === 'Enter')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      acceptSuggestion(editorState.tree);
+      return;
+    }
+
+    if (event.key !== 'Escape') return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    rejectActiveSuggestion();
+  };
+
+  editor?.addEventListener('keydown', handleKeyDown);
+  return () => editor?.removeEventListener('keydown', handleKeyDown);
+}, [
+  acceptSuggestion,
+  editorState.tree,
+  isMobileDevice,
+  rejectActiveSuggestion,
+  suggestion,
+]);
+```
+
+See the [complete source code](https://github.com/fatemehkarimi/theodore/blob/master/landing/src/components/examples/SuggestionInTextInput.tsx)
+on GitHub.

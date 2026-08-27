@@ -1,0 +1,141 @@
+export const metadata = {
+  title: 'Editor State | theodore-js Docs',
+  sidebarTitle: 'Editor State',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Create and access Theodore editor content, subscriptions, selection, and reset behavior with useEditorState.',
+};
+
+# Editor State
+
+`useEditorState()` creates the state used by a Theodore editor. Call it in your component and pass the
+returned object to Theodore through the required `editorState` prop.
+
+```tsx
+import { Theodore, useEditorState } from 'theodore-js';
+import 'theodore-js/style.css';
+
+export function MessageInput() {
+  const editorState = useEditorState();
+
+  return <Theodore editorState={editorState} />;
+}
+```
+
+The hook does not accept any arguments.
+
+## Reading editor content
+
+`editorState.tree` contains Theodore's structured representation of the current content. Use the
+exported `convertTreeToText` helper when you need plain text. See
+[Utility Functions](/docs/utility-functions) for its complete reference.
+
+```tsx
+import { convertTreeToText } from 'theodore-js';
+
+const text = convertTreeToText(editorState.tree);
+```
+
+The tree can contain internal node objects, including temporary ghost nodes used for suggestions. Avoid
+mutating the tree or its nodes directly.
+
+## Subscribing to changes
+
+Use `editorState.subscribe(listener)` to observe subsequent content or selection updates. It returns an
+unsubscribe function. Subscribing does not immediately emit the current state.
+
+```tsx
+import { useEffect } from 'react';
+import {
+  convertTreeToText,
+  Theodore,
+  type EditorSelection,
+  useEditorState,
+} from 'theodore-js';
+
+export function MessageInput() {
+  const editorState = useEditorState();
+  const subscribe = editorState.subscribe;
+
+  useEffect(
+    () =>
+      subscribe({
+        onTreeChange: (tree) => {
+          console.log('Content:', convertTreeToText(tree));
+        },
+        onSelectionChange: (selection: EditorSelection) => {
+          console.log('Selection:', selection);
+        },
+      }),
+    [subscribe],
+  );
+
+  return <Theodore editorState={editorState} />;
+}
+```
+
+Returning the unsubscribe function directly from `useEffect`, as shown above, removes the listener when
+the component unmounts or the subscription changes.
+
+### Listener callbacks
+
+Pass an `EditorStateListener` object containing either or both callbacks:
+
+```ts
+type EditorStateListener = {
+  onSelectionChange?: (selection: EditorSelection) => void;
+  onTreeChange?: (tree: TheodoreTree) => void;
+};
+```
+
+#### `onTreeChange`
+
+Called with the updated `TheodoreTree` whenever the editor tree changes. Use
+`convertTreeToText(tree)` when you only need its plain-text content.
+
+#### `onSelectionChange`
+
+Called with the updated `EditorSelection` whenever the editor selection changes. A selection contains
+its start and end node indexes and character offsets, or is `null` when no editor selection is active:
+
+```ts
+type EditorSelection = {
+  startSelection: {
+    nodeIndex: number;
+    offset: number;
+  };
+  endSelection: {
+    nodeIndex: number;
+    offset: number;
+  };
+} | null;
+```
+
+A collapsed cursor has identical start and end positions. A range selection has different start and
+end positions.
+
+### Reading the initial state
+
+Subscribing only reports subsequent changes. Read `editorState.tree` for the current content tree and
+call `editorState.selectionHandle.getSelection()` for the current selection before subscribing if you
+also need initial values.
+
+## Resetting the editor
+
+Call `editorState.reset()` to clear the content, restore the initial selection, reset node indexing,
+and discard undo history:
+
+```tsx
+editorState.reset();
+```
+
+Code that already uses a `TheodoreHandle` can call `resetEditor()` instead. Both operations reset the
+same editor state.
+
+## Low-level fields
+
+`EditorState` also exposes `setTree`, `assignNodeIndex`, `historyHandle`, and `selectionHandle` for the
+editor implementation. Most applications should use `TheodoreHandle`, `subscribe`, and the exported
+conversion or selection helpers instead of modifying these low-level fields directly.

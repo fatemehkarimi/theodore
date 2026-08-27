@@ -1,0 +1,187 @@
+export const metadata = {
+  title: 'useSuggestion Hook | theodore-js Docs',
+  sidebarTitle: 'useSuggestion Hook',
+  theme: {
+    breadcrumb: false,
+  },
+  description:
+    'Request, debounce, display, accept, and reject inline suggestions with the Theodore useSuggestion hook.',
+};
+
+# `useSuggestion` Hook
+
+`useSuggestion` is an optional convenience hook for suggestions generated asynchronously, such as
+suggestions returned by an API. It subscribes to editor changes, debounces requests, aborts stale
+requests, and manages the active suggestion. You can use it as-is or provide your own implementation
+for requesting and managing suggestion state.
+
+## Usage
+
+```tsx
+import { useCallback, useEffect, useRef } from 'react';
+import {
+  Theodore,
+  type SuggestionRequest,
+  type TheodoreHandle,
+  useEditorState,
+  useSuggestion,
+} from 'theodore-js';
+import 'theodore-js/style.css';
+
+type SuggestionResponse = {
+  suggestion: string | null;
+};
+
+export function MessageInput() {
+  const editorState = useEditorState();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const theodoreRef = useRef<TheodoreHandle>(null);
+
+  const requestSuggestion = useCallback(
+    async ({ input, cursor, signal }: SuggestionRequest) => {
+      const response = await fetch('/api/suggestions', {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input, cursor }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not request a suggestion');
+      }
+
+      const data = (await response.json()) as SuggestionResponse;
+      return data.suggestion;
+    },
+    [],
+  );
+
+  const { acceptSuggestion, rejectActiveSuggestion, suggestion } =
+    useSuggestion({
+      debounceMs: 500,
+      editorState,
+      onRequestError: (error) => {
+        console.error('Suggestion request failed', error);
+      },
+      requestSuggestion,
+      theodoreRef,
+    });
+
+  useEffect(() => {
+    const editor = editorRef.current;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (suggestion == null) return;
+
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        acceptSuggestion(editorState.tree);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        rejectActiveSuggestion();
+      }
+    };
+
+    editor?.addEventListener('keydown', handleKeyDown);
+    return () => editor?.removeEventListener('keydown', handleKeyDown);
+  }, [
+    acceptSuggestion,
+    editorState.tree,
+    rejectActiveSuggestion,
+    suggestion,
+  ]);
+
+  return (
+    <Theodore
+      ref={editorRef}
+      editorState={editorState}
+      suggestion={suggestion}
+      theodoreRef={theodoreRef}
+    />
+  );
+}
+```
+
+## Parameters
+
+The hook receives one `UseSuggestionOptions` object:
+
+```ts
+type UseSuggestionOptions = {
+  debounceMs: number;
+  editorState: EditorState;
+  onRequestError?: (error: unknown) => void;
+  requestSuggestion: SuggestionRequestHandler;
+  theodoreRef: RefObject<TheodoreHandle>;
+};
+```
+
+- **debounceMs (required, `number`)**: The number of milliseconds to wait after the editor content
+  changes before requesting a suggestion. If the content changes again during that time, the pending
+  request is canceled and a new debounce period begins.
+
+- **editorState (required, `EditorState`)**: The editor state created by `useEditorState()`. Pass the
+  same object to both `useSuggestion` and the `Theodore` component. The hook subscribes to its content
+  and selection changes and reads its current tree and selection.
+
+- **requestSuggestion (required, `SuggestionRequestHandler`)**: An async function that generates a
+  suggestion. It must resolve to the suggested continuation as a string, or `null` when no suggestion
+  should be displayed. The hook calls it only for non-empty content with a collapsed selection and
+  ignores its result if the content or selection changes before the request finishes.
+  
+- **onRequestError (optional, `(error: unknown) => void`)**: Called when `requestSuggestion` throws or
+  returns a rejected promise. Requests intentionally aborted because the content or selection changed
+  do not call this function. If you omit it, request errors are ignored by the hook.
+
+
+- **theodoreRef (required, `RefObject<TheodoreHandle>`)**: A ref created with
+  `useRef<TheodoreHandle>(null)` and passed to the `theodoreRef` prop on the same `Theodore` component.
+  The hook uses the exposed component API to accept and reject the rendered ghost text.
+
+### `requestSuggestion` parameters
+
+The `requestSuggestion` function receives a `SuggestionRequest` object:
+
+```ts
+type SuggestionRequest = {
+  input: string;
+  cursor: number;
+  signal: AbortSignal;
+};
+```
+
+- **input (`string`)**: The editor's current content converted to plain text.
+
+- **cursor (`number`)**: The collapsed selection's character offset within its current editor node.
+
+- **signal (`AbortSignal`)**: A signal that is aborted when the request becomes stale or the component
+  unmounts. Pass it to `fetch` or otherwise observe it in your async work so canceled requests can stop
+  early.
+
+## Return value
+
+`useSuggestion` returns the suggestion state and the functions that keep that state synchronized with
+the editor:
+
+- **suggestion (`string | undefined`)**: The active continuation. Pass it to Theodore's `suggestion`
+  prop. It is `undefined` when no suggestion is active.
+
+- **acceptSuggestion (`(tree: TheodoreTree) => void`)**: Accepts the rendered suggestion, clears the
+  hook's suggestion state, and cancels pending work. Pass the current `editorState.tree` when calling
+  it.
+
+- **rejectActiveSuggestion (`() => void`)**: Removes the rendered suggestion, clears the hook's
+  suggestion state, and cancels pending work.
+
+The hook does not assign keyboard shortcuts. Connect these returned functions to the interactions that
+fit your interface, such as Tab for acceptance and Escape for rejection on desktop.
+
+## Using your own implementation
+
+Using `useSuggestion` is not required. Theodore only needs the suggestion value passed through its
+`suggestion` prop. You can subscribe to `editorState`, debounce or cancel requests, and store the active
+suggestion using your own application logic. When doing so, use the `TheodoreHandle` methods to accept
+or reject the ghost text and clear your own suggestion state at the same time. See
+[Rendering Inline Suggestions](/docs/rendering-inline-suggestions) for the lower-level integration.
