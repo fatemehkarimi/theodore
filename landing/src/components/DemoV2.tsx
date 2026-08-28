@@ -126,6 +126,7 @@ const DemoSuggestionHint: React.FC<SuggestionHintProps> = ({
         lineHeight: 1,
         boxShadow: '0 1px 2px rgb(76 29 149 / 8%)',
         userSelect: 'none',
+        cursor: 'pointer',
       }}
     >
       <span

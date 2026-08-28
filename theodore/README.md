@@ -11,4 +11,5 @@ Theodore is a React content-editable text input that supports consistent emoji r
 - Inline text suggestions
 - Undo support for text and emoji edits
 
-Read the [documentation](https://theodore-js.dev/docs) or try the [live demo](https://theodore-js.dev).
+📚 Documentation: https://theodore-js.dev/docs
+🧪 Playground: https://theodore-js.dev
