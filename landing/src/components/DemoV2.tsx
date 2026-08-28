@@ -262,11 +262,29 @@ export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
 
   const suggestion = isShowcaseActive ? showcaseSuggestion : backendSuggestion;
 
+  const SuggestionHint = useCallback(
+    ({
+      acceptSuggestion: acceptHintSuggestion,
+      ...props
+    }: SuggestionHintProps) => (
+      <DemoSuggestionHint
+        {...props}
+        acceptSuggestion={() => {
+          if (isShowcaseActiveRef.current) {
+            stopShowcaseRef.current(true);
+            return;
+          }
+          acceptHintSuggestion?.();
+        }}
+      />
+    ),
+    [],
+  );
+
   useEffect(() => {
     let exampleIndex = 0;
     let suggestionTimer: number | null = null;
     let nextExampleTimer: number | null = null;
-    const isMobileDevice = isMobile();
 
     isShowcaseActiveRef.current = true;
 
@@ -324,7 +342,7 @@ export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
         showcaseSuggestionRef.current != null &&
         (event.key === 'Tab' ||
           event.key === 'Escape' ||
-          (isMobileDevice && event.key === 'Enter'));
+          event.key === 'Enter');
       if (isSuggestionAction) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -508,7 +526,7 @@ export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
               theodoreRef={theodoreRef}
               ref={editorRef}
               suggestion={suggestion}
-              suggestionHint={DemoSuggestionHint}
+              suggestionHint={SuggestionHint}
             />
 
             <p className="mt-2 text-xs text-gray-500">
@@ -560,32 +578,6 @@ export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
               ))}
             </div>
           </Card>
-
-          {/* <div className="grid md:grid-cols-2 gap-6">
-            <Card className="p-6">
-              <div className="mb-3">
-                <span className="text-3xl mb-2 block">🎯</span>
-                <h3 className="text-lg font-medium mb-2">
-                  Native Emoji Support
-                </h3>
-                <p className="text-sm text-gray-600">
-                  All emojis render consistently, regardless of the user's
-                  browser or operating system.
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="mb-3">
-                <span className="text-3xl mb-2 block">🛡️</span>
-                <h3 className="text-lg font-medium mb-2">Reliable Editing</h3>
-                <p className="text-sm text-gray-600">
-                  Content-editable with robust emoji handling, no unexpected
-                  formatting issues.
-                </p>
-              </div>
-            </Card>
-          </div> */}
         </div>
       </div>
     </section>
