@@ -93,7 +93,10 @@ const showcaseExamples = [
 const SHOWCASE_SUGGESTION_DELAY_MS = 1000;
 const SHOWCASE_CYCLE_MS = 5000;
 
-const DemoSuggestionHint: React.FC<SuggestionHintProps> = ({ direction }) => {
+const DemoSuggestionHint: React.FC<SuggestionHintProps> = ({
+  direction,
+  acceptSuggestion,
+}) => {
   const isMobileDevice = isMobile();
 
   return (
@@ -104,7 +107,10 @@ const DemoSuggestionHint: React.FC<SuggestionHintProps> = ({ direction }) => {
       aria-label={
         isMobileDevice ? 'Press Enter to accept' : 'Press Tab to accept'
       }
-      onMouseDown={(event) => event.preventDefault()}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        acceptSuggestion?.();
+      }}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -247,7 +253,7 @@ export function DemoV2({ embedded = false }: { embedded?: boolean } = {}) {
     rejectActiveSuggestion,
     suggestion: backendSuggestion,
   } = useSuggestion({
-    debounceMs: 2000,
+    debounceMs: 1000,
     editorState,
     requestSuggestion,
     theodoreRef,
