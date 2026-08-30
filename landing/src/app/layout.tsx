@@ -7,7 +7,8 @@ import '../index.css';
 import 'theodore-js/style.css';
 
 const metadata: Metadata = {
-  title: 'theodore-js | Render Emoji in React Inputs',
+  title:
+    'theodore-js | Richer react inputs with inline suggestions and custom-rendered-emoji',
   description:
     'Render emoji as images in React text inputs with theodore-js. Replace emoji characters with custom images for consistent cross-browser display. Built for classy web apps.',
   keywords: [
@@ -30,7 +31,8 @@ const metadata: Metadata = {
     icon: '/favicon.png',
   },
   openGraph: {
-    title: 'theodore-js | Render Emoji in React Inputs',
+    title:
+      'theodore-js | Richer react inputs with inline suggestions and custom-rendered-emoji',
     description:
       'Replace emoji characters with custom images in React text inputs for consistent cross-browser rendering. Perfect for chat apps and social platforms.',
     url: 'https://theodore-js.dev',

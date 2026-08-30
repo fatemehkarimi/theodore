@@ -13,7 +13,6 @@ const sitemapRules = [
     type: 'app-static',
     appDir: file('src/app'),
     changefreq: 'weekly',
-    excludedRoutes: ['/pre-release'],
     priorityByLoc: (loc) => (loc === '/' ? '1' : '0.8'),
     sharedSources: [
       file('src/app/layout.tsx'),
