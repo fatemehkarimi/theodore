@@ -1,6 +1,6 @@
 # theodore-js
 
-> A React content-editable component for consistent, customizable emoji rendering across browsers.
+> A React content-editable component for richer inputs with inline suggestions and custom-rendered emoji.
 
 theodore-js replaces native emoji characters with application-provided React elements while preserving editing behavior. It supports custom emoji renderers, TypeScript, controlled editor state, undo history, and inline autocomplete suggestions.
 

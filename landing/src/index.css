@@ -2881,16 +2881,6 @@ html {
   }
 }
 
-.pre-release-suggestion-preview {
-  padding-inline: 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .pre-release-suggestion-preview {
-    padding-inline: 1rem;
-  }
-}
-
 h1,
 h2,
 h3,
