@@ -22,6 +22,7 @@ export async function generateMetadata(props: any) {
 }
 
 const Wrapper = getMDXComponents({}).wrapper;
+const siteOrigin = 'https://theodore-js.dev';
 
 function getCanonicalPath(mdxPath: string[] = []) {
   if (mdxPath.length === 0) {
@@ -29,6 +30,26 @@ function getCanonicalPath(mdxPath: string[] = []) {
   }
 
   return `/docs/${mdxPath.join('/')}`;
+}
+
+function getTechArticleStructuredData(metadata: any, canonical: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: metadata.title,
+    description: metadata.description,
+    url: siteOrigin + canonical,
+    mainEntityOfPage: siteOrigin + canonical,
+    author: {
+      '@type': 'Person',
+      name: 'Fatemeh Karimi',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'theodore-js',
+      url: siteOrigin,
+    },
+  };
 }
 
 export default async function Page(props: any) {
@@ -39,10 +60,21 @@ export default async function Page(props: any) {
     metadata,
     sourceCode,
   } = await importPage(params.mdxPath);
+  const canonical = getCanonicalPath(params.mdxPath);
   return (
-    <Wrapper toc={toc} metadata={metadata} sourceCode={sourceCode}>
-      <MDXContent {...props} params={params} />
-    </Wrapper>
+    <>
+      <Wrapper toc={toc} metadata={metadata} sourceCode={sourceCode}>
+        <MDXContent {...props} params={params} />
+      </Wrapper>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            getTechArticleStructuredData(metadata, canonical),
+          ),
+        }}
+      />
+    </>
   );
 }
 

@@ -47,7 +47,7 @@ const xml = [
   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
   ...routes.flatMap((route) => [
     '  <url>',
-    `    <loc>${escapeXml(origin + route.loc)}</loc>`,
+    `    <loc>${escapeXml(canonicalUrl(route.loc))}</loc>`,
     `    <lastmod>${route.lastmod}</lastmod>`,
     `    <changefreq>${route.changefreq}</changefreq>`,
     `    <priority>${route.priority}</priority>`,
@@ -95,6 +95,10 @@ function expandRule(rule) {
   }
 
   throw new Error(`Unsupported sitemap rule type: ${rule.type}`);
+}
+
+function canonicalUrl(route) {
+  return route === '/' ? origin : origin + route;
 }
 
 function appRoute(appDir, source) {
