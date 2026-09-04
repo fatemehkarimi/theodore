@@ -62,7 +62,11 @@ export function Articles() {
                   aria-label={`${article.title} on Medium`}
                 >
                   <div className="landing-article-image">
-                    <img src={article.image} alt="" loading="lazy" />
+                    <img
+                      src={article.image}
+                      alt={`Cover image for ${article.title}`}
+                      loading="lazy"
+                    />
                     <span aria-hidden="true">
                       {String(index + 1).padStart(2, '0')}
                     </span>
